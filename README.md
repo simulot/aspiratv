@@ -44,7 +44,7 @@ Intervalle entre deux recherches sur le serveur de la télévision, selon le for
 Le délai exact est aléatoire pour ne pas interroger le serveur à heures fixes.
 
 ### Destinations
-Défini les répertoires de destination des fichiers. A noter que les variables d'environnement peuvent être ête utiliser.
+Défini les répertoires de destination des fichiers. A noter que les variables d'environnement peuvent être utilisées.
 
 ### WatchList
 Donne la liste des critères de recherche pour sélectionner les émissions à télécharger. L'ensemble des critères non vides doit être statisfaits. Il sont évalués dans l'ordre suivant :
