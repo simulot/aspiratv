@@ -66,13 +66,9 @@ Actuellement, seul france.tv est implémenté. Le connecteur permet de télécha
 
 ## Configuration de PLEX
 
-<<<<<<< HEAD
 Pour obtenir un résultat acceptable, il faut configurer une librairie de type "Séries TV" en utilisant l'agent "Personal Media Shows" afin que plex utilise les titres et les imagettes téléchargées depuis le server de la télévision. Veillez à ce que l'agent "Local Media Assets (TV)" soit placé en tête de liste des agents pour les Séries / Personal Media Shows ([voir cette page](https://support.plex.tv/articles/200265256-naming-home-series-media/)) . 
-=======
-Pour obtenir un résultat acceptable, il faut configurer une librairie de type "Séries TV" en utilisant l'agent "Personal Media Shows" afin que plex utilise les titres et les imagettes téléchargées depuis le server de la télévision. Veillez à ce que l'agent "Local Media Assets (TV) soit placé en tête de liste des agents pour les Séries / Personal Media Shows ([voir cette page](https://support.plex.tv/articles/200265256-naming-home-series-media/)) . 
->>>>>>> ae723df8f29bbf60211376393a89ec500aaa78c9
 
-
+ 
 
 # Téléchargement
 
