@@ -175,17 +175,12 @@ func (w *pullWork) DownloadShow(p providers.Provider, s *providers.Show, d strin
 		return err
 	}
 
-	pl, err := m3u8.NewPlayList(master.BestQuality(), w.getter)
-	if err != nil {
-		return err
-	}
-	stream, err := pl.Download()
-	if err != nil {
-		return err
-	}
+	bestURL := master.BestQuality()
 
 	params := []string{
-		"-i", "-", // Input from stdin
+		"-loglevel", "quiet",
+		"-hide_banner",
+		"-i", bestURL,
 		"-metadata", "title=" + s.Title,
 		"-metadata", "comment=" + s.Pitch,
 		"-metadata", "show=" + s.Show,
@@ -199,10 +194,6 @@ func (w *pullWork) DownloadShow(p providers.Provider, s *providers.Show, d strin
 
 	cmd := exec.Command(w.ffmpeg, params...)
 
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		return err
-	}
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
@@ -219,15 +210,7 @@ func (w *pullWork) DownloadShow(p providers.Provider, s *providers.Show, d strin
 		go io.Copy(os.Stdout, stdout)
 		go io.Copy(os.Stderr, stderr)
 	}
-	go func() {
-		if _, err := io.Copy(stdin, stream); err != nil {
-			stdin.Close()
-			deleteFile = true
-			log.Println(err)
-			return
-		}
-		stdin.Close()
-	}()
+
 	err = cmd.Run()
 	if err != nil {
 		deleteFile = true
