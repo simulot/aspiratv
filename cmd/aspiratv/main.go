@@ -48,7 +48,7 @@ func (a *app) Initialize() {
 	// Check ans normalize configuration file
 	a.Config.Check()
 
-	// Get ffmpeg path
+	// Check ffmpeg presence
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
 		cmd = exec.Command("where", "ffmpeg")
@@ -192,7 +192,7 @@ func (w *pullWork) DownloadShow(p providers.Provider, s *providers.Show, d strin
 		fn, // output file
 	}
 
-	cmd := exec.Command(w.ffmpeg, params...)
+	cmd := exec.Command("ffmpeg", params...)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
