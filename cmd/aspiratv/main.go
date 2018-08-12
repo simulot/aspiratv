@@ -5,11 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"github.com/simulot/aspiratv/net/http"
-	"github.com/simulot/aspiratv/playlists/m3u8"
-	"github.com/simulot/aspiratv/providers"
-	_ "github.com/simulot/aspiratv/providers/francetv"
-	"github.com/simulot/aspiratv/workers"
 	"log"
 	"math/rand"
 	"os"
@@ -19,9 +14,22 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/simulot/aspiratv/net/http"
+	"github.com/simulot/aspiratv/playlists/m3u8"
+	"github.com/simulot/aspiratv/providers"
+	_ "github.com/simulot/aspiratv/providers/francetv"
+	"github.com/simulot/aspiratv/workers"
+)
+
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
 )
 
 func main() {
+	fmt.Printf("%s: %v, commit %v, built at %v\n", filepath.Base(os.Args[0]), version, commit, date)
 	a := &App{
 		Config: ReadConfig(),
 		Stop:   make(chan bool),
