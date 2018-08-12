@@ -1,11 +1,8 @@
 {
   "PullInterval": "1h30m",
   "Destinations": {
-    "Documentaires": "${HOME}/Videos/LickTV/Documentaires",
-    "Jeunesse": "${HOME}/Videos/LickTV/Jeunesse",
-    "Sciences": "${HOME}/Videos/LickTV/Sciences",
-    "Séries": "${HOME}/Videos/LickTV/Séries",
-    "Divers": "${HOME}/Videos/LickTV/Divers"
+    "Documentaires": "${HOME}/Videos/Documentaires",
+    "Jeunesse": "${HOME}/Videos/Jeunesse"
   },
   "WatchList": [
     {
@@ -16,88 +13,11 @@
       "Destination": "Jeunesse"
     },
     {
-      "Show": "Les as de la jungle",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "francetv",
-      "Destination": "Jeunesse"
-    },
-    {
-      "Show": "Ninjago",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "francetv",
-      "Destination": "Jeunesse"
-    },
-    {
-      "Show": "Les Lapins Crétins",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "francetv",
-      "Destination": "Jeunesse"
-    },
-    {
-      "Show": "Star Wars Rebels",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "francetv",
-      "Destination": "Jeunesse"
-    },
-    {
-      "Show": "Sam le pompier",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "francetv",
-      "Destination": "Jeunesse"
-    },
-    {
-      "Show": "Des trains pas comme les autres",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "francetv",
-      "Destination": "Documentaires"
-    },
-    {
-      "Show": "Echappées belles",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "francetv",
-      "Destination": "Documentaires"
-    },
-    {
-      "Show": "L'angle éco",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "francetv",
-      "Destination": "Documentaires"
-    },
-    {
       "Show": "Les routes de l'impossible",
       "Title": "",
       "Pitch": "",
       "Provider": "francetv",
       "Destination": "Documentaires"
-    },
-    {
-      "Show": "C'est pas sorcier",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "francetv",
-      "Destination": "Sciences"
-    },
-    {
-      "Show": "Scientastik",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "francetv",
-      "Destination": "Sciences"
-    },
-    {
-      "Show": "Doctor Who",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "francetv",
-      "Destination": "Séries"
-    }
+    }    
   ]
 }
