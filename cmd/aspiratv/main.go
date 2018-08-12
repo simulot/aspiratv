@@ -31,7 +31,7 @@ var (
 func main() {
 	fmt.Printf("%s: %v, commit %v, built at %v\n", filepath.Base(os.Args[0]), version, commit, date)
 	a := &app{
-		Config: ReadConfig(),
+		Config: ReadConfigOrGenerateDefault(),
 		Stop:   make(chan bool),
 	}
 

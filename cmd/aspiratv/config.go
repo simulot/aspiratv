@@ -2,11 +2,13 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/simulot/aspiratv/providers"
+	"fmt"
 	"log"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/simulot/aspiratv/providers"
 )
 
 // Config holds settings from configuration file
@@ -48,7 +50,7 @@ var defaultConfig = &Config{
 		},
 	},
 	Destinations: map[string]string{
-		"Jeunesse": "${HOME}/Videos/LickTV/Jeunesse",
+		"Jeunesse": "${HOME}/Videos/Jeunesse",
 	},
 }
 
@@ -66,17 +68,27 @@ func WriteConfig() {
 }
 
 // ReadConfig read the JSON configuration file
-func ReadConfig() *Config {
+func ReadConfig() (*Config, error) {
 	f, err := os.Open("config.json")
 	if err != nil {
-		log.Fatalf("Can't open configuration file: %v", err)
+		return nil, fmt.Errorf("Can't open configuration file: %v", err)
 	}
 	defer f.Close()
 	conf := &Config{}
 	d := json.NewDecoder(f)
 	err = d.Decode(conf)
 	if err != nil {
-		log.Fatalf("Can't decode configuration file: %v", err)
+		return nil, fmt.Errorf("Can't decode configuration file: %v", err)
+	}
+	return conf, nil
+}
+
+func ReadConfigOrGenerateDefault() *Config {
+	conf, err := ReadConfig()
+	if err != nil {
+		log.Printf("%v, generate a default file.", err)
+		conf = defaultConfig
+		WriteConfig()
 	}
 	return conf
 }
