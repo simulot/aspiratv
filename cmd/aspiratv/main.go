@@ -30,7 +30,7 @@ var (
 
 func main() {
 	fmt.Printf("%s: %v, commit %v, built at %v\n", filepath.Base(os.Args[0]), version, commit, date)
-	a := &App{
+	a := &app{
 		Config: ReadConfig(),
 		Stop:   make(chan bool),
 	}
@@ -43,7 +43,7 @@ func main() {
 	<-a.Stop
 }
 
-func (a *App) Initialize() {
+func (a *app) Initialize() {
 
 	// Check ans normalize configuration file
 	a.Config.Check()
@@ -60,6 +60,9 @@ func (a *App) Initialize() {
 		log.Fatal("Missing ffmpeg on your system, it is required to handle video files.")
 	}
 	a.ffmpeg = strings.Trim(strings.Trim(string(b), "\r\n"), "\n")
+	if a.Config.Debug {
+		log.Printf("FFMPG path: %q", a.ffmpeg)
+	}
 
 	// Kick of providers loop
 	for n, p := range providers.List() {
@@ -68,7 +71,7 @@ func (a *App) Initialize() {
 	}
 }
 
-func (a *App) ProviderLoop(p providers.Provider) {
+func (a *app) ProviderLoop(p providers.Provider) {
 	for {
 		select {
 		case <-a.Stop:
@@ -90,7 +93,7 @@ type pullWork struct {
 	ffmpeg string
 }
 
-func (a *App) PullShows(p providers.Provider) {
+func (a *app) PullShows(p providers.Provider) {
 	w := &pullWork{
 		worker: workers.New(),
 		config: a.Config,
@@ -269,7 +272,7 @@ func (w *pullWork) DownloadShow(p providers.Provider, s *providers.Show, d strin
 	return nil
 }
 
-type App struct {
+type app struct {
 	Config *Config
 	Stop   chan bool
 	ffmpeg string
