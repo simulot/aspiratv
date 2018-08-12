@@ -54,7 +54,7 @@ Donne la liste des critères de recherche pour sélectionner les émissions à t
 1. Provider: code du fournisseur de contenu
 1. Show : nom de l'émission
 1. Title: titre de l'émission ou de l'épisode
-1. Pitch: déscription de l'émission
+1. Pitch: description de l'émission
 Le contenu du critère doit être contenu dans le champ correspondant obtenu sur le serveur de la télévision.
 
 * Destination: code du répertoire où les fichiers doivent être téléchargés, dont la définition est placée dans la section  **Destinations**
