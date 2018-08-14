@@ -35,12 +35,17 @@ func main() {
 		Stop:   make(chan bool),
 	}
 
-	flag.BoolVar(&a.Config.Debug, "debug", false, "Debug mode")
+	flag.BoolVar(&a.Config.Service, "service", false, "Run as service.")
+	flag.BoolVar(&a.Config.Debug, "debug", false, "Debug mode.")
 	flag.BoolVar(&a.Config.Force, "force", false, "Force media download.")
 	flag.Parse()
 
 	a.Initialize()
-	<-a.Stop
+	if a.Config.Service {
+		a.RunAsService()
+	} else {
+		a.RunOnce()
+	}
 }
 
 func (a *app) Initialize() {
@@ -64,11 +69,29 @@ func (a *app) Initialize() {
 		log.Printf("FFMPG path: %q", a.ffmpeg)
 	}
 
-	// Kick of providers loop
+}
+
+func (a *app) RunOnce() {
+	// Kick of providers, wait queries to finish, and exit
+	wg := sync.WaitGroup{}
+	for _, p := range providers.List() {
+		wg.Add(1)
+		go func(p providers.Provider) {
+			a.PullShows(p)
+			wg.Done()
+		}(p)
+	}
+	wg.Wait()
+	log.Println("Job(s) are done!")
+}
+
+func (a *app) RunAsService() {
+	// Kick of providers loop and remain active
 	for n, p := range providers.List() {
 		go a.ProviderLoop(p)
 		log.Printf("Provider %s watch loop initialized", n)
 	}
+	<-a.Stop
 }
 
 func (a *app) ProviderLoop(p providers.Provider) {
