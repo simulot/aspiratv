@@ -16,6 +16,7 @@ type Config struct {
 	PullInterval textDuration
 	Debug        bool                      // Log ffmep output
 	Force        bool                      // True to force reload medias
+	Service      bool                      // True when runing as service. When false, query all provider en terminate
 	Destinations map[string]string         // Mapping of destination path
 	WatchList    []*providers.MatchRequest // Slice of show matcher
 }
