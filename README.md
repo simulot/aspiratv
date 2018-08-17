@@ -7,9 +7,8 @@ Aspiratv ne fait que garder une copie de l'oeuvre sur votre disque dur, comme vo
 
 ## Prérequis
 
-- FFMPEG: ffmpeg est utilisé pour convertir le flux video en fichiers mp4. l'exécutable doit être diponible dans votre système.
+- FFMPEG: ffmpeg est utilisé pour convertir le flux video en fichiers mp4. l'exécutable doit être diponible dans votre système. Page de téléchargement pour Windows: [https://ffmpeg.zeranoe.com/builds/](https://ffmpeg.zeranoe.com/builds/)
 
-- OS: Windows, Linux pour les binaires fournis, MacOS, OpenBSD,FreeBSD,
 
 ## Configuration
 
@@ -61,8 +60,12 @@ Le contenu du critère doit être contenu dans le champ correspondant obtenu sur
 
 
 ## Les fournisseurs de contenu: les providers
-### France Télévisions: **francetv**
-Actuellement, seul france.tv est implémenté. Le connecteur permet de télécharger les épisodes disponibles en replay. 
+Un provider est un package du logiciel permettant d'implémenter les différents connecteurs.
+Les connecteurs disponibles sont :
+* France Télévision (`francetv`):
+  * Programmes en replay des chaine France 2, France 3, France 4, France 5, France Ô, La 1ère
+* Arte France (`artetv`) :
+  * Programmes en langue française ou sous-titrés en français.
 
 ## Configuration de PLEX
 
@@ -72,7 +75,7 @@ Pour obtenir un résultat acceptable, il faut configurer une librairie de type "
 
 # Téléchargement
 
-TBD
+Les binaires pour Windows, Linux et FreeBSD sont directement disponibles sur la page [releases](releases/latest)
 
 # Compilation
 Vous devez avoir un compilateur pour [le langage GO](https://golang.org/dl/).
