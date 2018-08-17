@@ -38,6 +38,7 @@ changelog:
     - '^docs:'
     - '^test:'
     - '^typo:'
+    - 'README'
 
 git:
   short_hash: true

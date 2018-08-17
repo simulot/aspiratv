@@ -7,13 +7,36 @@ Aspiratv ne fait que garder une copie de l'oeuvre sur votre disque dur, comme vo
 
 ## Prérequis
 
-- FFMPEG: ffmpeg est utilisé pour convertir le flux video en fichiers mp4. l'exécutable doit être diponible dans votre système.
+- FFMPEG: ffmpeg est utilisé pour convertir le flux video en fichiers mp4. l'exécutable doit être diponible dans votre système. Page de téléchargement pour Windows: [https://ffmpeg.zeranoe.com/builds/](https://ffmpeg.zeranoe.com/builds/)
 
-- OS: Windows, Linux pour les binaires fournis, MacOS, OpenBSD,FreeBSD,
+# Installation
 
-## Configuration
+Les binaires pour Windows, Linux et FreeBSD sont directement disponibles sur la page [releases](https://github.com/simulot/aspiratv/releases/latest). Les binaires n'ont pas de dépendance autre que FFMPEG et n'ont pas besoin d'être installés.
 
-### fichier **config.json**
+# Ligne de commande
+
+```
+Usage of ./aspiratv:
+  -debug
+        Debug mode.
+  -force
+        Force media download.
+  -service
+        Run as service.
+```
+## -debug
+Augmente le nombre de message de log.
+
+## -force
+Télécharge toutes les émissions correspontant à la liste de recherche, mais si elles ont été déjà téléchagées.
+
+## -service
+Dans ce mode, le programme reste actif et interroge les serveurs régulièrement.
+
+
+# Configuration
+
+## fichier **config.json**
 
 Le fichier config.json contient les paramètres et la liste des émissions que l'on shouhaite télécharger :
 
@@ -60,21 +83,20 @@ Le contenu du critère doit être contenu dans le champ correspondant obtenu sur
 * Destination: code du répertoire où les fichiers doivent être téléchargés, dont la définition est placée dans la section  **Destinations**
 
 
-## Les fournisseurs de contenu: les providers
-### France Télévisions: **francetv**
-Actuellement, seul france.tv est implémenté. Le connecteur permet de télécharger les épisodes disponibles en replay. 
+# Les fournisseurs de contenu : les providers
+Un provider est un package du logiciel permettant d'implémenter les différents connecteurs.
+Les connecteurs disponibles sont :
+* France Télévision (`francetv`):
+  * Programmes en replay des chaine France 2, France 3, France 4, France 5, France Ô, La 1ère
+* Arte France (`artetv`) :
+  * Programmes en langue française ou sous-titrés en français.
 
-## Configuration de PLEX
+# Configuration de PLEX
 
 Pour obtenir un résultat acceptable, il faut configurer une librairie de type "Séries TV" en utilisant l'agent "Personal Media Shows" afin que plex utilise les titres et les imagettes téléchargées depuis le server de la télévision. Veillez à ce que l'agent "Local Media Assets (TV)" soit placé en tête de liste des agents pour les Séries / Personal Media Shows ([voir cette page](https://support.plex.tv/articles/200265256-naming-home-series-media/)) . 
 
- 
 
-# Téléchargement
-
-TBD
-
-# Compilation
+# Compilation des sources
 Vous devez avoir un compilateur pour [le langage GO](https://golang.org/dl/).
 
 

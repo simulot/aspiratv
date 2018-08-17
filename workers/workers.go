@@ -49,7 +49,7 @@ func (w *WorkerPool) NewWorker(id int) {
 			t := time.Now()
 			err := i.Run()
 			if err == nil {
-				log.Printf("Done  [%d]: (%s) %s\n", id, time.Since(t), i.Name())
+				log.Printf("Done  [%d]: %s(%s)\n", id, i.Name(), time.Since(t).Round(100*time.Millisecond))
 			} else {
 				log.Printf("Fail  [%d]: %s\n", id, i.Name())
 				log.Printf("Error [%d]: %v\n", id, err)
