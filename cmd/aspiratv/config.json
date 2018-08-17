@@ -2,22 +2,38 @@
   "PullInterval": "1h30m",
   "Destinations": {
     "Documentaires": "${HOME}/Videos/Documentaires",
-    "Jeunesse": "${HOME}/Videos/Jeunesse"
+    "Jeunesse": "${HOME}/Videos/Jeunesse",
+    "Courts": "${HOME}/Videos/Courts"
   },
   "WatchList": [
+  
     {
-      "Show": "Garfield",
+      "Show": "Entre Terre et ciel",
+      "Title": "",
+      "Pitch": "",
+      "Provider": "artetv",
+      "Destination": "Documentaires"
+    },
+    {
+      "Show": "La minute vieille",
+      "Title": "",
+      "Pitch": "",
+      "Provider": "artetv",
+      "Destination": "Courts"
+    },
+    {
+      "Show": "Les lapins crétins",
       "Title": "",
       "Pitch": "",
       "Provider": "francetv",
       "Destination": "Jeunesse"
     },
     {
-      "Show": "Les routes de l'impossible",
+      "Show": "Xenius",
       "Title": "",
       "Pitch": "",
-      "Provider": "francetv",
+      "Provider": "artetv",
       "Destination": "Documentaires"
-    }    
+    }
   ]
 }
