@@ -15,10 +15,13 @@ import (
 	"sync"
 	"time"
 
+	_ "github.com/simulot/aspiratv/providers/artetv"
+	_ "github.com/simulot/aspiratv/providers/francetv"
+
 	"github.com/simulot/aspiratv/net/http"
 	"github.com/simulot/aspiratv/playlists/m3u8"
 	"github.com/simulot/aspiratv/providers"
-	_ "github.com/simulot/aspiratv/providers/francetv"
+
 	"github.com/simulot/aspiratv/workers"
 )
 
@@ -109,19 +112,28 @@ func (a *app) ProviderLoop(p providers.Provider) {
 }
 
 type pullWork struct {
-	worker *workers.WorkerPool
-	config *Config
-	wg     sync.WaitGroup
-	getter getter
-	ffmpeg string
+	worker      *workers.WorkerPool
+	config      *Config
+	wg          sync.WaitGroup
+	getter      getter
+	ffmpeg      string
+	deduplicate map[string]bool
+}
+
+type debugger interface {
+	SetDebug(bool)
 }
 
 func (a *app) PullShows(p providers.Provider) {
 	w := &pullWork{
-		worker: workers.New(),
-		config: a.Config,
-		getter: http.DefaultClient,
-		ffmpeg: a.ffmpeg,
+		worker:      workers.New(),
+		config:      a.Config,
+		getter:      http.DefaultClient,
+		ffmpeg:      a.ffmpeg,
+		deduplicate: map[string]bool{},
+	}
+	if d, ok := p.(debugger); ok {
+		d.SetDebug(a.Config.Debug)
 	}
 	w.Run(p)
 }
@@ -155,6 +167,10 @@ func (w *pullWork) Run(p providers.Provider) {
 }
 
 func (w *pullWork) MustDownload(p providers.Provider, s *providers.Show, d string) bool {
+	if _, ok := w.deduplicate[s.ID]; ok {
+		return false
+	}
+	w.deduplicate[s.ID] = true
 	fn := filepath.Join(d, p.GetShowFileName(s))
 	if _, err := os.Stat(fn); err == nil {
 		return false
@@ -175,6 +191,7 @@ func (w *pullWork) SubmitDownload(p providers.Provider, s *providers.Show, d str
 }
 
 func (w *pullWork) DownloadShow(p providers.Provider, s *providers.Show, d string) error {
+
 	deleteFile := false
 	fn := filepath.Join(d, p.GetShowFileName(s))
 	defer func() {
@@ -187,23 +204,23 @@ func (w *pullWork) DownloadShow(p providers.Provider, s *providers.Show, d strin
 	if err != nil {
 		return err
 	}
+
 	url, err := p.GetShowStreamURL(s)
 	if err != nil {
 		return err
 	}
-
-	master, err := m3u8.NewMaster(url, w.getter)
-
-	if err != nil {
-		return err
+	if strings.ToLower(filepath.Ext(url)) == ".m38u" {
+		master, err := m3u8.NewMaster(url, w.getter)
+		if err != nil {
+			return err
+		}
+		url = master.BestQuality()
 	}
-
-	bestURL := master.BestQuality()
 
 	params := []string{
 		"-loglevel", "quiet",
 		"-hide_banner",
-		"-i", bestURL,
+		"-i", url,
 		"-metadata", "title=" + s.Title,
 		"-metadata", "comment=" + s.Pitch,
 		"-metadata", "show=" + s.Show,
