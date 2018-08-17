@@ -303,8 +303,8 @@ func TestArteTV_getStreamScore(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &ArteTV{
-				preferedVersions: []string{"VF", "VOF", "VOSTF", "VF-STF"},
-				preferedMedia:    "mp4",
+				preferredVersions: []string{"VF", "VOF", "VOSTF", "VF-STF"},
+				preferedMedia:     "mp4",
 			}
 			if got := p.getStreamScore(tt.args.s, tt.args.resolutionIndex); got != tt.want {
 				t.Errorf("ArteTV.getStreamScore() = %v, want %v", got, tt.want)
