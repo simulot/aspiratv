@@ -99,4 +99,9 @@ Pour obtenir un résultat acceptable, il faut configurer une librairie de type "
 # Compilation des sources
 Vous devez avoir un compilateur pour [le langage GO](https://golang.org/dl/).
 
+# Todo
+
+- [x] Provider pour Arte
+- [ ] Arte.TV: Suivre les collections
+- [ ] Provider pour Gulli 
 
