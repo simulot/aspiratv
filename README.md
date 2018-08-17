@@ -75,7 +75,11 @@ Pour obtenir un résultat acceptable, il faut configurer une librairie de type "
 
 # Téléchargement
 
+<<<<<<< HEAD
 Les binaires pour Windows, Linux et FreeBSD sont directement disponibles sur la page [releases](/releases/latest)
+=======
+Les binaires pour Windows, Linux et FreeBSD sont directement disponibles sur la page [releases](releases/latest)
+>>>>>>> 6c263fabee2a0f33bf43eb6c7413a5fbda4f80da
 
 # Compilation
 Vous devez avoir un compilateur pour [le langage GO](https://golang.org/dl/).
