@@ -75,7 +75,7 @@ Pour obtenir un résultat acceptable, il faut configurer une librairie de type "
 
 # Téléchargement
 
-Les binaires pour Windows, Linux et FreeBSD sont directement disponibles sur la page [releases](/releases/latest)
+Les binaires pour Windows, Linux et FreeBSD sont directement disponibles sur la page [releases](https://github.com/simulot/aspiratv/releases/latest)
 
 # Compilation
 Vous devez avoir un compilateur pour [le langage GO](https://golang.org/dl/).
