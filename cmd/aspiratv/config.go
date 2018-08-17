@@ -14,14 +14,14 @@ import (
 // Config holds settings from configuration file
 type Config struct {
 	PullInterval textDuration
-	Debug        bool                      // Log ffmep output
+	Debug        bool                      // Verbose Log output
 	Force        bool                      // True to force reload medias
 	Service      bool                      // True when runing as service. When false, query all provider en terminate
 	Destinations map[string]string         // Mapping of destination path
 	WatchList    []*providers.MatchRequest // Slice of show matcher
 }
 
-// Handle Duration as string for JSON configation
+// Handle Duration as string for JSON configuration
 type textDuration time.Duration
 
 func (t textDuration) MarshalJSON() ([]byte, error) {
@@ -55,7 +55,7 @@ var defaultConfig = &Config{
 	},
 }
 
-// WriteConfig create a JSON file with the current confuration
+// WriteConfig create a JSON file with the current configuration
 func WriteConfig() {
 	f, err := os.Create("confing.json")
 	if err != nil {
@@ -84,6 +84,7 @@ func ReadConfig() (*Config, error) {
 	return conf, nil
 }
 
+// ReadConfigOrGenerateDefault create a stub of config.json when it is missing from disk
 func ReadConfigOrGenerateDefault() *Config {
 	conf, err := ReadConfig()
 	if err != nil {
