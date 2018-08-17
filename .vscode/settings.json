@@ -1,0 +1,19 @@
+{
+    "spellright.language": "fr_FR",
+    "spellright.documentTypes": [
+        "markdown",
+        "latex",
+        "plaintext"
+    ],
+    "cSpell.words": [
+        "acodec",
+        "adtstoasc",
+        "artetv",
+        "aspiratv",
+        "ffmpeg",
+        "francetv",
+        "pluzz",
+        "simulot",
+        "vcodec"
+    ]
+}

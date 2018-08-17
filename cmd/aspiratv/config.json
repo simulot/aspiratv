@@ -5,9 +5,21 @@
     "Jeunesse": "${HOME}/Videos/Jeunesse",
     "Courts": "${HOME}/Videos/Courts"
   },
+  "Providers": {
+    "artetv": {
+      "Locale": "fr",
+      "PreferedVersions": ["VF", "VOF", "VOF-STF", "VOSTF", "VF-STF"]
+    }
+  },
   "WatchList": [
-  
     {
+      "Show": "Astronomie : voyage vers les étoiles !",
+      "ShowID": "RC-013500",
+      "Title": "",
+      "Pitch": "",
+      "Provider": "artetv",
+      "Destination": "Documentaires"
+    },    {
       "Show": "Entre Terre et ciel",
       "Title": "",
       "Pitch": "",

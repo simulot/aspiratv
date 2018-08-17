@@ -7,7 +7,9 @@ import (
 type MatchRequest struct {
 	// Fields for matching
 	Show     string
+	ShowID   string
 	Title    string
+	TitleID  string
 	Pitch    string
 	Provider string
 

@@ -69,7 +69,7 @@ func (a *app) Initialize() {
 	}
 	a.ffmpeg = strings.Trim(strings.Trim(string(b), "\r\n"), "\n")
 	if a.Config.Debug {
-		log.Printf("FFMPG path: %q", a.ffmpeg)
+		log.Printf("FFMPEG path: %q", a.ffmpeg)
 	}
 
 }

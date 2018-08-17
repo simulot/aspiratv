@@ -23,3 +23,6 @@ http://pluzz.webservices.francetelevisions.fr/pluzz/liste/type/live/
 ## show manifest and video url
 http://webservices.francetelevisions.fr/tools/getInfosOeuvre/v2/?catalogue=Pluzz&idDiffusion=" + e.IDDiffusion
 
+
+## Playlist 
+https://www.arte.tv/guide/api/api/zones/fr/collection_videos/?id=RC-013500&page=2

@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// Show strcture hanlde show details.
+// Show structure handle show details.
 // It is shared among all packages
 type Show struct {
 	ID           string        // Show ID
@@ -18,7 +18,7 @@ type Show struct {
 	Duration     time.Duration // Duration of the show
 	ShowURL      string        // url to the show page at provider
 	StreamURL    string        // url of the video stream
-	ThumbnailURL string        // direct url to the thumbnal of the show provided by the provider
+	ThumbnailURL string        // direct url to the thumbnail of the show provided by the provider
 	Detailed     bool          // False means some details can be requested
 	DRM          bool          // True when video is protected with DRM
 	Category     string        // Show's category
