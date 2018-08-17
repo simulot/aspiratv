@@ -23,4 +23,5 @@ type Show struct {
 	DRM          bool          // True when video is protected with DRM
 	Category     string        // Show's category
 	Provider     string        // provider's name
+	Destination  string        // Destination code taken from watch list
 }

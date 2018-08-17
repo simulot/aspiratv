@@ -141,26 +141,17 @@ func (a *app) PullShows(p providers.Provider) {
 func (w *pullWork) Run(p providers.Provider) {
 	pName := p.Name()
 	log.Printf("Read shows from %s\n", pName)
-	shows, err := p.Shows()
+	shows, err := p.Shows(w.config.WatchList)
 	if err != err {
 		log.Printf("Can't get shows list of provider %s", pName)
 		return
 	}
 	log.Printf("Got %d shows from %s\n", len(shows), pName)
 	for _, s := range shows {
-		for _, m := range w.config.WatchList {
-			if m.Provider == "" || m.Provider == pName {
-				if providers.Match(m, s) {
-					d, ok := w.config.Destinations[m.Destination]
-					if !ok {
-						log.Fatalf("Destination %s is not configured", m.Destination)
-					}
-					if w.config.Force || w.MustDownload(p, s, d) {
-						w.wg.Add(1)
-						w.SubmitDownload(p, s, d)
-					}
-				}
-			}
+		d := w.config.Destinations[s.Destination]
+		if w.config.Force || w.MustDownload(p, s, d) {
+			w.wg.Add(1)
+			w.SubmitDownload(p, s, d)
 		}
 	}
 	w.wg.Wait()

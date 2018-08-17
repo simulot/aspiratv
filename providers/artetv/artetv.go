@@ -86,7 +86,7 @@ func withGetter(g getter) func(p *ArteTV) {
 func (p ArteTV) Name() string { return "artetv" }
 
 // Shows download the shows catalog from the web site.
-func (p *ArteTV) Shows() ([]*providers.Show, error) {
+func (p *ArteTV) Shows(mm []*providers.MatchRequest) ([]*providers.Show, error) {
 	shows := []*providers.Show{}
 
 	var dateStart time.Time
@@ -102,7 +102,7 @@ func (p *ArteTV) Shows() ([]*providers.Show, error) {
 	dateEnd := time.Now().Truncate(24 * time.Hour).Add(24 * time.Hour)
 
 	for d := dateStart; d.Before(dateEnd); d = d.Add(24 * time.Hour) {
-		ss, err := p.getGuide(d)
+		ss, err := p.getGuide(mm, d)
 		if err != nil {
 			return nil, err
 		}
@@ -112,7 +112,7 @@ func (p *ArteTV) Shows() ([]*providers.Show, error) {
 }
 
 // getGuide get Arte's guide of programs for the given date
-func (p *ArteTV) getGuide(d time.Time) ([]*providers.Show, error) {
+func (p *ArteTV) getGuide(mm []*providers.MatchRequest, d time.Time) ([]*providers.Show, error) {
 	if p.debug {
 		log.Printf("Fetch guide for date: %s", d.Format("06-01-02"))
 	}
@@ -133,7 +133,7 @@ func (p *ArteTV) getGuide(d time.Time) ([]*providers.Show, error) {
 	for _, z := range guide.Zones {
 		if z.Code.Name == "listing_TV_GUIDE" {
 			for _, d := range z.Data {
-				shows = append(shows, &providers.Show{
+				show := &providers.Show{
 					AirDate: func(ds []tsGuide) time.Time {
 						if len(ds) > 0 {
 							return ds[0].Time()
@@ -165,7 +165,10 @@ func (p *ArteTV) getGuide(d time.Time) ([]*providers.Show, error) {
 						return bestURL
 					}(d.Images["landscape"]),
 					Title: strings.TrimSpace(d.Subtitle),
-				})
+				}
+				if providers.IsShowMatch(mm, show) {
+					shows = append(shows, show)
+				}
 			}
 		}
 	}
