@@ -8,28 +8,49 @@ import (
 	"os"
 )
 
-type HttpTest struct {
+// HTTPTest provides a HTTP getter to mock http requests
+type HTTPTest struct {
 	UrlToFilefn func(u string) string
 }
 
-func New(conf ...func(ht *HttpTest)) *HttpTest {
-	ht := &HttpTest{}
-	fileDirect()(ht)
+// New create a HTTPTest and configures it
+func New(conf ...func(ht *HTTPTest)) *HTTPTest {
+	ht := &HTTPTest{}
+	fileDirect()(ht) // default: url is file name
 	for _, fn := range conf {
 		fn(ht)
 	}
 	return ht
 }
 
-func fileDirect() func(ht *HttpTest) {
-	return func(ht *HttpTest) {
+// the url is the file name
+func fileDirect() func(ht *HTTPTest) {
+	return func(ht *HTTPTest) {
 		ht.UrlToFilefn = func(u string) string {
 			return u
 		}
 	}
 }
 
-func (ht *HttpTest) RoundTrip(r *http.Request) (*http.Response, error) {
+// WithURLToFile set the custom function UrlToFile
+func WithURLToFile(fn func(u string) string) func(ht *HTTPTest) {
+	return func(ht *HTTPTest) {
+		ht.UrlToFilefn = fn
+	}
+}
+
+// WithConstantFile read always the same file
+func WithConstantFile(s string) func(ht *HTTPTest) {
+	return func(ht *HTTPTest) {
+		ht.UrlToFilefn = func(string) string {
+			return s
+		}
+	}
+}
+
+// RoundTrip implements the file roundtripper and use the UrlToFile function
+// to determine the actual file name from the given url
+func (ht *HTTPTest) RoundTrip(r *http.Request) (*http.Response, error) {
 	url := ""
 	if r != nil && r.URL != nil {
 		url = r.URL.String()
@@ -61,7 +82,8 @@ func (ht *HttpTest) RoundTrip(r *http.Request) (*http.Response, error) {
 	return resp, nil
 }
 
-func (ht *HttpTest) Get(u string) (io.Reader, error) {
+// Get implement the Getter interface
+func (ht *HTTPTest) Get(u string) (io.Reader, error) {
 	url, err := url.Parse(u)
 	if err != nil {
 		return nil, err

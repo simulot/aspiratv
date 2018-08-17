@@ -14,3 +14,6 @@ debug
 
 # Exclude dist folder
 dist
+
+launch.json
+cmd/aspiratv/aspiratv
