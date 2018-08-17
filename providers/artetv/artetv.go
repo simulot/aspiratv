@@ -42,10 +42,10 @@ type getter interface {
 
 // ArteTV structure handles arte  catalog of shows
 type ArteTV struct {
-	getter           getter
-	preferedVersions []string // versionCode List of version in order of preference VF,VA...
-	preferedMedia    string   // mediaType mp4,hls
-	debug            bool
+	getter            getter
+	preferredVersions []string // versionCode List of version in order of preference VF,VA...
+	preferredMedia    string   // mediaType mp4,hls
+	debug             bool
 }
 
 // WithGetter inject a getter in FranceTV object instead of normal one
@@ -60,9 +60,9 @@ func WithGetter(g getter) func(p *ArteTV) {
 func New(conf ...func(p *ArteTV)) (*ArteTV, error) {
 	p := &ArteTV{
 		getter: http.DefaultClient,
-		//TODO: get prefrences from config file
-		preferedVersions: []string{"VF", "VOF", "VOF-STF", "VOSTF", "VF-STF"}, // "VF-STMF" "VA", "VA-STA"
-		preferedMedia:    "mp4",
+		//TODO: get preferences from config file
+		preferredVersions: []string{"VF", "VOF", "VOF-STF", "VOSTF", "VF-STF"}, // "VF-STMF" "VA", "VA-STA"
+		preferredMedia:    "mp4",
 	}
 	for _, fn := range conf {
 		fn(p)
@@ -261,13 +261,13 @@ func (p *ArteTV) getStreamScore(s streamInfo, resolutionIndex uint64) uint64 {
 	grade := uint64(0)
 
 	// Best grade for the preferred version
-	grade += reverseSliceIndex(s.VersionCode, p.preferedVersions) * 1000000
+	grade += reverseSliceIndex(s.VersionCode, p.preferredVersions) * 1000000
 
 	// Then best resolution
 	grade += resolutionIndex * 1000
 
 	// Add points for the preferred format
-	if s.MediaType == p.preferedMedia {
+	if s.MediaType == p.preferredMedia {
 		grade += 10
 	}
 	return grade
