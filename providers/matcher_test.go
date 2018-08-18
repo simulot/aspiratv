@@ -3,7 +3,7 @@ package providers
 import "testing"
 
 func TestIsShowMatch(t *testing.T) {
-	ml := []MatchRequest{
+	ml := []*MatchRequest{
 		{
 			Show:        "searched1",
 			Provider:    "p1",
@@ -21,7 +21,7 @@ func TestIsShowMatch(t *testing.T) {
 		},
 	}
 	type args struct {
-		mm []MatchRequest
+		mm []*MatchRequest
 		s  *Show
 	}
 	tests := []struct {
