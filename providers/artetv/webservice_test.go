@@ -52,8 +52,8 @@ func TestCollection(t *testing.T) {
 	}
 
 	d := json.NewDecoder(f)
-	collection := &collection{}
-	err = d.Decode(collection)
+	sr := &searchResults{}
+	err = d.Decode(sr)
 	if err != nil {
 		t.Error(err)
 		return

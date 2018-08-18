@@ -117,6 +117,10 @@ func (s *seconds) UnmarshalJSON(b []byte) error {
 	if b[0] == '"' {
 		b = b[1 : len(b)-1]
 	}
+	if string(b) == "null" {
+		*s = 0
+		return nil
+	}
 	i, err := strconv.Atoi(string(b))
 	if err != nil {
 		return fmt.Errorf("Can't parse duration in seconds: %v", err)
@@ -295,7 +299,7 @@ type streamInfo struct {
 	Width               int    `json:"width"`
 }
 
-type collection struct {
+type searchResults struct {
 	// Code struct {
 	// 	ID   string `json:"id"`
 	// 	Name string `json:"name"`
@@ -326,9 +330,10 @@ type collection struct {
 		// 	Portrait interface{} `json:"portrait"`
 		// 	Square   interface{} `json:"square"`
 		// } `json:"images"`
-		// Kind struct {
-		// 	Code  string `json:"code"`
-		// 	Label string `json:"label"`
+		Kind struct {
+			Code  string `json:"code"`
+			Label string `json:"label"`
+		} `json:"kind"`
 		ProgramID string `json:"programId"`
 		// Stickers  []interface{} `json:"stickers"`
 		Subtitle string `json:"subtitle"`
