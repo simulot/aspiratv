@@ -276,7 +276,7 @@ func (p *ArteTV) GetShowStreamURL(s *providers.Show) (string, error) {
 	return s.StreamURL, nil
 }
 
-var reArteSerie = regexp.MustCompile(`(?P<Title>.*\S)\s*\((?P<Episode>\d+)\/(?P<Total>\d+)\)`)
+var reArteSeries = regexp.MustCompile(`(?P<Title>.*\S)\s*\((?P<Episode>\d+)\/(?P<Total>\d+)\)`)
 
 // GetShowInfo query the URL from InfoOeuvre web service
 func (p *ArteTV) GetShowInfo(s *providers.Show) error {
@@ -300,7 +300,7 @@ func (p *ArteTV) GetShowInfo(s *providers.Show) error {
 	}
 
 	// Get episode number from the title when exists.
-	m := reArteSerie.FindAllStringSubmatch(i.VideoJSONPlayer.VTI, -1)
+	m := reArteSeries.FindAllStringSubmatch(i.VideoJSONPlayer.VTI, -1)
 	if m != nil {
 		s.Title = m[0][1]
 		s.Episode = m[0][2]
