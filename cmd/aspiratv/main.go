@@ -155,6 +155,7 @@ func (w *pullWork) Run(p providers.Provider) {
 		}
 	}
 	w.wg.Wait()
+	w.worker.Stop()
 }
 
 func (w *pullWork) MustDownload(p providers.Provider, s *providers.Show, d string) bool {
