@@ -40,7 +40,7 @@ func TestBestStream(t *testing.T) {
 	}
 
 	s := p.getBestVideo(player.VideoJSONPlayer.VSR)
-	if s != "HTTPS_SQ_1" {
+	if s != player.VideoJSONPlayer.VSR["HTTPS_SQ_1"].URL {
 		t.Errorf("Unexpected value, got %v", player.VideoJSONPlayer.VSR[s])
 	}
 }
@@ -133,7 +133,7 @@ func Test_sliceIndex(t *testing.T) {
 		},
 		{
 			"test-notfound",
-			args{"notfoud", []string{"one", "two", "three"}},
+			args{"notfound", []string{"one", "two", "three"}},
 			0,
 		},
 		{
@@ -188,7 +188,7 @@ func Test_reverseSliceIndex(t *testing.T) {
 		},
 		{
 			"test-notfound",
-			args{"notfoud", []string{"one", "two", "three"}},
+			args{"notfound", []string{"one", "two", "three"}},
 			0,
 		},
 		{
@@ -221,13 +221,13 @@ func Test_getGuide(t *testing.T) {
 
 	p, err := New(withGetter(getter))
 	if err != nil {
-		t.Errorf("Unexpeced error: %v", err)
+		t.Errorf("Unexpected error: %v", err)
 		return
 	}
 
-	ss, err := p.getGuide(time.Time{})
+	ss, err := p.getGuide(nil, time.Time{})
 	if err != nil {
-		t.Errorf("Unexpeced error: %v", err)
+		t.Errorf("Unexpected error: %v", err)
 		return
 	}
 

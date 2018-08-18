@@ -105,7 +105,7 @@ func (a *app) ProviderLoop(p providers.Provider) {
 		default:
 			a.PullShows(p)
 			s := time.Duration(a.Config.PullInterval) + time.Duration(rand.Intn(int(time.Duration(a.Config.PullInterval))/4))
-			log.Printf("Provider %s is sleeping until %s\n", p.Name(), time.Now().Add(s).Format("15:04:05"))
+			log.Printf("[%s] Provider is sleeping until %s\n", p.Name(), time.Now().Add(s).Format("15:04:05"))
 			time.Sleep(s)
 		}
 	}
@@ -140,26 +140,20 @@ func (a *app) PullShows(p providers.Provider) {
 
 func (w *pullWork) Run(p providers.Provider) {
 	pName := p.Name()
-	log.Printf("Read shows from %s\n", pName)
-	shows, err := p.Shows()
+	shows, err := p.Shows(w.config.WatchList)
 	if err != err {
-		log.Printf("Can't get shows list of provider %s", pName)
+		log.Printf("[%s] Can't get shows list of provider", pName)
 		return
 	}
-	log.Printf("Got %d shows from %s\n", len(shows), pName)
+	log.Printf("[%s] %s has %d show(s) that match", pName, pName, len(shows))
 	for _, s := range shows {
-		for _, m := range w.config.WatchList {
-			if m.Provider == "" || m.Provider == pName {
-				if providers.Match(m, s) {
-					d, ok := w.config.Destinations[m.Destination]
-					if !ok {
-						log.Fatalf("Destination %s is not configured", m.Destination)
-					}
-					if w.config.Force || w.MustDownload(p, s, d) {
-						w.wg.Add(1)
-						w.SubmitDownload(p, s, d)
-					}
-				}
+		d := w.config.Destinations[s.Destination]
+		if w.config.Force || w.MustDownload(p, s, d) {
+			w.wg.Add(1)
+			w.SubmitDownload(p, s, d)
+		} else {
+			if w.config.Debug {
+				log.Printf("[%s] Show %q, %q is already download", pName, s.Show, s.Title)
 			}
 		}
 	}
@@ -186,7 +180,7 @@ func (w *pullWork) MustDownload(p providers.Provider, s *providers.Show, d strin
 }
 
 func (w *pullWork) SubmitDownload(p providers.Provider, s *providers.Show, d string) {
-	w.worker.Submit(workers.NewRunAction("Downloading show: "+p.GetShowFileName(s), func() error {
+	w.worker.Submit(workers.NewRunAction(fmt.Sprintf("[%s] Downloading show: %q", p.Name(), p.GetShowFileName(s)), func() error {
 		return w.DownloadShow(p, s, d)
 	}))
 }
@@ -196,10 +190,10 @@ func (w *pullWork) DownloadShow(p providers.Provider, s *providers.Show, d strin
 	deleteFile := false
 	fn := filepath.Join(d, p.GetShowFileName(s))
 	defer func() {
-		w.wg.Done()
 		if deleteFile {
 			os.Remove(fn)
 		}
+		w.wg.Done()
 	}()
 	err := os.MkdirAll(filepath.Dir(fn), 0777)
 	if err != nil {
@@ -252,6 +246,9 @@ func (w *pullWork) DownloadShow(p providers.Provider, s *providers.Show, d strin
 		go io.Copy(os.Stderr, stderr)
 	}
 
+	if w.config.Debug {
+		log.Printf("[%s] Runing FFMPEG to get %q", p.Name(), p.GetShowFileName(s))
+	}
 	err = cmd.Run()
 	if err != nil {
 		deleteFile = true
@@ -268,13 +265,13 @@ func (w *pullWork) DownloadShow(p providers.Provider, s *providers.Show, d strin
 
 	tbnStream, err := w.getter.Get(s.ThumbnailURL)
 	if err != nil {
-		return fmt.Errorf("Can't download %s's thumbnail: %v", p.GetShowFileName(s), err)
+		return fmt.Errorf("[%s] Can't download %q's thumbnail: %v", p.Name(), p.GetShowFileName(s), err)
 	}
 
 	ws := []io.Writer{}
 	tbnFile, err := os.Create(tbnFileName)
 	if err != nil {
-		return fmt.Errorf("Can't create %s's thumbnail: %v", p.GetShowFileName(s), err)
+		return fmt.Errorf("[%s] Can't create %q's thumbnail: %v", p.Name(), p.GetShowFileName(s), err)
 	}
 	defer tbnFile.Close()
 	ws = append(ws, tbnFile)
@@ -282,7 +279,7 @@ func (w *pullWork) DownloadShow(p providers.Provider, s *providers.Show, d strin
 	if mustDownloadShowTbnFile {
 		showTbnFile, err := os.Create(showTbnFileName)
 		if err != nil {
-			return fmt.Errorf("Can't create shows's %s thumbnail: %v", s.Show, err)
+			return fmt.Errorf("[%s] Can't create shows's %q thumbnail: %v", p.Name(), s.Show, err)
 		}
 		defer showTbnFile.Close()
 		ws = append(ws, showTbnFile)
@@ -291,7 +288,7 @@ func (w *pullWork) DownloadShow(p providers.Provider, s *providers.Show, d strin
 	wr := io.MultiWriter(ws...)
 	_, err = io.Copy(wr, tbnStream)
 	if err != nil {
-		return fmt.Errorf("Can't write %s's thumbnail: %v", p.GetShowFileName(s), err)
+		return fmt.Errorf("[%s] Can't write %q's thumbnail: %v", p.Name(), p.GetShowFileName(s), err)
 	}
 	return nil
 }
