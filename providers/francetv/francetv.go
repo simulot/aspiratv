@@ -48,7 +48,7 @@ func WithGetter(g getter) func(ftv *FranceTV) {
 	}
 }
 
-// New setup a Show provider for France Télévisons
+// New setup a Show provider for France Télévisions
 func New(conf ...func(ftv *FranceTV)) (*FranceTV, error) {
 	ftv := &FranceTV{
 		getter: http.DefaultClient,

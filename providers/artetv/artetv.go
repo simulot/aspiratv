@@ -57,7 +57,7 @@ func WithGetter(g getter) func(p *ArteTV) {
 	}
 }
 
-// New setup a Show provider for France Télévisons
+// New setup a Show provider for Arte
 func New(conf ...func(p *ArteTV)) (*ArteTV, error) {
 	p := &ArteTV{
 		getter: http.DefaultClient,
