@@ -49,7 +49,8 @@ Le fichier config.json contient les paramètres et la liste des émissions que l
   "PullInterval": "1h30m",
   "Destinations": {
     "Documentaires": "${HOME}/Videos/Documentaires",
-    "Jeunesse": "${HOME}/Videos/Jeunesse"
+    "Jeunesse": "${HOME}/Videos/Jeunesse",
+    "Courts": "${HOME}/Videos/Courts"
   },
   "WatchList": [
     {
@@ -65,7 +66,14 @@ Le fichier config.json contient les paramètres et la liste des émissions que l
       "Pitch": "",
       "Provider": "francetv",
       "Destination": "Documentaires"
-    }    
+    },
+    {
+      "Playlist": "La minute vieille",
+      "Title": "",
+      "Pitch": "",
+      "Provider": "artetv",
+      "Destination": "Courts"
+    }      
   ]
 }
 ```
@@ -86,6 +94,7 @@ Le contenu du critère doit être contenu dans le champ correspondant obtenu sur
 
 * Destination: code du répertoire où les fichiers doivent être téléchargés, dont la définition est placée dans la section  **Destinations**
 
+Chaque provider peut traiter spécifiquement les recherches. 
 
 # Les fournisseurs de contenu : les providers
 Un provider est un package du logiciel permettant d'implémenter les différents connecteurs.
@@ -94,6 +103,7 @@ Les connecteurs disponibles sont :
   * Programmes en replay des chaîne France 2, France 3, France 4, France 5, France Ô, La 1ère
 * Arte France (`artetv`) :
   * Programmes en langue française ou sous-titrés en français.
+  * Les playlists Arte peuvent être surveillées pour que les nouveaux épisodes soit téléchargés dès leur disponibilité. 
 
 # Configuration de PLEX
 
@@ -106,6 +116,6 @@ Vous devez avoir un compilateur pour [le langage GO](https://golang.org/dl/).
 # Todo
 
 - [x] Provider pour Arte
-- [ ] Arte.TV: Suivre les collections
-- [ ] Provider pour Gulli 
+- [x] Arte.TV: Suivre les collections
+- [_] Provider pour Gulli 
 
