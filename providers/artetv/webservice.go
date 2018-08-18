@@ -7,8 +7,10 @@ import (
 	"time"
 )
 
+// cSpell:disable
+
 // Day guide structure
-// Commented out fields are kept for docuementation
+// Commented out fields are kept for documentation
 type guide struct {
 	// AlternativeLanguages []struct {
 	// 	Code  string `json:"code"`

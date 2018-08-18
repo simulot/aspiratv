@@ -188,7 +188,7 @@ func Test_reverseSliceIndex(t *testing.T) {
 		},
 		{
 			"test-notfound",
-			args{"notfoud", []string{"one", "two", "three"}},
+			args{"notfound", []string{"one", "two", "three"}},
 			0,
 		},
 		{
