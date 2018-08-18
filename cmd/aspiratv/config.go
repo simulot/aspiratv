@@ -18,7 +18,7 @@ type Config struct {
 	Force        bool                      // True to force reload medias
 	Service      bool                      // True when runing as service. When false, query all provider en terminate
 	Destinations map[string]string         // Mapping of destination path
-	WatchList    []*providers.MatchRequest // Slice of show matcher
+	WatchList    []*providers.MatchRequest // Slice of show matchers
 }
 
 // Handle Duration as string for JSON configuration
@@ -97,15 +97,18 @@ func ReadConfigOrGenerateDefault() *Config {
 
 // Check the configuration or die
 func (c *Config) Check() {
+	// Expand paths
+	for d, p := range c.Destinations {
+		c.Destinations[d] = os.ExpandEnv(p)
+	}
+
 	for _, m := range c.WatchList {
 		m.Pitch = strings.ToLower(m.Pitch)
 		m.Show = strings.ToLower(m.Show)
 		m.Title = strings.ToLower(m.Title)
-	}
-
-	// Expand paths
-	for d, p := range c.Destinations {
-		c.Destinations[d] = os.ExpandEnv(p)
+		if _, ok := c.Destinations[m.Destination]; !ok {
+			log.Fatalf("Destination %q is not defined into section Destination of config.json", m.Destination)
+		}
 	}
 
 }

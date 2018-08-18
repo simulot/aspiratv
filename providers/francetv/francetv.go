@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -48,7 +49,7 @@ func WithGetter(g getter) func(ftv *FranceTV) {
 	}
 }
 
-// New setup a Show provider for France Télévisons
+// New setup a Show provider for France Télévisions
 func New(conf ...func(ftv *FranceTV)) (*FranceTV, error) {
 	ftv := &FranceTV{
 		getter: http.DefaultClient,
@@ -62,8 +63,10 @@ func New(conf ...func(ftv *FranceTV)) (*FranceTV, error) {
 // Name return the name of the provider
 func (ftv FranceTV) Name() string { return "francetv" }
 
-// Shows download the shows catalog from the web site.
-func (ftv *FranceTV) Shows() ([]*providers.Show, error) {
+// Shows return shows that match with matching list.
+func (ftv *FranceTV) Shows(mm []*providers.MatchRequest) ([]*providers.Show, error) {
+	log.Print("[francetv] Fetch France.tv's new shows")
+
 	shows := []*providers.Show{}
 
 	var url string
@@ -88,7 +91,7 @@ func (ftv *FranceTV) Shows() ([]*providers.Show, error) {
 
 	for _, e := range list.Reponse.Emissions {
 		// Map JSON object to provider.Show common structure
-		shows = append(shows, &providers.Show{
+		show := &providers.Show{
 			AirDate:      time.Time(e.TsDiffusionUtc),
 			Channel:      e.ChaineID,
 			Category:     strings.TrimSpace(e.Rubrique),
@@ -105,7 +108,10 @@ func (ftv *FranceTV) Shows() ([]*providers.Show, error) {
 			StreamURL:    "", // Must call GetShowStreamURL to get the show's URL
 			ThumbnailURL: e.ImageLarge,
 			Title:        strings.TrimSpace(e.Soustitre),
-		})
+		}
+		if providers.IsShowMatch(mm, show) {
+			shows = append(shows, show)
+		}
 	}
 	return shows, nil
 }

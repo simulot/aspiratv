@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/url"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -27,10 +28,12 @@ func init() {
 
 // Provider constants
 const (
-	arteIndex   = "https://www.arte.tv"
-	arteCDN     = "https://static-cdn.arte.tv"
-	arteGuide   = "https://www.arte.tv/guide/api/api/pages/fr/TV_GUIDE/?day="
-	arteDetails = "https://api.arte.tv/api/player/v1/config/fr/%s?autostart=1&lifeCycle=1"
+	arteIndex      = "https://www.arte.tv"
+	arteCDN        = "https://static-cdn.arte.tv"
+	arteGuide      = "https://www.arte.tv/guide/api/api/pages/fr/TV_GUIDE/?day="
+	arteDetails    = "https://api.arte.tv/api/player/v1/config/fr/%s?autostart=1&lifeCycle=1"              // ProgID
+	arteCollection = "https://www.arte.tv/guide/api/api/zones/fr/collection_videos/?id=%s&page=%d"         // Id and Page
+	arteSearch     = "https://www.arte.tv/guide/api/api/zones/fr/listing_SEARCH/?page=1&limit=20&query=%s" // Search term
 )
 
 // Track when this is the first time the Show is invoked
@@ -56,7 +59,7 @@ func WithGetter(g getter) func(p *ArteTV) {
 	}
 }
 
-// New setup a Show provider for France Télévisons
+// New setup a Show provider for Arte
 func New(conf ...func(p *ArteTV)) (*ArteTV, error) {
 	p := &ArteTV{
 		getter: http.DefaultClient,
@@ -86,11 +89,145 @@ func withGetter(g getter) func(p *ArteTV) {
 func (p ArteTV) Name() string { return "artetv" }
 
 // Shows download the shows catalog from the web site.
-func (p *ArteTV) Shows() ([]*providers.Show, error) {
+func (p *ArteTV) Shows(mm []*providers.MatchRequest) ([]*providers.Show, error) {
+	shows := []*providers.Show{}
+	log.Print("[artetv] Fetch Arte's new shows")
+
+	replay, err := p.getReplayShows(mm)
+	if err != nil {
+		return nil, err
+	}
+	shows = append(shows, replay...)
+
+	collections, err := p.getCollectionsShows(mm)
+	if err != nil {
+		return nil, err
+	}
+
+	shows = append(shows, collections...)
+
+	return shows, nil
+}
+
+// browse all match request to handle those having a ShowID denoting an Arte collection ID
+// and invoke  getCollection
+func (p *ArteTV) getCollectionsShows(mm []*providers.MatchRequest) ([]*providers.Show, error) {
+	shows := []*providers.Show{}
+	for _, m := range mm {
+		if m.Provider == "artetv" && m.Playlist != "" {
+			collection, err := p.getCollection(m.Playlist, m.Destination)
+			if err != nil {
+				log.Printf("[artetv] Can't fetch collection %q: %v", m.Playlist, err)
+				continue
+			}
+			shows = append(shows, collection...)
+		}
+	}
+	return shows, nil
+}
+
+// getCollectionIDFromName retrieve collection's ID from its name
+// It returns the 1st encountered collection in result set
+func (p *ArteTV) getCollectionIDFromName(collection string) (string, error) {
+
+	if p.debug {
+		log.Printf("[artetv] Query collection's ID: %q", collection)
+	}
+
+	URL := fmt.Sprintf(arteSearch, url.PathEscape(collection))
+	r, err := p.getter.Get(URL)
+	if err != nil {
+		return "", err
+	}
+	d := json.NewDecoder(r)
+	result := &searchResults{}
+	err = d.Decode(result)
+	if err != nil {
+		return "", err
+	}
+	for _, s := range result.Data {
+		if strings.HasPrefix(s.ProgramID, "RC-") {
+			return s.ProgramID, nil
+		}
+	}
+	return "", fmt.Errorf("[artetv] Id for collection %q not found", collection)
+}
+
+// get all Arte shows for the given collection ID
+func (p *ArteTV) getCollection(ColName string, destination string) ([]*providers.Show, error) {
+
+	ColID, err := p.getCollectionIDFromName(ColName)
+	if err != nil {
+		return nil, err
+	}
+
 	shows := []*providers.Show{}
 
+	if p.debug {
+		log.Printf("[artetv] Fetch collection: %q[%s]", ColName, ColID)
+	}
+	page := 1
+
+	for {
+		URL := fmt.Sprintf(arteCollection, ColID, page)
+		r, err := p.getter.Get(URL)
+		if err != nil {
+			return nil, err
+		}
+		d := json.NewDecoder(r)
+		collection := &searchResults{}
+		err = d.Decode(collection)
+		if err != nil {
+			return nil, err
+		}
+		for _, s := range collection.Data {
+			shows = append(shows, &providers.Show{
+				AirDate:   time.Now().Truncate(24 * time.Hour),
+				Channel:   "Arte",
+				Category:  "",
+				Detailed:  false,
+				DRM:       false,
+				Duration:  s.Duration.Duration(),
+				Episode:   "",
+				ID:        s.ProgramID,
+				Pitch:     strings.TrimSpace(s.Description),
+				Season:    "",
+				Provider:  "artetv",
+				Show:      strings.TrimSpace(collection.Link.Title),
+				ShowURL:   s.URL,
+				StreamURL: "", // Must call GetShowStreamURL to get the show's URL
+				ThumbnailURL: func(t thumbs) string {
+					bestRes := -1
+					bestURL := ""
+					for _, r := range t.Resolutions {
+						if r.Height*r.Width > bestRes {
+							bestRes = r.Height * r.Width
+							bestURL = r.URL
+						}
+					}
+					return bestURL
+				}(s.Images["landscape"]),
+				Title:       strings.TrimSpace(s.Title),
+				Destination: destination,
+			})
+		}
+		if len(collection.NextPage) == 0 {
+			break
+		}
+		page++
+	}
+	if p.debug {
+		log.Printf("[artetv] Collection: %q has %d shows", ColName, len(shows))
+	}
+	return shows, nil
+}
+
+// parse guide page to get brocasted shows.
+// Note for the first run (in service mode), we collect 3 weeks of guide
+func (p *ArteTV) getReplayShows(mm []*providers.MatchRequest) ([]*providers.Show, error) {
 	var dateStart time.Time
 
+	shows := []*providers.Show{}
 	if runCounter == 0 {
 		// Start search 3 weeks in the past
 		dateStart = time.Now().Truncate(24 * time.Hour).Add(-3 * 7 * 24 * time.Hour)
@@ -102,19 +239,20 @@ func (p *ArteTV) Shows() ([]*providers.Show, error) {
 	dateEnd := time.Now().Truncate(24 * time.Hour).Add(24 * time.Hour)
 
 	for d := dateStart; d.Before(dateEnd); d = d.Add(24 * time.Hour) {
-		ss, err := p.getGuide(d)
+		ss, err := p.getGuide(mm, d)
 		if err != nil {
 			return nil, err
 		}
 		shows = append(shows, ss...)
 	}
+	runCounter++
 	return shows, nil
 }
 
 // getGuide get Arte's guide of programs for the given date
-func (p *ArteTV) getGuide(d time.Time) ([]*providers.Show, error) {
+func (p *ArteTV) getGuide(mm []*providers.MatchRequest, d time.Time) ([]*providers.Show, error) {
 	if p.debug {
-		log.Printf("Fetch guide for date: %s", d.Format("06-01-02"))
+		log.Printf("[artetv] Fetch guide for date: %s", d.Format("06-01-02"))
 	}
 	url := arteGuide + d.Format("06-01-02")
 	r, err := p.getter.Get(url)
@@ -133,7 +271,7 @@ func (p *ArteTV) getGuide(d time.Time) ([]*providers.Show, error) {
 	for _, z := range guide.Zones {
 		if z.Code.Name == "listing_TV_GUIDE" {
 			for _, d := range z.Data {
-				shows = append(shows, &providers.Show{
+				show := &providers.Show{
 					AirDate: func(ds []tsGuide) time.Time {
 						if len(ds) > 0 {
 							return ds[0].Time()
@@ -165,14 +303,17 @@ func (p *ArteTV) getGuide(d time.Time) ([]*providers.Show, error) {
 						return bestURL
 					}(d.Images["landscape"]),
 					Title: strings.TrimSpace(d.Subtitle),
-				})
+				}
+				if providers.IsShowMatch(mm, show) {
+					shows = append(shows, show)
+				}
 			}
 		}
 	}
 	return shows, nil
 }
 
-// GetShowStreamURL return the show's URL, a m3u8 playlist
+// GetShowStreamURL return the show's URL, a mp4 file
 func (p *ArteTV) GetShowStreamURL(s *providers.Show) (string, error) {
 	if s.StreamURL == "" {
 		err := p.GetShowInfo(s)
@@ -183,9 +324,9 @@ func (p *ArteTV) GetShowStreamURL(s *providers.Show) (string, error) {
 	return s.StreamURL, nil
 }
 
-var reArteSerie = regexp.MustCompile(`(?P<Title>.*\S)\s*\((?P<Episode>\d+)\/(?P<Total>\d+)\)`)
+var reArteSeries = regexp.MustCompile(`(?P<Title>.*\S)\s*\((?P<Episode>\d+)\/(?P<Total>\d+)\)`)
 
-// GetShowInfo query the URL from InfoOeuvre web service
+// GetShowInfo query the URL from player web service
 func (p *ArteTV) GetShowInfo(s *providers.Show) error {
 	if s.Detailed {
 		return nil
@@ -207,7 +348,7 @@ func (p *ArteTV) GetShowInfo(s *providers.Show) error {
 	}
 
 	// Get episode number from the title when exists.
-	m := reArteSerie.FindAllStringSubmatch(i.VideoJSONPlayer.VTI, -1)
+	m := reArteSeries.FindAllStringSubmatch(i.VideoJSONPlayer.VTI, -1)
 	if m != nil {
 		s.Title = m[0][1]
 		s.Episode = m[0][2]
