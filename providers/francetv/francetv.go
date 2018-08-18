@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -64,6 +65,8 @@ func (ftv FranceTV) Name() string { return "francetv" }
 
 // Shows return shows that match with matching list.
 func (ftv *FranceTV) Shows(mm []*providers.MatchRequest) ([]*providers.Show, error) {
+	log.Print("[francetv] Fetch France.tv's new shows")
+
 	shows := []*providers.Show{}
 
 	var url string
