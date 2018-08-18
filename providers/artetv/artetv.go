@@ -91,6 +91,7 @@ func (p ArteTV) Name() string { return "artetv" }
 // Shows download the shows catalog from the web site.
 func (p *ArteTV) Shows(mm []*providers.MatchRequest) ([]*providers.Show, error) {
 	shows := []*providers.Show{}
+	log.Print("[artetv] Fetch Arte's new shows")
 
 	replay, err := p.getReplayShows(mm)
 	if err != nil {
@@ -102,6 +103,7 @@ func (p *ArteTV) Shows(mm []*providers.MatchRequest) ([]*providers.Show, error) 
 	if err != nil {
 		return nil, err
 	}
+
 	shows = append(shows, collections...)
 
 	return shows, nil
@@ -115,7 +117,8 @@ func (p *ArteTV) getCollectionsShows(mm []*providers.MatchRequest) ([]*providers
 		if m.Provider == "artetv" && m.Playlist != "" {
 			collection, err := p.getCollection(m.Playlist, m.Destination)
 			if err != nil {
-				return nil, err
+				log.Printf("[artetv] Can't fetch collection %q: %v", m.Playlist, err)
+				continue
 			}
 			shows = append(shows, collection...)
 		}
@@ -123,12 +126,12 @@ func (p *ArteTV) getCollectionsShows(mm []*providers.MatchRequest) ([]*providers
 	return shows, nil
 }
 
-// getCollectionFromName retrieve collection's ID from its name
+// getCollectionIDFromName retrieve collection's ID from its name
 // It returns the 1st encountered collection in result set
-func (p *ArteTV) getCollectionFromName(collection string) (string, error) {
+func (p *ArteTV) getCollectionIDFromName(collection string) (string, error) {
 
 	if p.debug {
-		log.Printf("Query collection's ID: %q", collection)
+		log.Printf("[artetv] Query collection's ID: %q", collection)
 	}
 
 	URL := fmt.Sprintf(arteSearch, url.PathEscape(collection))
@@ -143,17 +146,17 @@ func (p *ArteTV) getCollectionFromName(collection string) (string, error) {
 		return "", err
 	}
 	for _, s := range result.Data {
-		if s.Kind.Code == "TOPIC" {
+		if strings.HasPrefix(s.ProgramID, "RC-") {
 			return s.ProgramID, nil
 		}
 	}
-	return "", fmt.Errorf("Id for collection %q not found", collection)
+	return "", fmt.Errorf("[artetv] Id for collection %q not found", collection)
 }
 
 // get all Arte shows for the given collection ID
 func (p *ArteTV) getCollection(ColName string, destination string) ([]*providers.Show, error) {
 
-	ColID, err := p.getCollectionFromName(ColName)
+	ColID, err := p.getCollectionIDFromName(ColName)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +164,7 @@ func (p *ArteTV) getCollection(ColName string, destination string) ([]*providers
 	shows := []*providers.Show{}
 
 	if p.debug {
-		log.Printf("Fetch collection: %s", ColName)
+		log.Printf("[artetv] Fetch collection: %q[%s]", ColName, ColID)
 	}
 	page := 1
 
@@ -213,6 +216,9 @@ func (p *ArteTV) getCollection(ColName string, destination string) ([]*providers
 		}
 		page++
 	}
+	if p.debug {
+		log.Printf("[artetv] Collection: %q has %d shows", ColName, len(shows))
+	}
 	return shows, nil
 }
 
@@ -246,7 +252,7 @@ func (p *ArteTV) getReplayShows(mm []*providers.MatchRequest) ([]*providers.Show
 // getGuide get Arte's guide of programs for the given date
 func (p *ArteTV) getGuide(mm []*providers.MatchRequest, d time.Time) ([]*providers.Show, error) {
 	if p.debug {
-		log.Printf("Fetch guide for date: %s", d.Format("06-01-02"))
+		log.Printf("[artetv] Fetch guide for date: %s", d.Format("06-01-02"))
 	}
 	url := arteGuide + d.Format("06-01-02")
 	r, err := p.getter.Get(url)
