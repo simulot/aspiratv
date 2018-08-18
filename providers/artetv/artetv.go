@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/url"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -30,8 +31,9 @@ const (
 	arteIndex      = "https://www.arte.tv"
 	arteCDN        = "https://static-cdn.arte.tv"
 	arteGuide      = "https://www.arte.tv/guide/api/api/pages/fr/TV_GUIDE/?day="
-	arteDetails    = "https://api.arte.tv/api/player/v1/config/fr/%s?autostart=1&lifeCycle=1"      // ProgID
-	arteCollection = "https://www.arte.tv/guide/api/api/zones/fr/collection_videos/?id=%s&page=%d" // Id and Page
+	arteDetails    = "https://api.arte.tv/api/player/v1/config/fr/%s?autostart=1&lifeCycle=1"              // ProgID
+	arteCollection = "https://www.arte.tv/guide/api/api/zones/fr/collection_videos/?id=%s&page=%d"         // Id and Page
+	arteSearch     = "https://www.arte.tv/guide/api/api/zones/fr/listing_SEARCH/?page=1&limit=20&query=%s" // Search term
 )
 
 // Track when this is the first time the Show is invoked
@@ -110,8 +112,8 @@ func (p *ArteTV) Shows(mm []*providers.MatchRequest) ([]*providers.Show, error) 
 func (p *ArteTV) getCollectionsShows(mm []*providers.MatchRequest) ([]*providers.Show, error) {
 	shows := []*providers.Show{}
 	for _, m := range mm {
-		if m.Provider == "artetv" && m.ShowID != "" {
-			collection, err := p.getCollection(m.ShowID, m.Destination)
+		if m.Provider == "artetv" && m.Playlist != "" {
+			collection, err := p.getCollection(m.Playlist, m.Destination)
 			if err != nil {
 				return nil, err
 			}
@@ -121,12 +123,45 @@ func (p *ArteTV) getCollectionsShows(mm []*providers.MatchRequest) ([]*providers
 	return shows, nil
 }
 
+// getCollectionFromName retrieve collection's ID from its name
+// It returns the 1st encountered collection in result set
+func (p *ArteTV) getCollectionFromName(collection string) (string, error) {
+
+	if p.debug {
+		log.Printf("Query collection's ID: %q", collection)
+	}
+
+	URL := fmt.Sprintf(arteSearch, url.PathEscape(collection))
+	r, err := p.getter.Get(URL)
+	if err != nil {
+		return "", err
+	}
+	d := json.NewDecoder(r)
+	result := &searchResults{}
+	err = d.Decode(result)
+	if err != nil {
+		return "", err
+	}
+	for _, s := range result.Data {
+		if s.Kind.Code == "TOPIC" {
+			return s.ProgramID, nil
+		}
+	}
+	return "", fmt.Errorf("Id for collection %q not found", collection)
+}
+
 // get all Arte shows for the given collection ID
-func (p *ArteTV) getCollection(ColID string, destination string) ([]*providers.Show, error) {
+func (p *ArteTV) getCollection(ColName string, destination string) ([]*providers.Show, error) {
+
+	ColID, err := p.getCollectionFromName(ColName)
+	if err != nil {
+		return nil, err
+	}
+
 	shows := []*providers.Show{}
 
 	if p.debug {
-		log.Printf("Fetch collection: %s", ColID)
+		log.Printf("Fetch collection: %s", ColName)
 	}
 	page := 1
 
@@ -137,7 +172,7 @@ func (p *ArteTV) getCollection(ColID string, destination string) ([]*providers.S
 			return nil, err
 		}
 		d := json.NewDecoder(r)
-		collection := &collection{}
+		collection := &searchResults{}
 		err = d.Decode(collection)
 		if err != nil {
 			return nil, err

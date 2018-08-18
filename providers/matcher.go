@@ -8,9 +8,9 @@ import (
 type MatchRequest struct {
 	// Fields for matching
 	Show     string
-	ShowID   string
+	ShowID   string // Future use
 	Title    string
-	TitleID  string
+	TitleID  string // Future use
 	Pitch    string
 	Provider string
 	Playlist string // Playlist search is implemented in providers.
@@ -34,6 +34,11 @@ func IsShowMatch(mm []*MatchRequest, s *Show) bool {
 		return true
 	}
 	for _, m := range mm {
+		if len(m.Playlist) > 0 {
+			// Skip Playlist that must have a special treatment
+			continue
+		}
+
 		if len(m.Provider) > 0 {
 			if m.Provider != strings.ToLower(s.Provider) {
 				continue
