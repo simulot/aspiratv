@@ -292,3 +292,59 @@ type streamInfo struct {
 	VersionShortLibelle string `json:"versionShortLibelle"`
 	Width               int    `json:"width"`
 }
+
+type collection struct {
+	// Code struct {
+	// 	ID   string `json:"id"`
+	// 	Name string `json:"name"`
+	// } `json:"code"`
+	// ContextPage interface{} `json:"contextPage"`
+	Data []struct {
+		// Availability  interface{} `json:"availability"`
+		// ChildrenCount interface{} `json:"childrenCount"`
+		Description string  `json:"description"`
+		Duration    seconds `json:"duration"`
+		// Geoblocking   struct {
+		// 	Code  string `json:"code"`
+		// 	Label string `json:"label"`
+		// } `json:"geoblocking"`
+		// ID     string `json:"id"`
+		Images map[string]thumbs `json:"images"`
+		// Images struct {
+		// 	Banner    interface{} `json:"banner"`
+		// 	Landscape struct {
+		// 		BlurURL     string `json:"blurUrl"`
+		// 		Caption     string `json:"caption"`
+		// 		Resolutions []struct {
+		// 			Height int    `json:"height"`
+		// 			URL    string `json:"url"`
+		// 			Width  int    `json:"width"`
+		// 		} `json:"resolutions"`
+		// 	} `json:"landscape"`
+		// 	Portrait interface{} `json:"portrait"`
+		// 	Square   interface{} `json:"square"`
+		// } `json:"images"`
+		// Kind struct {
+		// 	Code  string `json:"code"`
+		// 	Label string `json:"label"`
+		ProgramID string `json:"programId"`
+		// Stickers  []interface{} `json:"stickers"`
+		Subtitle string `json:"subtitle"`
+		Title    string `json:"title"`
+		Type     string `json:"type"`
+		URL      string `json:"url"`
+	} `json:"data"`
+	// DisplayOptions struct {
+	// 	Layout   string      `json:"layout"`
+	// 	Template string      `json:"template"`
+	// 	Theme    interface{} `json:"theme"`
+	// } `json:"displayOptions"`
+	Link struct {
+		// Page  string `json:"page"`
+		Title string `json:"title"`
+		// URL   string `json:"url"`
+	} `json:"link"`
+	NextPage string `json:"nextPage"`
+	// Title    string      `json:"title"`
+	// Type     interface{} `json:"type"`
+}

@@ -27,10 +27,11 @@ func init() {
 
 // Provider constants
 const (
-	arteIndex   = "https://www.arte.tv"
-	arteCDN     = "https://static-cdn.arte.tv"
-	arteGuide   = "https://www.arte.tv/guide/api/api/pages/fr/TV_GUIDE/?day="
-	arteDetails = "https://api.arte.tv/api/player/v1/config/fr/%s?autostart=1&lifeCycle=1"
+	arteIndex      = "https://www.arte.tv"
+	arteCDN        = "https://static-cdn.arte.tv"
+	arteGuide      = "https://www.arte.tv/guide/api/api/pages/fr/TV_GUIDE/?day="
+	arteDetails    = "https://api.arte.tv/api/player/v1/config/fr/%s?autostart=1&lifeCycle=1"      // ProgID
+	arteCollection = "https://www.arte.tv/guide/api/api/zones/fr/collection_videos/?id=%s&page=%d" // Id and Page
 )
 
 // Track when this is the first time the Show is invoked
@@ -89,8 +90,97 @@ func (p ArteTV) Name() string { return "artetv" }
 func (p *ArteTV) Shows(mm []*providers.MatchRequest) ([]*providers.Show, error) {
 	shows := []*providers.Show{}
 
+	replay, err := p.getReplayShows(mm)
+	if err != nil {
+		return nil, err
+	}
+	shows = append(shows, replay...)
+
+	collections, err := p.getCollectionsShows(mm)
+	if err != nil {
+		return nil, err
+	}
+	shows = append(shows, collections...)
+
+	return shows, nil
+}
+
+func (p *ArteTV) getCollectionsShows(mm []*providers.MatchRequest) ([]*providers.Show, error) {
+	shows := []*providers.Show{}
+	for _, m := range mm {
+		if m.Provider == "artetv" && m.ShowID != "" {
+			collection, err := p.getCollection(m.ShowID)
+			if err != nil {
+				return nil, err
+			}
+			shows = append(shows, collection...)
+		}
+	}
+	return shows, nil
+}
+
+func (p *ArteTV) getCollection(ColID string) ([]*providers.Show, error) {
+	shows := []*providers.Show{}
+
+	if p.debug {
+		log.Printf("Fetch collection: %s", ColID)
+	}
+	page := 1
+
+	for {
+		URL := fmt.Sprintf(arteCollection, ColID, page)
+		r, err := p.getter.Get(URL)
+		if err != nil {
+			return nil, err
+		}
+		d := json.NewDecoder(r)
+		collection := &collection{}
+		err = d.Decode(collection)
+		if err != nil {
+			return nil, err
+		}
+		for _, s := range collection.Data {
+			shows = append(shows, &providers.Show{
+				AirDate:   time.Now().Truncate(24 * time.Hour),
+				Channel:   "Arte",
+				Category:  "",
+				Detailed:  false,
+				DRM:       false,
+				Duration:  s.Duration.Duration(),
+				Episode:   "",
+				ID:        s.ProgramID,
+				Pitch:     strings.TrimSpace(s.Description),
+				Season:    "",
+				Show:      strings.TrimSpace(s.Title),
+				Provider:  "artetv",
+				ShowURL:   s.URL,
+				StreamURL: "", // Must call GetShowStreamURL to get the show's URL
+				ThumbnailURL: func(t thumbs) string {
+					bestRes := -1
+					bestURL := ""
+					for _, r := range t.Resolutions {
+						if r.Height*r.Width > bestRes {
+							bestRes = r.Height * r.Width
+							bestURL = r.URL
+						}
+					}
+					return bestURL
+				}(s.Images["landscape"]),
+				Title: strings.TrimSpace(collection.Link.Title),
+			})
+		}
+		if len(collection.NextPage) == 0 {
+			break
+		}
+		page++
+	}
+	return shows, nil
+}
+
+func (p *ArteTV) getReplayShows(mm []*providers.MatchRequest) ([]*providers.Show, error) {
 	var dateStart time.Time
 
+	shows := []*providers.Show{}
 	if runCounter == 0 {
 		// Start search 3 weeks in the past
 		dateStart = time.Now().Truncate(24 * time.Hour).Add(-3 * 7 * 24 * time.Hour)

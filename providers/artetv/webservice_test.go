@@ -41,3 +41,21 @@ func TestPlayer(t *testing.T) {
 		return
 	}
 }
+
+// Test decoding playlist structure
+
+func TestCollection(t *testing.T) {
+	f, err := os.Open(filepath.Join("testdata", "collection.json"))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	d := json.NewDecoder(f)
+	collection := &collection{}
+	err = d.Decode(collection)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+}
