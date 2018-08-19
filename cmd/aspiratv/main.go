@@ -34,16 +34,18 @@ var (
 func main() {
 	fmt.Printf("%s: %v, commit %v, built at %v\n", filepath.Base(os.Args[0]), version, commit, date)
 	a := &app{
-		Config: ReadConfigOrGenerateDefault(),
-		Stop:   make(chan bool),
+		Stop: make(chan bool),
 	}
 
-	flag.BoolVar(&a.Config.Service, "service", false, "Run as service.")
-	flag.BoolVar(&a.Config.Debug, "debug", false, "Debug mode.")
-	flag.BoolVar(&a.Config.Force, "force", false, "Force media download.")
+	cliConfig := &Config{}
+
+	flag.BoolVar(&cliConfig.Service, "service", false, "Run as service.")
+	flag.BoolVar(&cliConfig.Debug, "debug", false, "Debug mode.")
+	flag.BoolVar(&cliConfig.Force, "force", false, "Force media download.")
+	flag.StringVar(&cliConfig.ConfigFile, "config", "config.json", "Configuration file name.")
 	flag.Parse()
 
-	a.Initialize()
+	a.Initialize(cliConfig)
 	if a.Config.Service {
 		a.RunAsService()
 	} else {
@@ -51,7 +53,8 @@ func main() {
 	}
 }
 
-func (a *app) Initialize() {
+func (a *app) Initialize(c *Config) {
+	a.Config = ReadConfigOrDie(c)
 
 	// Check ans normalize configuration file
 	a.Config.Check()

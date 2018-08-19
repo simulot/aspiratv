@@ -18,6 +18,7 @@ type Config struct {
 	Force        bool                      // True to force reload medias
 	Service      bool                      // True when runing as service. When false, query all provider en terminate
 	Destinations map[string]string         // Mapping of destination path
+	ConfigFile   string                    // Name of configuration file
 	WatchList    []*providers.MatchRequest // Slice of show matchers
 }
 
@@ -69,8 +70,8 @@ func WriteConfig() {
 }
 
 // ReadConfig read the JSON configuration file
-func ReadConfig() (*Config, error) {
-	f, err := os.Open("config.json")
+func ReadConfig(configFile string) (*Config, error) {
+	f, err := os.Open(configFile)
 	if err != nil {
 		return nil, fmt.Errorf("Can't open configuration file: %v", err)
 	}
@@ -84,14 +85,17 @@ func ReadConfig() (*Config, error) {
 	return conf, nil
 }
 
-// ReadConfigOrGenerateDefault create a stub of config.json when it is missing from disk
-func ReadConfigOrGenerateDefault() *Config {
-	conf, err := ReadConfig()
+// ReadConfigOrDie create a stub of config.json when it is missing from disk
+func ReadConfigOrDie(cli *Config) *Config {
+	conf, err := ReadConfig(cli.ConfigFile)
 	if err != nil {
-		log.Printf("%v, generate a default file.", err)
-		conf = defaultConfig
-		WriteConfig()
+		log.Fatalf("Fatal: %v", err)
 	}
+	// Set flags comming from CLI
+	conf.Debug = cli.Debug
+	conf.Service = cli.Service
+	conf.Force = cli.Force
+	conf.ConfigFile = cli.ConfigFile
 	return conf
 }
 
@@ -107,7 +111,7 @@ func (c *Config) Check() {
 		m.Show = strings.ToLower(m.Show)
 		m.Title = strings.ToLower(m.Title)
 		if _, ok := c.Destinations[m.Destination]; !ok {
-			log.Fatalf("Destination %q is not defined into section Destination of config.json", m.Destination)
+			log.Fatalf("Destination %q is not defined into section Destination of %q", m.Destination, c.ConfigFile)
 		}
 	}
 
