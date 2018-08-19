@@ -207,7 +207,12 @@ func (p *ArteTV) getCollection(ColName string, destination string) ([]*providers
 					}
 					return bestURL
 				}(s.Images["landscape"]),
-				Title:       strings.TrimSpace(s.Title),
+				Title: func() string {
+					if len(s.Subtitle) > 0 {
+						return strings.TrimSpace(s.Subtitle)
+					}
+					return strings.TrimSpace(s.Title)
+				}(),
 				Destination: destination,
 			})
 		}
@@ -352,10 +357,6 @@ func (p *ArteTV) GetShowInfo(s *providers.Show) error {
 	if m != nil {
 		s.Title = m[0][1]
 		s.Episode = m[0][2]
-		s.Season = strconv.Itoa(s.AirDate.Year())
-	} else {
-		s.Title = i.VideoJSONPlayer.VTI
-		s.Episode = s.AirDate.Format("2006-01-02")
 		s.Season = strconv.Itoa(s.AirDate.Year())
 	}
 
