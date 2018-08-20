@@ -16,4 +16,5 @@ debug
 dist
 
 launch.json
+settings.json
 cmd/aspiratv/aspiratv
