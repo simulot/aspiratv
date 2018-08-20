@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/url"
 	"path/filepath"
@@ -13,7 +14,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/simulot/aspiratv/parsers/jscript"
+
 	"github.com/simulot/aspiratv/net/http"
+	"github.com/simulot/aspiratv/parsers/htmlparser"
 	"github.com/simulot/aspiratv/providers"
 )
 
@@ -30,8 +34,8 @@ func init() {
 const (
 	arteIndex      = "https://www.arte.tv"
 	arteCDN        = "https://static-cdn.arte.tv"
-	arteGuide      = "https://www.arte.tv/guide/api/api/pages/fr/TV_GUIDE/?day="
-	arteDetails    = "https://api.arte.tv/api/player/v1/config/fr/%s?autostart=1&lifeCycle=1"              // ProgID
+	arteGuide      = "https://www.arte.tv/guide/api/api/pages/fr/TV_GUIDE/?day="                           // Day YY-MM-DD
+	arteDetails    = "https://api.arte.tv/api/player/v1/config/fr/%s?autostart=1&lifeCycle=1"              // Player to get Video streams ProgID
 	arteCollection = "https://www.arte.tv/guide/api/api/zones/fr/collection_videos/?id=%s&page=%d"         // Id and Page
 	arteSearch     = "https://www.arte.tv/guide/api/api/zones/fr/listing_SEARCH/?page=1&limit=20&query=%s" // Search term
 )
@@ -49,6 +53,7 @@ type ArteTV struct {
 	preferredVersions []string // versionCode List of version in order of preference VF,VA...
 	preferredMedia    string   // mediaType mp4,hls
 	debug             bool
+	htmlParserFactory *htmlparser.Factory
 }
 
 // WithGetter inject a getter in FranceTV object instead of normal one
@@ -66,6 +71,7 @@ func New(conf ...func(p *ArteTV)) (*ArteTV, error) {
 		//TODO: get preferences from config file
 		preferredVersions: []string{"VF", "VOF", "VOF-STF", "VOSTF", "VF-STF"}, // "VF-STMF" "VA", "VA-STA"
 		preferredMedia:    "mp4",
+		htmlParserFactory: htmlparser.NewFactory(),
 	}
 	for _, fn := range conf {
 		fn(p)
@@ -181,8 +187,8 @@ func (p *ArteTV) getCollection(ColName string, destination string) ([]*providers
 			return nil, err
 		}
 		for _, s := range collection.Data {
-			shows = append(shows, &providers.Show{
-				AirDate:   time.Now().Truncate(24 * time.Hour),
+			s := &providers.Show{
+				AirDate:   time.Time{},
 				Channel:   "Arte",
 				Category:  "",
 				Detailed:  false,
@@ -214,7 +220,9 @@ func (p *ArteTV) getCollection(ColName string, destination string) ([]*providers
 					return strings.TrimSpace(s.Title)
 				}(),
 				Destination: destination,
-			})
+			}
+			setEpisodeFromTitle(s)
+			shows = append(shows, s)
 		}
 		if len(collection.NextPage) == 0 {
 			break
@@ -276,7 +284,7 @@ func (p *ArteTV) getGuide(mm []*providers.MatchRequest, d time.Time) ([]*provide
 	for _, z := range guide.Zones {
 		if z.Code.Name == "listing_TV_GUIDE" {
 			for _, d := range z.Data {
-				show := &providers.Show{
+				s := &providers.Show{
 					AirDate: func(ds []tsGuide) time.Time {
 						if len(ds) > 0 {
 							return ds[0].Time()
@@ -309,8 +317,9 @@ func (p *ArteTV) getGuide(mm []*providers.MatchRequest, d time.Time) ([]*provide
 					}(d.Images["landscape"]),
 					Title: strings.TrimSpace(d.Subtitle),
 				}
-				if providers.IsShowMatch(mm, show) {
-					shows = append(shows, show)
+				setEpisodeFromTitle(s)
+				if providers.IsShowMatch(mm, s) {
+					shows = append(shows, s)
 				}
 			}
 		}
@@ -318,52 +327,102 @@ func (p *ArteTV) getGuide(mm []*providers.MatchRequest, d time.Time) ([]*provide
 	return shows, nil
 }
 
-// GetShowStreamURL return the show's URL, a mp4 file
-func (p *ArteTV) GetShowStreamURL(s *providers.Show) (string, error) {
-	if s.StreamURL == "" {
-		err := p.GetShowInfo(s)
-		if err != nil {
-			return "", err
-		}
-	}
-	return s.StreamURL, nil
-}
-
 var reArteSeries = regexp.MustCompile(`(?P<Title>.*\S)\s*\((?P<Episode>\d+)\/(?P<Total>\d+)\)`)
 
-// GetShowInfo query the URL from player web service
-func (p *ArteTV) GetShowInfo(s *providers.Show) error {
-	if s.Detailed {
-		return nil
+// Get episode number from the title pattern (episode/number of episodes) in the title
+// If found, the pattern (x/y) is removed from title
+func setEpisodeFromTitle(s *providers.Show) {
+	m := reArteSeries.FindAllStringSubmatch(s.Title, -1)
+	if m != nil {
+		s.Title = m[0][1]
+		s.Episode = m[0][2]
 	}
+}
+
+// GetShowStreamURL return the show's URL, a mp4 file
+func (p *ArteTV) GetShowStreamURL(s *providers.Show) (string, error) {
+	if s.StreamURL != "" {
+		return s.StreamURL, nil
+	}
+
 	if p.debug {
-		log.Printf("Fetch details for %q, %q", s.Show, s.Title)
+		log.Printf("Fetch video url for %q, %q", s.Show, s.Title)
 	}
 	url := fmt.Sprintf(arteDetails, s.ID)
 	r, err := p.getter.Get(url)
 	if err != nil {
-		return fmt.Errorf("Can't get show's detailled information: %v", err)
+		return "", fmt.Errorf("Can't get show's detailled information: %v", err)
 	}
 
 	d := json.NewDecoder(r)
 	i := &player{}
 	err = d.Decode(&i)
 	if err != nil {
-		return fmt.Errorf("Can't decode show's detailled information: %v", err)
-	}
-
-	// Get episode number from the title when exists.
-	m := reArteSeries.FindAllStringSubmatch(i.VideoJSONPlayer.VTI, -1)
-	if m != nil {
-		s.Title = m[0][1]
-		s.Episode = m[0][2]
-		s.Season = strconv.Itoa(s.AirDate.Year())
+		return "", fmt.Errorf("Can't decode show's detailled information: %v", err)
 	}
 
 	s.StreamURL = p.getBestVideo(i.VideoJSONPlayer.VSR)
 
-	s.Detailed = true
+	return s.StreamURL, nil
+}
+
+// GetShowInfo gather show information from dedicated web page.
+// It load the html page of the show to extract availability date used as airdate and production year as season
+func (p *ArteTV) GetShowInfo(s *providers.Show) error {
+	if s.Detailed {
+		return nil
+	}
+	r, err := p.getter.Get(s.ShowURL)
+	if err != nil {
+		return err
+	}
+
+	info, err := readDetails(r)
+	if err != nil {
+		return err
+	}
+	s.AirDate = info.airDate
+	s.Season = info.season
 	return nil
+}
+
+type showInfo struct {
+	season  string
+	airDate time.Time
+}
+
+// readDetails returns the structure that contains shows details
+
+func readDetails(r io.Reader) (*showInfo, error) {
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+
+	info := &showInfo{}
+
+	o, err := jscript.ParseObjectAtAnchor(b, regexp.MustCompile(`"availability":{`))
+	if err != nil {
+		return nil, err
+	}
+
+	if s := o.Property("startDay"); s != nil {
+		d, err := time.Parse("2006-01-02", s.String())
+		if err == nil {
+			info.airDate = d
+		}
+	}
+
+	o, err = jscript.ParseObjectAtAnchor(b, regexp.MustCompile(`\{\s*"code"\s*:\s*"PRODUCTION_YEAR"`))
+	if err != nil {
+		return nil, err
+	}
+
+	if s := o.Property("values"); s != nil {
+		y := s.Strings()
+		info.season = y[0]
+	}
+	return info, nil
 }
 
 type mapStrInt map[string]uint64
@@ -455,24 +514,47 @@ func reverseSliceIndex(k string, ls []string) uint64 {
 
 }
 
+func episodeFromID(ID string) string {
+	b := ""
+	for _, c := range ID {
+		if c >= '0' && c <= '9' {
+			b += string(c)
+		}
+	}
+	for len(b) > 0 && b[0] == '0' {
+		b = b[1:]
+	}
+	return b
+}
+
 // GetShowFileName return a file name with a path that is compatible with PLEX server:
 //   ShowName/Season NN/ShowName - sNNeMM - Episode title
 //   Show and Episode names are sanitized to avoid problem when saving on the file system
-func (ArteTV) GetShowFileName(s *providers.Show) string {
-	if s.Season == "" && s.Episode == "" {
+func (p *ArteTV) GetShowFileName(s *providers.Show) string {
+	if !s.Detailed {
+		p.GetShowInfo(s)
+	}
+	switch {
+	case s.Season == "" && s.Episode == "" && s.AirDate.IsZero():
+		// Following Plex naming convention for Specials show https://support.plex.tv/articles/200220707-naming-tv-show-specials/
+		return filepath.Join(
+			providers.PathNameCleaner(s.Show),
+			"Specials",
+			providers.FileNameCleaner(s.Show)+" - s00e"+episodeFromID(s.ID)+" - "+providers.FileNameCleaner(s.Title)+".mp4",
+		)
+	case s.Season == "" && s.Episode == "" && !s.AirDate.IsZero():
 		// Follow Plex naming convention https://support.plex.tv/articles/200381053-naming-date-based-tv-shows/
 		return filepath.Join(
 			providers.PathNameCleaner(s.Show),
 			"Season "+strconv.Itoa(s.AirDate.Year()),
-			providers.FileNameCleaner(s.Show)+" - "+s.AirDate.Format("2006-01-02")+" - "+providers.FileNameCleaner(s.Title)+".mp4",
+			providers.FileNameCleaner(s.Show)+" - s"+strconv.Itoa(s.AirDate.Year())+"e"+episodeFromID(s.ID)+" - "+providers.FileNameCleaner(s.Title)+".mp4",
 		)
-	}
-	if s.Season != "" && s.Episode == "" {
+	case s.Season != "" && s.Episode == "" && !s.AirDate.IsZero():
 		// When episode is missing, use the ID as episode number
 		return filepath.Join(
 			providers.PathNameCleaner(s.Show),
 			"Season "+providers.Format2Digits(s.Season),
-			providers.FileNameCleaner(s.Show)+" - s"+providers.Format2Digits(s.Season)+"e"+s.ID+" - "+providers.FileNameCleaner(s.Title)+".mp4",
+			providers.FileNameCleaner(s.Show)+" - s"+s.Season+"e"+episodeFromID(s.ID)+" - "+providers.FileNameCleaner(s.Title)+".mp4",
 		)
 	}
 	// Normal case: https://support.plex.tv/articles/200220687-naming-series-season-based-tv-shows/
@@ -488,7 +570,7 @@ func (ArteTV) GetShowFileName(s *providers.Show) string {
 func (ArteTV) GetShowFileNameMatcher(s *providers.Show) string {
 	return filepath.Join(
 		providers.PathNameCleaner(s.Show),
-		"Season *",
-		providers.FileNameCleaner(s.Show)+" * "+providers.FileNameCleaner(s.Title)+".mp4",
+		"*",
+		providers.FileNameCleaner(s.Show)+" - * - "+providers.FileNameCleaner(s.Title)+".mp4",
 	)
 }
