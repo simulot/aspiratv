@@ -186,21 +186,26 @@ func (p *ArteTV) getCollection(ColName string, destination string) ([]*providers
 		if err != nil {
 			return nil, err
 		}
-		for _, s := range collection.Data {
+		for _, data := range collection.Data {
 			s := &providers.Show{
-				AirDate:   time.Time{},
-				Channel:   "Arte",
-				Category:  "",
-				Detailed:  false,
-				DRM:       false,
-				Duration:  s.Duration.Duration(),
-				Episode:   "",
-				ID:        s.ProgramID,
-				Pitch:     strings.TrimSpace(s.Description),
-				Season:    "",
-				Provider:  "artetv",
-				Show:      strings.TrimSpace(collection.Link.Title),
-				ShowURL:   s.URL,
+				AirDate:  time.Time{},
+				Channel:  "Arte",
+				Category: "",
+				Detailed: false,
+				DRM:      false,
+				Duration: data.Duration.Duration(),
+				Episode:  "",
+				ID:       data.ProgramID,
+				Pitch:    strings.TrimSpace(data.Description),
+				Season:   "",
+				Provider: "artetv",
+				Show: func() string {
+					if len(data.Subtitle) == 0 {
+						return strings.TrimSpace(collection.Link.Title)
+					}
+					return strings.TrimSpace(data.Title)
+				}(),
+				ShowURL:   data.URL,
 				StreamURL: "", // Must call GetShowStreamURL to get the show's URL
 				ThumbnailURL: func(t thumbs) string {
 					bestRes := -1
@@ -212,12 +217,12 @@ func (p *ArteTV) getCollection(ColName string, destination string) ([]*providers
 						}
 					}
 					return bestURL
-				}(s.Images["landscape"]),
+				}(data.Images["landscape"]),
 				Title: func() string {
-					if len(s.Subtitle) > 0 {
-						return strings.TrimSpace(s.Subtitle)
+					if len(data.Subtitle) == 0 {
+						return strings.TrimSpace(data.Title)
 					}
-					return strings.TrimSpace(s.Title)
+					return strings.TrimSpace(data.Subtitle)
 				}(),
 				Destination: destination,
 			}
@@ -387,8 +392,10 @@ func (p *ArteTV) GetShowInfo(s *providers.Show) error {
 }
 
 type showInfo struct {
-	season  string
-	airDate time.Time
+	season   string
+	airDate  time.Time
+	title    string
+	subTitle string
 }
 
 // readDetails returns the structure that contains shows details
@@ -401,27 +408,38 @@ func readDetails(r io.Reader) (*showInfo, error) {
 
 	info := &showInfo{}
 
-	o, err := jscript.ParseObjectAtAnchor(b, regexp.MustCompile(`"availability":{`))
+	o, err := jscript.ParseObjectAtAnchor(b, regexp.MustCompile(`"zones":\[\{`))
 	if err != nil {
 		return nil, err
 	}
 
-	if s := o.Property("startDay"); s != nil {
-		d, err := time.Parse("2006-01-02", s.String())
-		if err == nil {
-			info.airDate = d
+	if dd := o.Property("data"); dd != nil {
+		for _, d := range dd.Ar {
+			if t := d.Property("title"); t != nil {
+				info.title = strings.TrimSpace(t.String())
+			}
+			if t := d.Property("subtitle"); t != nil {
+				info.subTitle = strings.TrimSpace(t.String())
+			}
+			if a := d.Property("availability"); a != nil {
+				if t := a.Property("startDay"); t != nil {
+					d, err := time.Parse("2006-01-02", t.String())
+					if err == nil {
+						info.airDate = d
+					}
+				}
+			}
+			if cc := d.Property("credits"); cc != nil {
+				for _, c := range cc.Ar {
+					if code := c.Property("code"); code != nil && code.String() == "PRODUCTION_YEAR" {
+						y := c.Property("values").Strings()
+						info.season = y[0]
+					}
+				}
+			}
 		}
 	}
 
-	o, err = jscript.ParseObjectAtAnchor(b, regexp.MustCompile(`\{\s*"code"\s*:\s*"PRODUCTION_YEAR"`))
-	if err != nil {
-		return nil, err
-	}
-
-	if s := o.Property("values"); s != nil {
-		y := s.Strings()
-		info.season = y[0]
-	}
 	return info, nil
 }
 
