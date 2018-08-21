@@ -186,21 +186,21 @@ func (p *ArteTV) getCollection(ColName string, destination string) ([]*providers
 		if err != nil {
 			return nil, err
 		}
-		for _, s := range collection.Data {
+		for _, data := range collection.Data {
 			s := &providers.Show{
 				AirDate:   time.Time{},
 				Channel:   "Arte",
 				Category:  "",
 				Detailed:  false,
 				DRM:       false,
-				Duration:  s.Duration.Duration(),
+				Duration:  data.Duration.Duration(),
 				Episode:   "",
-				ID:        s.ProgramID,
-				Pitch:     strings.TrimSpace(s.Description),
+				ID:        data.ProgramID,
+				Pitch:     strings.TrimSpace(data.Description),
 				Season:    "",
 				Provider:  "artetv",
 				Show:      strings.TrimSpace(collection.Link.Title),
-				ShowURL:   s.URL,
+				ShowURL:   data.URL,
 				StreamURL: "", // Must call GetShowStreamURL to get the show's URL
 				ThumbnailURL: func(t thumbs) string {
 					bestRes := -1
@@ -212,16 +212,16 @@ func (p *ArteTV) getCollection(ColName string, destination string) ([]*providers
 						}
 					}
 					return bestURL
-				}(s.Images["landscape"]),
+				}(data.Images["landscape"]),
 				Title: func() string {
-					if len(s.Subtitle) > 0 {
-						return strings.TrimSpace(s.Subtitle)
+					if len(data.Subtitle) > 0 {
+						return strings.TrimSpace(data.Subtitle)
 					}
-					return strings.TrimSpace(s.Title)
+					return strings.TrimSpace(data.Title)
 				}(),
 				Destination: destination,
 			}
-			setEpisodeFromTitle(s)
+			setShowTitleEpisode(s, data)
 			shows = append(shows, s)
 		}
 		if len(collection.NextPage) == 0 {
@@ -283,26 +283,26 @@ func (p *ArteTV) getGuide(mm []*providers.MatchRequest, d time.Time) ([]*provide
 
 	for _, z := range guide.Zones {
 		if z.Code.Name == "listing_TV_GUIDE" {
-			for _, d := range z.Data {
+			for _, data := range z.Data {
 				s := &providers.Show{
 					AirDate: func(ds []tsGuide) time.Time {
 						if len(ds) > 0 {
 							return ds[0].Time()
 						}
 						return time.Time{}
-					}(d.BroadcastDates),
+					}(data.BroadcastDates),
 					Channel:   "Arte",
 					Category:  "",
 					Detailed:  false,
 					DRM:       false,
-					Duration:  d.Duration.Duration(),
+					Duration:  data.Duration.Duration(),
 					Episode:   "",
-					ID:        d.ProgramID,
-					Pitch:     strings.TrimSpace(d.ShortDescription),
+					ID:        data.ProgramID,
+					Pitch:     strings.TrimSpace(data.ShortDescription),
 					Season:    "",
-					Show:      strings.TrimSpace(d.Title),
+					Show:      strings.TrimSpace(data.Title),
 					Provider:  "artetv",
-					ShowURL:   d.URL,
+					ShowURL:   data.URL,
 					StreamURL: "", // Must call GetShowStreamURL to get the show's URL
 					ThumbnailURL: func(t thumbs) string {
 						bestRes := -1
@@ -314,11 +314,11 @@ func (p *ArteTV) getGuide(mm []*providers.MatchRequest, d time.Time) ([]*provide
 							}
 						}
 						return bestURL
-					}(d.Images["landscape"]),
-					Title: strings.TrimSpace(d.Subtitle),
+					}(data.Images["landscape"]),
+					// Title: strings.TrimSpace(d.Subtitle),
 				}
-				setEpisodeFromTitle(s)
 				if providers.IsShowMatch(mm, s) {
+					setShowTitleEpisode(s, data)
 					shows = append(shows, s)
 				}
 			}
@@ -331,12 +331,23 @@ var reArteSeries = regexp.MustCompile(`(?P<Title>.*\S)\s*\((?P<Episode>\d+)\/(?P
 
 // Get episode number from the title pattern (episode/number of episodes) in the title
 // If found, the pattern (x/y) is removed from title
-func setEpisodeFromTitle(s *providers.Show) {
-	m := reArteSeries.FindAllStringSubmatch(s.Title, -1)
+// Set the Title with Show when empty
+func setShowTitleEpisode(s *providers.Show, data data) {
+	s.Show = data.Title
+	s.Title = data.Subtitle
+	s.Episode = ""
+
+	m := reArteSeries.FindStringSubmatch(s.Show)
 	if m != nil {
-		s.Title = m[0][1]
-		s.Episode = m[0][2]
+		s.Show = m[1]
+		s.Episode = m[2]
 	}
+
+	if len(s.Title) == 0 {
+		// Fill the episode title with Show title and episode number for having different files name
+		s.Title = s.Show + " (" + providers.Format2Digits(s.Episode) + ")"
+	}
+
 }
 
 // GetShowStreamURL return the show's URL, a mp4 file

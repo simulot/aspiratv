@@ -72,14 +72,15 @@ type data struct {
 	BroadcastDates []tsGuide `json:"broadcastDates"`
 	// Credits         []interface{} `json:"credits"`
 	Duration        seconds `json:"duration"`
+	Description     string  `json:"description"`
 	FullDescription string  `json:"fullDescription"`
 	// Geoblocking     interface{}   `json:"geoblocking"`
 	ID     string            `json:"id"`
 	Images map[string]thumbs `json:"images"`
-	// Kind struct {
-	// 	Code  string      `json:"code"`
-	// 	Label interface{} `json:"label"`
-	// } `json:"kind"`
+	Kind   struct {
+		Code  string      `json:"code"`
+		Label interface{} `json:"label"`
+	} `json:"kind"`
 	// LivestreamRights    interface{} `json:"livestreamRights"`
 	// OfflineAvailability interface{} `json:"offlineAvailability"`
 	// Partners            interface{} `json:"partners"`
@@ -94,8 +95,8 @@ type data struct {
 	// Stickers         []interface{} `json:"stickers"`
 	Subtitle string `json:"subtitle"`
 	Title    string `json:"title"`
-	// Type             string        `json:"type"`
-	URL string `json:"url"`
+	Type     string `json:"type"`
+	URL      string `json:"url"`
 }
 
 type thumbs struct {
@@ -300,47 +301,48 @@ type streamInfo struct {
 }
 
 type searchResults struct {
-	// Code struct {
-	// 	ID   string `json:"id"`
-	// 	Name string `json:"name"`
-	// } `json:"code"`
-	// ContextPage interface{} `json:"contextPage"`
-	Data []struct {
-		// Availability  interface{} `json:"availability"`
-		// ChildrenCount interface{} `json:"childrenCount"`
-		Description string  `json:"description"`
-		Duration    seconds `json:"duration"`
-		// Geoblocking   struct {
-		// 	Code  string `json:"code"`
-		// 	Label string `json:"label"`
-		// } `json:"geoblocking"`
-		// ID     string `json:"id"`
-		Images map[string]thumbs `json:"images"`
-		// Images struct {
-		// 	Banner    interface{} `json:"banner"`
-		// 	Landscape struct {
-		// 		BlurURL     string `json:"blurUrl"`
-		// 		Caption     string `json:"caption"`
-		// 		Resolutions []struct {
-		// 			Height int    `json:"height"`
-		// 			URL    string `json:"url"`
-		// 			Width  int    `json:"width"`
-		// 		} `json:"resolutions"`
-		// 	} `json:"landscape"`
-		// 	Portrait interface{} `json:"portrait"`
-		// 	Square   interface{} `json:"square"`
-		// } `json:"images"`
-		Kind struct {
-			Code  string `json:"code"`
-			Label string `json:"label"`
-		} `json:"kind"`
-		ProgramID string `json:"programId"`
-		// Stickers  []interface{} `json:"stickers"`
-		Subtitle string `json:"subtitle"`
-		Title    string `json:"title"`
-		Type     string `json:"type"`
-		URL      string `json:"url"`
-	} `json:"data"`
+	Code struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	} `json:"code"`
+	ContextPage interface{} `json:"contextPage"`
+	// Data []struct {
+	// 	// Availability  interface{} `json:"availability"`
+	// 	// ChildrenCount interface{} `json:"childrenCount"`
+	// 	Description string  `json:"description"`
+	// 	Duration    seconds `json:"duration"`
+	// 	// Geoblocking   struct {
+	// 	// 	Code  string `json:"code"`
+	// 	// 	Label string `json:"label"`
+	// 	// } `json:"geoblocking"`
+	// 	// ID     string `json:"id"`
+	// 	Images map[string]thumbs `json:"images"`
+	// 	// Images struct {
+	// 	// 	Banner    interface{} `json:"banner"`
+	// 	// 	Landscape struct {
+	// 	// 		BlurURL     string `json:"blurUrl"`
+	// 	// 		Caption     string `json:"caption"`
+	// 	// 		Resolutions []struct {
+	// 	// 			Height int    `json:"height"`
+	// 	// 			URL    string `json:"url"`
+	// 	// 			Width  int    `json:"width"`
+	// 	// 		} `json:"resolutions"`
+	// 	// 	} `json:"landscape"`
+	// 	// 	Portrait interface{} `json:"portrait"`
+	// 	// 	Square   interface{} `json:"square"`
+	// 	// } `json:"images"`
+	// 	Kind struct {
+	// 		Code  string `json:"code"`
+	// 		Label string `json:"label"`
+	// 	} `json:"kind"`
+	// 	ProgramID string `json:"programId"`
+	// 	// Stickers  []interface{} `json:"stickers"`
+	// 	Subtitle string `json:"subtitle"`
+	// 	Title    string `json:"title"`
+	// 	Type     string `json:"type"`
+	// 	URL      string `json:"url"`
+	// } `json:"data"`
+	Data []data `json:"data"`
 	// DisplayOptions struct {
 	// 	Layout   string      `json:"layout"`
 	// 	Template string      `json:"template"`
