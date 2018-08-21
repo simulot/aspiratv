@@ -23,7 +23,7 @@ func Test_readDetails(t *testing.T) {
 		season:  "2017",
 	}
 
-	f, err := os.Open(filepath.Join("testdata", "minute.html"))
+	f, err := os.Open(filepath.Join("testdata", "minute.html.tst"))
 	if err != nil {
 		t.Fatal(err)
 		return
