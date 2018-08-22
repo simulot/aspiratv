@@ -39,6 +39,7 @@ changelog:
     - '^test:'
     - '^typo:'
     - 'README'
+    - 'WIP$'
 
 git:
   short_hash: true
