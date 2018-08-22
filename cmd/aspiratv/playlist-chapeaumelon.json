@@ -1,0 +1,23 @@
+{
+  "PullInterval": "1h30m",
+  "Destinations": {
+    "Documentaires": "${HOME}/Videos/Documentaires",
+    "Jeunesse": "${HOME}/Videos/Jeunesse",
+    "Courts": "${HOME}/Videos/Courts",
+    "Séries": "${HOME}/Videos/Séries"
+  },
+  "Providers": {
+    "artetv": {
+      "Locale": "fr",
+      "PreferedVersions": ["VF", "VOF", "VOF-STF", "VOSTF", "VF-STF"]
+    }
+  },
+  "WatchList": [
+    {
+      "Playlist": "Saison 2 - Chapeau melon et bottes de cuir : The New Avengers",
+      "Pitch": "",
+      "Provider": "artetv",
+      "Destination": "Séries"
+    }
+  ]
+}
