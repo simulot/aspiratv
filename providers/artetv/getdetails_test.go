@@ -25,7 +25,7 @@ func Test_readDetails(t *testing.T) {
 		subTitle: "Pulsion irréstistible",
 	}
 
-	f, err := os.Open(filepath.Join("testdata", "minute.html.tst"))
+	f, err := os.Open(filepath.Join("testdata", "minute.html.txt"))
 	if err != nil {
 		t.Fatal(err)
 		return
