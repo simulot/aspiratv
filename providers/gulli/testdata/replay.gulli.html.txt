@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<!--[if IE 8]>
+<html class="ie8" lang="fr"><![endif]-->
+<!--[if IE 9]>
+<html class="ie9" lang="fr"><![endif]-->
+<html lang="fr">
+<head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags --><title>Vidéos des programmes de Gulli en streaming sur Gulli Replay</title><meta name="description" content="
+Gulli Replay c’est le meilleur des programmes de Gulli gratuitement en streaming et à volonté disponible 24/24.Tous les coups de cœur de Gulli pour toute la famille : vidéos des séries, des téléfilms, des émissions et des dessins animés bien sûr !" /><meta property="og:title" content="Vidéos des programmes de Gulli en streaming sur Gulli Replay" /><meta property="og:type" content="article" /><meta property="og:url" content="http://replay.gulli.fr/" /><meta property="og:image" content="http:" /><meta property="og:description" content="
+Gulli Replay c’est le meilleur des programmes de Gulli gratuitement en streaming et à volonté disponible 24/24.Tous les coups de cœur de Gulli pour toute la famille : vidéos des séries, des téléfilms, des émissions et des dessins animés bien sûr !" /><meta name="robots" content="INDEX, FOLLOW" /><meta name="twitter:image" content="http:" /><link rel="alternate" href="android-app://com.ldf.gulli.view/gullireplay/Replay"/><link rel="Shortcut icon" href="//cdn3-gulli.ladmedia.fr/bundles/jeunesseintegrationreplay/images/favicon.ico"
+      type="image/x-icon"/><meta name="google-site-verification" content="V0sjf0UCpPirh1sC8rRHJB1v2mppugrxtKlSFNTbTgs"/><meta name="y_key" content="7f55256580cb9f8e"/><meta name="msvalidate.01" content="BDC6C8813E1F747D99D3EE9593F9A79A"/><meta name="MSSmartTagsPreventParsing" content="TRUE"/><meta name="apple-itunes-app" content="app-id=400922307"><link rel="dns-prefetch" href="http://cdn-analytics.ladmedia.fr"><link rel="stylesheet" href="//cdn2-gulli.ladmedia.fr/css/compiled/gulli/parcours_client.css"/><link rel="stylesheet" href="//cdn-gulli.ladmedia.fr/css/compiled/replay/main.css"/><script src="//cdn3-gulli.ladmedia.fr/js/compiled/replay/main.js"></script><script type="text/javascript"
+                    src="http://cdn2-gulli.ladmedia.fr/extension/lajavascript/design/standard/javascript/jquery/jquery.la/jquery.la.js?v=1452692343"></script><script type="text/javascript"
+                    src="http://cdn1-gulli.ladmedia.fr/extension/lajavascript/design/standard/javascript/jquery/jquery.la/jquery.la.promo.js?v=1452692343"></script><!--Respond JS for IE8 and HTML5 Support for IE --><!--[if lt IE 9]><script type="text/javascript"
+                src="//cdn3-gulli.ladmedia.fr/bundles/jeunesseintegrationreplay/js/respond/respondcrossdomain.src.js"></script><script type="text/javascript"
+                src="//cdn2-gulli.ladmedia.fr/bundles/jeunesseintegrationreplay/js/html5shiv/html5shiv.js"></script><![endif]--><!-- LaTagsVars start --><script type="text/javascript">//<![CDATA["
+    var tc_vars, userId = readCookie('lauser_id');
+
+    tc_vars = {
+                'content_type': 'home',
+                'content_class': 'frontpage',
+                'label': 'replay',
+                'content_node_id': '2452898',
+                'content_object_id': '3486113',
+                'content_tpl': 'frontpage',
+                'env_dnt': 'disabled',
+                'content_level_1': '',
+                'content_level_2': '',
+                'content_level_3': ''
+        };
+
+    if (userId !== null) {
+        tc_vars.user_id = parseInt(userId, 10);
+    }
+    //]]></script><!-- LaTagsVars end --><script type="text/javascript" src="//cdn-analytics.ladmedia.fr/gulli/analytics_gulli.js" async="true"></script><script type="text/javascript" src="//cdn-analytics.ladmedia.fr/gulli/pub_gulli.js" async="true"></script><script type="text/javascript" src="//cdn-analytics.ladmedia.fr/gulli/tech_gulli.js" async="true"></script><script type="text/javascript">//<![CDATA[
+            jQuery.la.promo.adSetZone('interstitiel', 112461);
+            jQuery.la.promo.adSetZone('page', 112462);
+            //]]></script></head><body>
+<span id="ad_zone_page">
+    <div id="replaygullifr_home_ha" ></div>
+ 
+</span>
+<span id="ad_zone_interstitiel">
+<div id="replaygullifr_home_ev" ></div>
+   
+</span>
+<div id="burger-overlay"></div>
+
+<div id="BurgerMenu">
+        <ul id="wrap-menu">
+        <li class="list-group panel"><a class="list-group-item" href="/dessins-animes">dessins animés</a></li>
+        <li class="list-group panel"><a class="list-group-item" href="/series">séries & films</a></li>
+        <li class="list-group panel"><a class="list-group-item" href="/emissions">émissions</a></li>
+        <li class="list-group panel list-integrale">
+                        <a href="#global-2958938" class="list-group-item collapsed" data-toggle="collapse" data-parent="#wrap-menu">l'intégrale
+                <span class="icon-bar"></span></a>
+            <ul class="collapse" id="global-2958938">
+                <li class="list-group panel"><a href="/all/always"
+                                                class="list-group-item list-group-item-success subMenu_link level_2">par
+                        dates</a></li>
+                <li class="list-group panel"><a href="/all/plus-vus"
+                                                class="list-group-item list-group-item-success subMenu_link level_2">les
+                        plus vues</a></li>
+                <li class="list-group panel"><a href="/all"
+                                                class="list-group-item list-group-item-success subMenu_link level_2">de
+                        a à z</a></li>
+                <li class="list-group panel"><a href="/derniere_chance"
+                                                class="list-group-item list-group-item-success subMenu_link level_2">dernière
+                        chance</a></li>
+                <li class="list-group panel">
+                    <a href="#programmealaune" data-toggle="collapse"
+                       class="list-group-item list-group-item-success collapsed subMenu_link subMenu_programmealaune level_2">programme
+                        à la une <span class="icon-bar"></span></a>
+                    <ul class="collapse dropdown-alaune" id="programmealaune">
+                        <li><a href="/dessins-animes/Grojband">Grojband</a></li>
+<li><a href="/dessins-animes/Sprout-a-craque-son-slip2">Sprout a craqué son slip</a></li>
+<li><a href="/series/Chica-Vampiro-mortel-d-etre-un-vampire2">Chica Vampiro</a></li>
+<li><a href="/dessins-animes/La-ferme-en-folie">La ferme en folie</a></li>
+<li><a href="/dessins-animes/Mes-parrains-sont-magiques5">Mes parrains sont magiques</a></li>
+<li><a href="/dessins-animes/Shezow">Shezow</a></li>
+<li><a href="/emissions/Intervilles-International">Intervilles International</a></li>
+<li><a href="/dessins-animes/Hubert-et-Takako">Hubert et Takako</a></li>                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li class="list-group panel">
+                        <a href="#burger_mon_replay" class="list-group-item collapsed" data-toggle="collapse"
+               data-parent="#wrap-menu">mon
+                replay <span class="icon-bar"></span></a>
+            <ul class="collapse" id="burger_mon_replay">
+                                            </ul>
+        </li>
+        <li class="list-group panel"><a class="list-group-item" href="/Direct">le direct</a></li>
+        <li class="list-group panel"><a class="list-group-item" href="http://www.gulli.fr/programme-tv" target="_blank">grille
+                tv</a></li>
+    </ul>
+</div>
+
+<script type="text/javascript">
+    jQuery(document).ready(function () {
+        jQuery.la.profiles.burger.initMenu();
+    });
+</script><header id="header" class="affix-top">
+    <section class="nav-top">
+    <div class="nav-top-border visible-md-block visible-lg-block"></div>
+    <div class="container">
+        <div class="row clearfix">
+            <div class="col-md-4 visible-md-block visible-lg-block text-left"><a href="/Partenaires"
+                                                                                 class="icon-gr_03_header_app">L'App</a>
+            </div>
+            <div class="col-md-4 visible-md-block visible-lg-block text-center"><a href="/"><img
+                            src="//cdn-gulli.ladmedia.fr/bundles/jeunesseintegrationreplay/images/header/logo-gulli-replay.png"
+                            alt=""/></a></div>
+            <div class="col-md-4 visible-md-block visible-lg-block text-right"><a href="http://www.gulli.fr" target="_blank"><img
+                            src="//cdn1-gulli.ladmedia.fr/bundles/jeunesseintegrationreplay/images/header/logo-gulli.png"
+                            alt=""/></a></div>
+        </div>
+    </div>
+</section>
+<section id="nav">
+            <div class="container">
+    <nav class="nav-bottom clearfix">
+        <div class="container">
+            <button data-target="" data-toggle="collapse" class="navbar-toggle icon-gr_05_menu_burger collapsed hidden"
+                    type="button" id="openBurgerButton"></button>
+            <div class="logo">
+                <a href="/">
+                    <img src="//cdn-gulli.ladmedia.fr/bundles/jeunesseintegrationreplay/images/header/logo-gulli-replay.png"
+                         alt=""/>
+                </a>
+            </div><!--
+            --><div class="dropdown">
+                <a href="/dessins-animes">dessins animés</a>
+            </div><!--
+            --><div class="dropdown">
+                <a href="/series">séries & films</a>
+            </div><!--
+            --><div class="dropdown">
+                <a href="/emissions">émissions</a>
+            </div><!--
+            --><div class="dropdown dropdown-sub">
+                <a href="#">l'intégrale</a>
+                <ul class="dropdown-menu category-overlay" role="menu">
+                    <li><a href="/all/always">par date</a></li><!--
+                    --><li><a href="/all/plus-vus">les plus vues</a></li><!--
+                    --><li><a href="/all">de a à z</a></li><!--
+                    --><li><a href="/derniere_chance">dernière chance</a></li><!--
+                    --><li class="dropdown-sub"><a href="#">programme à la une</a><ul class="dropdown-menu dropdown-alaune"><li><a href="/dessins-animes/Grojband">Grojband</a></li>
+<li><a href="/dessins-animes/Sprout-a-craque-son-slip2">Sprout a craqué son slip</a></li>
+<li><a href="/series/Chica-Vampiro-mortel-d-etre-un-vampire2">Chica Vampiro</a></li>
+<li><a href="/dessins-animes/La-ferme-en-folie">La ferme en folie</a></li>
+<li><a href="/dessins-animes/Mes-parrains-sont-magiques5">Mes parrains sont magiques</a></li>
+<li><a href="/dessins-animes/Shezow">Shezow</a></li>
+<li><a href="/emissions/Intervilles-International">Intervilles International</a></li>
+<li><a href="/dessins-animes/Hubert-et-Takako">Hubert et Takako</a></li></ul></li>
+                </ul>
+            </div><!--
+            --><div class="dropdown dropdown-sub">
+                <a href="#">mon replay</a>
+                <ul class="dropdown-menu category-overlay" role="menu" id="menu_mon_replay">
+                                                        </ul>
+            </div><!--
+            --><div class="dropdown lightcolor">
+                <a href="/Direct">le direct</a>
+            </div><!--
+            --><div class="dropdown lightcolor">
+                <a href="http://www.gulli.fr/programme-tv" target="_blank">grille tv</a>
+            </div>
+            <a title="Gulli Replay" class="navbar-brand-mobile hidden-md hidden-lg" href="/">
+                <img src="//cdn-gulli.ladmedia.fr/bundles/jeunesseintegrationreplay/images/header/logo-gulli-replay.png"
+                     alt=""/>
+            </a>
+            <span class="link-search icon-gr_01_header_loupe navbar-right" data-toggle="modal" id="openSearchModal"
+                  data-target="#mySearch"></span>
+        </div>
+    </nav>
+</div>
+
+<script type="text/javascript">
+    jQuery(document).ready(function () {
+        jQuery.la.profiles.initMenu();
+        jQuery('#openSearchModal').click(function () {
+                        jQuery('#mySearch').load('/search/modal #search_form', function () {
+                jQuery.la.autocompletion.init('replaySearch[searchText]');
+            });
+        });
+    });
+</script>
+</section>
+<div class="modal fade myModalForm" id="modal_securite_enfant" role="dialog" data-backdrop="static">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content" id="content_securite_enfant">
+            <div class="modal-body">
+                <strong>Sécurité enfant</strong>
+
+                <p>Entrez en chiffre le nombre suivant :<br/>
+                    <span id="encrypted_captcha"></span></p>
+
+                <div class="form-group">
+                    <label class="control-label"></label>
+                    <i class="form-control-feedback glyphicon glyphicon-remove"></i>
+                    <input type="text" pattern="[0-9]+" class="form-control" id="decrypted_captcha" placeholder="1234">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary alert-delete" id="validerCaptcha">Valider</button>
+            </div>
+        </div>
+    </div>
+</div></header>
+    <ol class="breadcrumb">
+    </ol>
+      <div id="masthead" class="row-masthead" style="width:100%;" >
+    <div id="replaygullifr_home_ac" ></div>
+
+</div> 
+<section class="clearfix" id="main">
+    <div class="container">            <div class="replay-home">
+            <h1>Gulli Replay, revoir le meilleur de Gulli en streaming</h1>
+            <span>
+                Gulli Replay c’est le meilleur des programmes de Gulli gratuitement et à volonté disponible 24/24.<br/>
+                Tous les coups de cœur de Gulli pour toute la famille : des séries, des téléfilms, des émissions et des dessins animés bien sûr !
+            </span>
+        </div>
+            
+            <!-- replay_highligths / default -->
+        <!-- @JeunesseIntegrationReplay/Block/replay_highligths.html.twig -->
+
+<ul class="row home_highlights"><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/zak_storm_super_pirate_s1.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/dessins-animes/Zak-Storm-super-Pirate">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/objectif_blake.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/dessins-animes/Objectif-Blake">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/oggy_et_les_cafards_s3.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/dessins-animes/Oggy-et-les-cafards2">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/oggy_et_les_cafards_s4.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/dessins-animes/Oggy-et-les-cafards3">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/blazing_team_s1.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/dessins-animes/Blazing-Team-Les-maitres-du-Yo-Kwon-Do">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/pokemon_s19.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/dessins-animes/Pokemon3">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/oggy_et_les_cafards_s5.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/dessins-animes/Oggy-et-les-cafards">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/the_basketeers.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/dessins-animes/The-Basketeers">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/parrains_magiques_s6.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/dessins-animes/Mes-parrains-sont-magiques6">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/hubert_et_takako.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/dessins-animes/Hubert-et-Takako">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/totally_spies.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/dessins-animes/Totally-Spies2">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/foot_2-rue_extreme.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/dessins-animes/Foot-2-rue-extreme">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/les_thunderman_s2.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/series/Les-Thunderman2">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/bienvenue_chez_les_loud.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/dessins-animes/Bienvenue-chez-les-Loud">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/sonic_boom_s2.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/dessins-animes/Sonic-Boom23">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/la_boucle_infernale.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/dessins-animes/La-boucle-infernale">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/danger_mouse_s1.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/dessins-animes/Danger-Mouse-Agent-tres-special">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/zig_et_sharko.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/dessins-animes/Zig-et-Sharko">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/sonic_boom.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/dessins-animes/Sonic-Boom">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/il_etait_une_fois_lhomme.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/dessins-animes/Il-etait-une-fois-L-Homme">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/robodog.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/series/Robodog">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/le_roman_de_renart.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/series/Le-roman-de-Renart">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/pokemon_salon_des_celebrations.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/series/Le-Salon-des-celebrations">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/safari_go_S2.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/emissions/Safari-Go2">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/quand_kanto_sinvite_a_kalos.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/series/Quand-Kanto-s-invite-a-Kalos">
+                                    </a>
+            </div>
+        </li><li class="col-md-2"
+            data-imgSrc="var/storage/imports/replay/images_programme/fais_gaffe.jpg">
+            <div class="wrap-img program wrap-zoom">
+                                <a href="http://replay.gulli.fr/emissions/Fais-Gaffe">
+                                    </a>
+            </div>
+        </li></ul>
+
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/postscribe/1.4.0/postscribe.min.js"></script>
+<div style="display:none" id="native_container">
+    <div class="wrap-img program wrap-zoom" style="display: block" id="pub_native"></div>
+</div>
+
+
+<script type="text/javascript">
+    // affichage aléatoire
+    jQuery(function () {
+        var parent = jQuery("ul.home_highlights:first");
+        var divs = parent.children();
+        while (divs.length) {
+            parent.append(divs.splice(Math.floor(Math.random() * divs.length), 1)[0]);
+        }
+
+        // display the right image
+
+        // position 0
+        var firstItem = jQuery("ul.home_highlights:first li.col-md-2:eq(0)");
+        var firstImgSrc = firstItem.attr('data-imgSrc');
+        firstItem.find('a').append(jQuery('<img>').attr('src', generateResImgSrc(firstImgSrc, 780, 585)));
+
+        // position 1
+        var secondItem = jQuery("ul.home_highlights:first li.col-md-2:eq(1)");
+        var secondImgSrc = secondItem.attr('data-imgSrc');
+        secondItem.find('a').append(jQuery('<img>').attr('src', generateResImgSrc(secondImgSrc, 380, 285)));
+
+        // position 2
+        var thirdItem = jQuery("ul.home_highlights:first li.col-md-2:eq(2)");
+        var thirdImgSrc = thirdItem.attr('data-imgSrc');
+        thirdItem.find('a').append(jQuery('<img>').attr('src', generateResImgSrc(thirdImgSrc, 380, 285)));
+
+        // position > 2
+        jQuery("ul.home_highlights:first li.col-md-2:gt(2)").each(function (i, otherItem) {
+            var otherItemImgSrc = jQuery(otherItem).attr('data-imgSrc');
+            jQuery(otherItem).find('a').append(jQuery('<img>').attr('src', generateResImgSrc(otherItemImgSrc, 180, 135)));
+        });
+
+        function generateResImgSrc(src, w, h) {
+            // ex : http://test.resize2-gulli.ladmedia.fr/r/380,285,smartcrop,center-top/img/var/storage/imports/replay/images_programme/big_time_rush_s2.jpg
+            return '//resize1-gulli' + '.ladmedia.fr/r/' + w + ',' + h + ',smartcrop,center-top/img/' + src;
+        }
+    });
+
+    // jQuery used as an example of delaying until load.
+    $(function () {
+        postscribe('#pub_native', '<script type="text/javascript">var a2d_s = 178747;var a2d_siteid = 112163;var a2d_domain = "pr.a2dfp.net/as";<\/script><script type="text/javascript" src="http://pr.a2dfp.net/m/tw3/a2d_displayAds-min.js"><\/script>', {
+            done: function () {
+                var hasPub, child;
+                hasPub = false;
+                for (child = document.getElementById("pub_native").firstChild; child; child = child.nextSibling) {
+                    if (child.nodeType == 1) { // 1 == Element
+                        if (child.nodeName == 'A') {
+                            //on insère le contenu en 2ème position
+                            $('ul.home_highlights li:first').after('<li class="col-md-2">' + document.getElementById("native_container").innerHTML + '</li>');
+                            hasPub = true;
+                            break;
+                        }
+                    }
+                }
+                //on supprime la div de pub pas de pub : on supprime le div
+                $('#native_container').remove();
+            }
+        });
+    });
+</script>
+
+            <!-- replay_playlists / default -->
+        <!-- @JeunesseIntegrationReplay/Block/replay_playlists.html.twig -->
+<div class="row playlists">
+    <h2 class="big"><strong>Playlists</strong></h2>
+                                                    <div id="playlist_gulli">
+                    <h3>
+                        <a href="http://replay.gulli.fr/playlists/gulli">playlist <em>Gulli</em></a>
+                    </h3>
+
+                    <div class="flexslider-01 carousel">
+                        <ul class="slides">
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/gulli#VOD68874563065000">
+                                        <img src="http://resize3-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/263445_0.jpg"/>
+                                        <strong>Fish&#039;N Chips: ...</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 44</span>
+                                        <span>Qui perd gagne</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/gulli#VOD68987885425000">
+                                        <img src="http://resize2-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/440673_0.jpg"/>
+                                        <strong>Fils de Wouf</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 37</span>
+                                        <span>Bonne fête mamans</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/gulli#VOD68874563010000">
+                                        <img src="http://resize-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/263446_0.jpg"/>
+                                        <strong>Fish&#039;N Chips: ...</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 43</span>
+                                        <span>Un poisson bien dans sa peau</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/gulli#VOD68987885573000">
+                                        <img src="http://resize1-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/440675_0.jpg"/>
+                                        <strong>Fils de Wouf</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 39</span>
+                                        <span>Plus chien que chien</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/gulli#VOD68987885647000">
+                                        <img src="http://resize2-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/440676_0.jpg"/>
+                                        <strong>Fils de Wouf</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 40</span>
+                                        <span>Nouveau venu</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/gulli#VOD68987885499000">
+                                        <img src="http://resize-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/440674_0.jpg"/>
+                                        <strong>Fils de Wouf</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 38</span>
+                                        <span>Super Nanny</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/gulli#VOD68991860986000">
+                                        <img src="http://resize1-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/440169_0.jpg"/>
+                                        <strong>Objectif Blake</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 11</span>
+                                        <span>Objectif Zombies</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/gulli#VOD68977194273000">
+                                        <img src="http://resize3-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/367310_0.jpg"/>
+                                        <strong>Monster Buster...</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 9</span>
+                                        <span>Règle 9 : Savoir jouer la comédi...</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/gulli#VOD68874562400000">
+                                        <img src="http://resize3-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/263445_0.jpg"/>
+                                        <strong>Fish&#039;N Chips: ...</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 41</span>
+                                        <span>Caline In Love</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/gulli#VOD68821478064000">
+                                        <img src="http://resize-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/460141_0.jpg"/>
+                                        <strong>P&#039;tit cosmonau...</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 20</span>
+                                        <span>Compteur Geyser</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/gulli#VOD68941619138000">
+                                        <img src="http://resize-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/442717_0.jpg"/>
+                                        <strong>Mes tubes en s...</strong>
+                                        <span>Saison 3
+                                            , &Eacute;pisode 5</span>
+                                        <span>Magic in the air - Magic System</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/gulli#VOD68874561975000">
+                                        <img src="http://resize-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/263446_0.jpg"/>
+                                        <strong>Fish&#039;N Chips: ...</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 40</span>
+                                        <span>La chambre de Darwin</span>
+                                    </a>
+                                </li>
+                                                        <li class="acces_playlist">
+                                <a href="http://replay.gulli.fr/playlists/gulli">
+                                                                        <strong>Accéder à la playlist <em>Gulli</em></strong>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                                                                <div id="playlist_plus-grands">
+                    <h3>
+                        <a href="http://replay.gulli.fr/playlists/plus-grands">playlist <em>Plus grands</em></a>
+                    </h3>
+
+                    <div class="flexslider-01 carousel">
+                        <ul class="slides">
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/plus-grands#VOD68894311317000">
+                                        <img src="http://resize1-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/453159_0.jpg"/>
+                                        <strong>Zak Storm supe...</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 30</span>
+                                        <span>La colère des Méduses</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/plus-grands#VOD68824134606000">
+                                        <img src="http://resize1-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/440171_0.jpg"/>
+                                        <strong>Objectif Blake</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 8</span>
+                                        <span>Objectif Fixe</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/plus-grands#VOD68826265348000">
+                                        <img src="http://resize1-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/440173_0.jpg"/>
+                                        <strong>Objectif Blake</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 5</span>
+                                        <span>Objectif Amnesique</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/plus-grands#VOD68894311200000">
+                                        <img src="http://resize3-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/449029_0.jpg"/>
+                                        <strong>Zak Storm supe...</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 29</span>
+                                        <span>Calabrass ne répond plus</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/plus-grands#VOD68821432381000">
+                                        <img src="http://resize-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/440170_0.jpg"/>
+                                        <strong>Objectif Blake</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 7</span>
+                                        <span>Objectif Papy</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/plus-grands#VOD68852880532000">
+                                        <img src="http://resize1-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/453095_0.jpg"/>
+                                        <strong>Oggy et les ca...</strong>
+                                        <span>Saison 3
+                                            , &Eacute;pisode 37</span>
+                                        <span>Formule 1</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/plus-grands#VOD68821432511000">
+                                        <img src="http://resize1-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/440171_0.jpg"/>
+                                        <strong>Objectif Blake</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 13</span>
+                                        <span>Objectif Skye Partie 1</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/plus-grands#VOD68824134726000">
+                                        <img src="http://resize1-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/440173_0.jpg"/>
+                                        <strong>Objectif Blake</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 15</span>
+                                        <span>Objectif Dodo</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/plus-grands#VOD68874563065000">
+                                        <img src="http://resize3-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/263445_0.jpg"/>
+                                        <strong>Fish&#039;N Chips: ...</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 44</span>
+                                        <span>Qui perd gagne</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/plus-grands#VOD68858114056000">
+                                        <img src="http://resize-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/453181_0.jpg"/>
+                                        <strong>Oggy et les ca...</strong>
+                                        <span>Saison 4
+                                            , &Eacute;pisode 40</span>
+                                        <span>Le chat miaule et la caravane pa...</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/plus-grands#VOD68821489568000">
+                                        <img src="http://resize-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/419702_0.jpg"/>
+                                        <strong>Rekkit</strong>
+                                        <span>Saison 2
+                                            , &Eacute;pisode 15</span>
+                                        <span>Attention: Maison malade</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/plus-grands#VOD68879961886000">
+                                        <img src="http://resize2-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/447288_0.jpg"/>
+                                        <strong>Blazing Team :...</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 9</span>
+                                        <span>Les yeux ouverts</span>
+                                    </a>
+                                </li>
+                                                        <li class="acces_playlist">
+                                <a href="http://replay.gulli.fr/playlists/plus-grands">
+                                                                        <strong>Accéder à la playlist <em>Plus grands</em></strong>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                                                                <div id="playlist_famille">
+                    <h3>
+                        <a href="http://replay.gulli.fr/playlists/famille">playlist <em>Famille</em></a>
+                    </h3>
+
+                    <div class="flexslider-01 carousel">
+                        <ul class="slides">
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/famille#VOD68988515380000">
+                                        <img src="http://resize-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/459280_0.jpg"/>
+                                        <strong>The Basketeers</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 25</span>
+                                        <span>Toujours au top P1</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/famille#VOD68988516264000">
+                                        <img src="http://resize1-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/459281_0.jpg"/>
+                                        <strong>The Basketeers</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 26</span>
+                                        <span>Toujours au top P2</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/famille#VOD68871179142000">
+                                        <img src="http://resize2-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/455780_0.jpg"/>
+                                        <strong>Les Thunderman</strong>
+                                        <span>Saison 2
+                                            , &Eacute;pisode 11</span>
+                                        <span>Une amitié indésirable</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/famille#VOD68879936726000">
+                                        <img src="http://resize1-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/451174_0.jpg"/>
+                                        <strong>Robo-Dog se dé...</strong>
+                                        <span>Saison 0
+                                            , &Eacute;pisode 0</span>
+                                        <span>Robo-Dog se déchaîne</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/famille#VOD68871179087000">
+                                        <img src="http://resize1-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/455781_0.jpg"/>
+                                        <strong>Les Thunderman</strong>
+                                        <span>Saison 2
+                                            , &Eacute;pisode 10</span>
+                                        <span>Max Swan</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/famille#VOD68848207569000">
+                                        <img src="http://resize2-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/447855_0.jpg"/>
+                                        <strong>C&#039;est bon sign...</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 2</span>
+                                        <span>Le réveil</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/famille#VOD68869047340000">
+                                        <img src="http://resize2-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/455782_0.jpg"/>
+                                        <strong>Les Thunderman</strong>
+                                        <span>Saison 2
+                                            , &Eacute;pisode 9</span>
+                                        <span>Un anniversaire presque parfait</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/famille#VOD68848207512000">
+                                        <img src="http://resize-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/447254_0.jpg"/>
+                                        <strong>C&#039;est bon sign...</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 1</span>
+                                        <span>Moi c&#039;est Luca</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/famille#VOD68823640120000">
+                                        <img src="http://resize2-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/447855_0.jpg"/>
+                                        <strong>C&#039;est bon sign...</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 12</span>
+                                        <span>Au supermarché</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/famille#VOD68984856520000">
+                                        <img src="http://resize-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/459279_0.jpg"/>
+                                        <strong>The Basketeers</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 24</span>
+                                        <span>Le coach</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/famille#VOD68823640065000">
+                                        <img src="http://resize-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/447254_0.jpg"/>
+                                        <strong>C&#039;est bon sign...</strong>
+                                        <span>Saison 1
+                                            , &Eacute;pisode 11</span>
+                                        <span>La musique</span>
+                                    </a>
+                                </li>
+                                                            <li>
+                                                                        <a href="http://replay.gulli.fr/playlists/famille#VOD68991848536000">
+                                        <img src="http://resize1-gulli.ladmedia.fr/r/200,150,smartcrop,center-top/img/var/storage/imports/replay/images/451174_0.jpg"/>
+                                        <strong>Robodog</strong>
+                                        <span>Saison 0
+                                            , &Eacute;pisode 0</span>
+                                        <span>Robodog</span>
+                                    </a>
+                                </li>
+                                                        <li class="acces_playlist">
+                                <a href="http://replay.gulli.fr/playlists/famille">
+                                                                        <strong>Accéder à la playlist <em>Famille</em></strong>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                                                                                                                            </div>            <!-- replay_programmes_preferes_gulli / default -->
+        <!-- @JeunesseIntegrationReplay/Block/replay_programmes_preferes_gulli.html.twig -->
+<div class="row favorites">
+    <h2 class="big"><strong>Retrouve tous tes programmes préférés sur Gulli</strong></h2>
+    <ul class="multicolumn">
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Bienvenue-chez-les-Loud"
+                   title="Bienvenue chez les Loud">Bienvenue chez les Loud (s1)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Blazing-Team-Les-maitres-du-Yo-Kwon-Do"
+                   title="Blazing Team : Les maîtres du Yo Kwon Do">Blazing Team : Les maîtres du Yo Kwon Do (s1)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/emissions/C-est-bon-signe"
+                   title="C&#039;est bon signe">C&#039;est bon signe (s1)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Danger-Mouse-Agent-tres-special"
+                   title="Danger Mouse">Danger Mouse (s1)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/emissions/Fais-Gaffe"
+                   title="Fais Gaffe">Fais Gaffe (s1)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Fils-de-Wouf"
+                   title="Fils de Wouf">Fils de Wouf (s1)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Fish-N-Chips-Rien-ne-les-arrete"
+                   title="Fish&#039;N Chips: Rien ne les arrête">Fish&#039;N Chips: Rien ne les arrête (s1)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Foot-2-rue-extreme"
+                   title="Foot 2 rue extrême">Foot 2 rue extrême (s1)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Hubert-et-Takako"
+                   title="Hubert et Takako">Hubert et Takako (s1)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Il-etait-une-fois-L-Homme"
+                   title="Il était une fois... L&#039;Homme">Il était une fois... L&#039;Homme (s1)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/La-boucle-infernale"
+                   title="La boucle infernale">La boucle infernale (s1)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/series/Le-Salon-des-celebrations"
+                   title="Le Salon des célébrations">Le Salon des célébrations </a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/series/Le-roman-de-Renart"
+                   title="Le roman de Renart">Le roman de Renart </a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/series/Les-Thunderman2"
+                   title="Les Thunderman">Les Thunderman (s2)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Magic-Famille-feerique"
+                   title="Magic : Famille féerique">Magic : Famille féerique (s1)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Mes-parrains-sont-magiques6"
+                   title="Mes parrains sont magiques">Mes parrains sont magiques (s6)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/emissions/Mes-tubes-en-signes"
+                   title="Mes tubes en signes">Mes tubes en signes (s3)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Monster-Buster-Club-Chasseurs-d-extraterrestres2"
+                   title="Monster Buster Club : Chasseurs d&#039;extraterrestres">Monster Buster Club : Chasseurs d&#039;extraterrestres (s1)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Objectif-Blake"
+                   title="Objectif Blake">Objectif Blake (s1)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Oggy-et-les-cafards2"
+                   title="Oggy et les cafards">Oggy et les cafards (s3)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Oggy-et-les-cafards3"
+                   title="Oggy et les cafards">Oggy et les cafards (s4)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Oggy-et-les-cafards"
+                   title="Oggy et les cafards">Oggy et les cafards (s5)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/P-tit-cosmonaute"
+                   title="P&#039;tit cosmonaute">P&#039;tit cosmonaute (s1)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Pokemon3"
+                   title="Pokémon">Pokémon (s19)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/series/Quand-Kanto-s-invite-a-Kalos"
+                   title="Quand Kanto s&#039;invite à Kalos">Quand Kanto s&#039;invite à Kalos </a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Rekkit24"
+                   title="Rekkit">Rekkit (s2)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/series/Robo-Dog-se-dechaine"
+                   title="Robo-Dog se déchaîne">Robo-Dog se déchaîne </a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/series/Robodog"
+                   title="Robodog">Robodog </a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/emissions/Safari-Go2"
+                   title="Safari Go">Safari Go (s2)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Shuriken-School-Academie-des-ninjas"
+                   title="Shuriken School : Académie des ninjas">Shuriken School : Académie des ninjas (s1)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Sonic-Boom"
+                   title="Sonic Boom">Sonic Boom (s1)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Sonic-Boom23"
+                   title="Sonic Boom">Sonic Boom (s2)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/The-Basketeers"
+                   title="The Basketeers">The Basketeers (s1)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Totally-Spies2"
+                   title="Totally Spies">Totally Spies (s1)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Totally-Spies"
+                   title="Totally Spies">Totally Spies (s2)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Zak-Storm-super-Pirate"
+                   title="Zak Storm super Pirate">Zak Storm super Pirate (s1)</a>
+            </li>
+                    <li>
+                <a href="http://replay.gulli.fr/dessins-animes/Zig-et-Sharko"
+                   title="Zig et Sharko">Zig et Sharko (s1)</a>
+            </li>
+            </ul>
+</div>    </div>
+</section>
+<footer><div class="container">
+    <div class="row">
+    <div class="col-md-12">
+        <small>
+                            Gulli Replay : streaming vidéo gratuit des programmes de la chaine de télé Gulli en intégralité. La VOD gratuite de Gulli pour visionner vos programmes en différé, sans abonnement.
+                    </small>
+    </div>
+</div>
+        <script type="text/javascript">
+        jQuery.get('/esi/3teasers', function (data) {
+            jQuery('footer .container:first').append(data);
+        });
+    </script>
+    <div class="divider filet"></div>
+</div>
+
+<div class="container-fluid" id="myFooter">
+                    <div class="row clearfix footer-links">
+    <div class="col-md-2 col-sm-2 col-md-offset-3 col-sm-offset-3 text-center">
+        <ul>
+                            <li><a href="/Partenaires#lapp" class="icon-gr_30_footer_app icon-gr_37_footer_fleche_app">L&#039;App</a></li>
+                            <li><a href="/Partenaires#sitemobile" class="icon-gr_29_footer_mobile">Site mobile</a></li>
+                            <li><a href="/Partenaires#tv" class="icon-gr_27_footer_tv">TV</a></li>
+                    </ul>
+    </div>
+    <div class="col-md-2 col-sm-2 text-center">
+        <ul>
+                            <li><a href="/Partenaires#android" class="icon-gr_28_footer_android">Android</a></li>
+                            <li><a href="/Partenaires#ios" class="icon-gr_40_footer_apple">IOS</a></li>
+                            <li><a href="/Partenaires#amazon" class="icon-gr_31_footer_amazone">Amazon</a></li>
+                    </ul>
+    </div>
+    <div class="col-md-2 col-sm-2 text-center">
+        <ul>
+                            <li><a href="/RSS" class="icon-gr_33_footer_rss">RSS</a></li>
+                            <li><a href="/FAQ" class="icon-gr_34_footer_ccm">Comment ça marche</a></li>
+                            <li><a href="/contact" class="icon-gr_36_footer_lettre">Nous écrire</a></li>
+                    </ul>
+    </div>
+</div>
+<div class="row clearfix footer-mentions">
+    <div class="col-md-12">
+        <ul>
+                            <li><a href="https://www.lagardere-pub.com/" target="_blank">Lagardère publicité</a></li>
+                            <li><a href="/Charte-Donnees-Personnelles-et-Cookies" target="_self">Gestion des cookies</a></li>
+                            <li><a href="/CGU" target="_self">CGU</a></li>
+                    </ul>
+    </div>
+</div>
+    </div></footer>
+
+<div class="modal fade" id="mySearch" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+     aria-hidden="true"></div>
+
+        <link rel="stylesheet" href="//cdn3-gulli.ladmedia.fr/css/compiled/replay/bottom.css"/>
+            <script src="//cdn3-gulli.ladmedia.fr/js/compiled/replay/main_bottom.js"></script>
+    
+
+
+<script type="text/javascript" src="//cdn-analytics.ladmedia.fr/gulli/monetisation_gulli.js" async="true"></script>
+		<script type="text/javascript" src="//cdn-analytics.ladmedia.fr/gulli/autres_gulli.js" async="true"></script>
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-NXZ6CDG');</script>
+			<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NXZ6CDG" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+
+</body>
+</html>
