@@ -18,3 +18,4 @@ dist
 launch.json
 settings.json
 cmd/aspiratv/aspiratv
+cmd/aspiratv/test*.json

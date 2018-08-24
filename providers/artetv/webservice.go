@@ -2,9 +2,9 @@ package artetv
 
 import (
 	"encoding/json"
-	"fmt"
-	"strconv"
 	"time"
+
+	"github.com/simulot/aspiratv/parsers/jsonparser"
 )
 
 // cSpell:disable
@@ -71,9 +71,9 @@ type data struct {
 	// Availability    interface{}   `json:"availability"`
 	BroadcastDates []tsGuide `json:"broadcastDates"`
 	// Credits         []interface{} `json:"credits"`
-	Duration        seconds `json:"duration"`
-	Description     string  `json:"description"`
-	FullDescription string  `json:"fullDescription"`
+	Duration        jsonparser.Seconds `json:"duration"`
+	Description     string             `json:"description"`
+	FullDescription string             `json:"fullDescription"`
 	// Geoblocking     interface{}   `json:"geoblocking"`
 	ID     string            `json:"id"`
 	Images map[string]thumbs `json:"images"`
@@ -110,27 +110,6 @@ type resolution struct {
 	URL    string `json:"url"`
 	Width  int    `json:"width"`
 }
-
-// seconds read a number of seconds and transform it into time.Duration
-type seconds time.Duration
-
-func (s *seconds) UnmarshalJSON(b []byte) error {
-	if b[0] == '"' {
-		b = b[1 : len(b)-1]
-	}
-	if string(b) == "null" {
-		*s = 0
-		return nil
-	}
-	i, err := strconv.Atoi(string(b))
-	if err != nil {
-		return fmt.Errorf("Can't parse duration in seconds: %v", err)
-	}
-	*s = seconds(time.Duration(i) * time.Second)
-	return nil
-}
-
-func (s seconds) Duration() time.Duration { return time.Duration(s) }
 
 // tsGuide read broadcast time
 var utcTZ, _ = time.LoadLocation("UTC")
@@ -273,7 +252,7 @@ type player struct {
 		// 		WEB   string `json:"WEB"`
 		// 	} `json:"tablet"`
 		// } `json:"tracking"`
-		VideoDurationSeconds seconds `json:"videoDurationSeconds"` // Secondes
+		VideoDurationSeconds jsonparser.Seconds `json:"videoDurationSeconds"` // Secondes
 		// VideoIsoLang         string `json:"videoIsoLang"`         // Code language iso
 		// VideoPlayerURL       string `json:"videoPlayerUrl"`       // URL of this JSON
 		// VideoWarning         bool   `json:"videoWarning"`         // When true, the player add a warning
