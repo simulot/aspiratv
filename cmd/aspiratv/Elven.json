@@ -1,0 +1,24 @@
+{
+  "PullInterval": "1h30m",
+  "Destinations": {
+    "Documentaires": "${HOME}/Videos/Documentaires",
+    "Séries": "${HOME}/Videos/Séries",
+    "Jeunesse": "${HOME}/Videos/Jeunesse",
+    "Courts": "${HOME}/Videos/Courts"
+  },
+  "Providers": {
+    "artetv": {
+      "Locale": "fr",
+      "PreferedVersions": ["VF", "VOF", "VOF-STF", "VOSTF", "VF-STF"]
+    }
+  },
+  "WatchList": [
+    {
+      "Playlist": "Elven - La rivière des secrets",
+      "Title": "",
+      "Pitch": "",
+      "Provider": "artetv",
+      "Destination": "Séries"
+    }
+  ]
+}
