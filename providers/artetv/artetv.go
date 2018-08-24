@@ -347,6 +347,8 @@ func setShowTitleEpisode(s *providers.Show, info showInfo) {
 	if m != nil {
 		s.Show = m[1]
 		s.Episode = m[2]
+	} else {
+		s.Episode = episodeFromID(s.ID)
 	}
 
 	if len(s.Title) == 0 {
