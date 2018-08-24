@@ -221,7 +221,10 @@ func (p *ArteTV) getCollection(ColName string, destination string) ([]*providers
 				}(),
 				Destination: destination,
 			}
-			setShowTitleEpisode(s, data)
+			setShowTitleEpisode(s, showInfo{
+				title:    data.Title,
+				subTitle: data.Subtitle,
+			})
 			shows = append(shows, s)
 		}
 		if len(collection.NextPage) == 0 {
@@ -318,7 +321,10 @@ func (p *ArteTV) getGuide(mm []*providers.MatchRequest, d time.Time) ([]*provide
 					// Title: strings.TrimSpace(d.Subtitle),
 				}
 				if providers.IsShowMatch(mm, s) {
-					setShowTitleEpisode(s, data)
+					setShowTitleEpisode(s, showInfo{
+						title:    data.Title,
+						subTitle: data.Subtitle,
+					})
 					shows = append(shows, s)
 				}
 			}
@@ -332,9 +338,9 @@ var reArteSeries = regexp.MustCompile(`(?P<Title>.*\S)\s*\((?P<Episode>\d+)\/(?P
 // Get episode number from the title pattern (episode/number of episodes) in the title
 // If found, the pattern (x/y) is removed from title
 // Set the Title with Show when empty
-func setShowTitleEpisode(s *providers.Show, data data) {
-	s.Show = data.Title
-	s.Title = data.Subtitle
+func setShowTitleEpisode(s *providers.Show, info showInfo) {
+	s.Show = info.title
+	s.Title = info.subTitle
 	s.Episode = ""
 
 	m := reArteSeries.FindStringSubmatch(s.Show)
@@ -345,7 +351,7 @@ func setShowTitleEpisode(s *providers.Show, data data) {
 
 	if len(s.Title) == 0 {
 		// Fill the episode title with Show title and episode number for having different files name
-		s.Title = s.Show + " (" + providers.Format2Digits(s.Episode) + ")"
+		s.Title = s.Show + " (e" + providers.Format2Digits(s.Episode) + ")"
 	}
 
 }
@@ -394,6 +400,7 @@ func (p *ArteTV) GetShowInfo(s *providers.Show) error {
 	}
 	s.AirDate = info.airDate
 	s.Season = info.season
+	setShowTitleEpisode(s, info)
 	return nil
 }
 
@@ -406,17 +413,16 @@ type showInfo struct {
 
 // readDetails returns the structure that contains shows details
 
-func readDetails(r io.Reader) (*showInfo, error) {
+func readDetails(r io.Reader) (showInfo, error) {
+	info := showInfo{}
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
-		return nil, err
+		return info, err
 	}
-
-	info := &showInfo{}
 
 	o, err := jscript.ParseObjectAtAnchor(b, regexp.MustCompile(`"zones":\[\{`))
 	if err != nil {
-		return nil, err
+		return info, err
 	}
 
 	if dd := o.Property("data"); dd != nil {
