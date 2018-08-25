@@ -144,8 +144,8 @@ func (a *app) PullShows(p providers.Provider) {
 func (w *pullWork) Run(p providers.Provider) {
 	pName := p.Name()
 	shows, err := p.Shows(w.config.WatchList)
-	if err != err {
-		log.Printf("[%s] Can't get shows list of provider", pName)
+	if err != nil {
+		log.Printf("[%s] Can't get shows list of provider: %v", pName, err)
 		return
 	}
 	log.Printf("[%s] %s has %d show(s) that match", pName, pName, len(shows))

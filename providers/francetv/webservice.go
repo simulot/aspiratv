@@ -1,10 +1,7 @@
 package francetv
 
 import (
-	"encoding/json"
-	"fmt"
-	"strconv"
-	"time"
+	"github.com/simulot/aspiratv/parsers/jsonparser"
 )
 
 // JSON structure for availble show list
@@ -32,8 +29,8 @@ type pluzzEmission struct {
 	// CsaNomLong        string `json:"csa_nom_long"`
 	DateDiffusion string `json:"date_diffusion"`
 	// Duree         string  `json:"duree"`
-	DureeReelle seconds `json:"duree_reelle"`
-	Episode     string  `json:"episode"`
+	DureeReelle jsonparser.Seconds `json:"duree_reelle"`
+	Episode     string             `json:"episode"`
 	// Etranger          string `json:"etranger"`
 	// ExtensionImage    string `json:"extension_image"`
 	// Format            string `json:"format"`
@@ -68,10 +65,10 @@ type pluzzEmission struct {
 	// Soustitrage       string `json:"soustitrage"`
 	Soustitre string `json:"soustitre"`
 	// TempsRestant      string `json:"temps_restant"`
-	Titre          string `json:"titre"`
-	TitreProgramme string `json:"titre_programme"`
-	TsDiffusionUtc tsUnix `json:"ts_diffusion_utc"`
-	URL            string `json:"url"`
+	Titre          string            `json:"titre"`
+	TitreProgramme string            `json:"titre_programme"`
+	TsDiffusionUtc jsonparser.TSUnix `json:"ts_diffusion_utc"`
+	URL            string            `json:"url"`
 	// URLImageRacine    string `json:"url_image_racine"`
 	// URLVideoSitemap   string `json:"url_video_sitemap"`
 	// VolonteReplay     string `json:"volonte_replay"`
@@ -156,60 +153,4 @@ type infoOeuvre struct {
 		// URLSecure string `json:"url_secure"`
 	} `json:"videos"`
 	// Votes interface{} `json:"votes"`
-}
-
-var parisTS, _ = time.LoadLocation("Europe/Paris")
-
-type ts020120161504 time.Time
-
-const ts020120161504fmt = "02/01/2006 15:04"
-
-func (t *ts020120161504) UnmarshalJSON(b []byte) error {
-	var s string
-	if err := json.Unmarshal(b, &s); err != nil {
-		return err
-	}
-
-	d, err := time.ParseInLocation(ts020120161504fmt, s, parisTS)
-	if err != nil {
-		return err
-	}
-	*t = ts020120161504(d)
-	return nil
-}
-
-func (t ts020120161504) MarshalJSON() ([]byte, error) {
-	u := time.Time(t).Unix()
-	return json.Marshal(u)
-}
-
-// tsUnix read a unix timestamp and transform it into a time.Time
-type tsUnix time.Time
-
-func (t *tsUnix) UnmarshalJSON(b []byte) error {
-	if b[0] == '"' {
-		b = b[1 : len(b)-1]
-	}
-	i, err := strconv.ParseInt(string(b), 0, 64)
-	if err != nil {
-		return err
-	}
-	// convert the unix epoch to a Time object
-	*t = tsUnix(time.Unix(i, 0))
-	return nil
-}
-
-// seconds read a number of seconds and transform it into time.Duration
-type seconds time.Duration
-
-func (s *seconds) UnmarshalJSON(b []byte) error {
-	if b[0] == '"' {
-		b = b[1 : len(b)-1]
-	}
-	i, err := strconv.Atoi(string(b))
-	if err != nil {
-		return fmt.Errorf("Can't parse duration in seconds: %v", err)
-	}
-	*s = seconds(time.Duration(i) * time.Second)
-	return nil
 }

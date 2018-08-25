@@ -18,7 +18,7 @@ func mustParse(t *testing.T, f string, d string) time.Time {
 	return date
 }
 func Test_readDetails(t *testing.T) {
-	expected := &showInfo{
+	expected := showInfo{
 		airDate:  mustParse(t, "2006-01-02", "2018-07-02"),
 		season:   "2017",
 		title:    "La minute vieille",
