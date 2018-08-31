@@ -99,11 +99,14 @@ Chaque provider peut traiter spécifiquement les recherches.
 # Les fournisseurs de contenu : les providers
 Un provider est un package du logiciel permettant d'implémenter les différents connecteurs.
 Les connecteurs disponibles sont :
-* France Télévision (`francetv`):
-  * Programmes en replay des chaîne France 2, France 3, France 4, France 5, France Ô, La 1ère
-* Arte France (`artetv`) :
-  * Programmes en langue française ou sous-titrés en français.
-  * Les playlists Arte peuvent être surveillées pour que les nouveaux épisodes soit téléchargés dès leur disponibilité. 
+## France Télévision (`francetv`):
+  Ce connecteur permet de surveiller les programmes en replay des chaînes France 2, France 3, France 4, France 5, France Ô, et La 1ère.
+## Arte France (`artetv`) :
+  Ce connecteur permet de surveiller les programmes de la chaîne Arte
+  
+  Les playlists Arte peuvent être surveillées pour que les nouveaux épisodes soit téléchargés dès leur disponibilité. 
+## Gulli (`gulli`)
+  Ce connecteur permet de surveiller les programmes de la chaîne Gulli. Attention Gulli tronque le nom des shows. Il convient de paramétrer les recherches avec les noms tronqués. 
 
 # Configuration de PLEX
 
@@ -116,6 +119,8 @@ Vous devez avoir un compilateur pour [le langage GO](https://golang.org/dl/).
 # Todo
 
 - [x] Provider pour Arte
-- [x] Arte.TV: Suivre les collections
-- [_] Provider pour Gulli 
+  - [x] Arte.TV: Suivre les collections
+- [X] Provider pour Gulli
+- [ ] Ajouter le pitch à Plex 
+
 
