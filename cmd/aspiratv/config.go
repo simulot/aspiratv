@@ -20,6 +20,12 @@ type Config struct {
 	Destinations map[string]string         // Mapping of destination path
 	ConfigFile   string                    // Name of configuration file
 	WatchList    []*providers.MatchRequest // Slice of show matchers
+	Providers    map[string]ProviderConfig
+}
+
+type ProviderConfig struct {
+	Enabled  bool
+	Settings map[string]string
 }
 
 // Handle Duration as string for JSON configuration
@@ -115,4 +121,11 @@ func (c *Config) Check() {
 		}
 	}
 
+}
+
+func (c *Config) IsProviderActive(p string) bool {
+	if pc, ok := c.Providers[p]; ok {
+		return pc.Enabled
+	}
+	return false
 }

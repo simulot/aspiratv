@@ -33,6 +33,7 @@ func IsShowMatch(mm []*MatchRequest, s *Show) bool {
 	if mm == nil || len(mm) == 0 {
 		return true
 	}
+
 	for _, m := range mm {
 		if len(m.Playlist) > 0 {
 			// Skip Playlist that must have a special treatment

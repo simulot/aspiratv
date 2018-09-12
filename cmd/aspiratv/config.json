@@ -1,5 +1,5 @@
 {
-  "PullInterval": "1h30m",
+  "PullInterval": "7h30m",
   "Destinations": {
     "Documentaires": "${HOME}/Videos/Documentaires",
     "Jeunesse": "${HOME}/Videos/Jeunesse",
@@ -7,44 +7,31 @@
   },
   "Providers": {
     "artetv": {
-      "Locale": "fr",
-      "PreferedVersions": ["VF", "VOF", "VOF-STF", "VOSTF", "VF-STF"]
+      "Enabled": false        
+    },
+    "gulli":{
+      "Enabled": true,
+      "Settings":{
+        "PreferedFormat": ".m38u"
+      }
+    },
+    "francetv":{
+        "Enabled": true
     }
   },
   "WatchList": [
     {
-      "Playlist": "Astronomie : voyage vers les étoiles !",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "artetv",
-      "Destination": "Documentaires"
-    },    {
-      "Show": "Entre Terre et ciel",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "artetv",
-      "Destination": "Documentaires"
-    },
-    {
-      "Playlist": "La minute vieille",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "artetv",
-      "Destination": "Courts"
-    },
-    {
-      "Show": "Les lapins crétins",
+      "Show": "Marsupilami", 
       "Title": "",
       "Pitch": "",
       "Provider": "francetv",
       "Destination": "Jeunesse"
     },
     {
-      "Show": "Xenius",
-      "Title": "",
+      "Show": "Oggy et les cafards",
       "Pitch": "",
-      "Provider": "artetv",
-      "Destination": "Documentaires"
+      "Provider": "gulli",
+      "Destination": "Jeunesse"
     }
   ]
 }
