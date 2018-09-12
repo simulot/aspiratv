@@ -17,6 +17,7 @@ import (
 
 	_ "github.com/simulot/aspiratv/providers/artetv"
 	_ "github.com/simulot/aspiratv/providers/francetv"
+	_ "github.com/simulot/aspiratv/providers/gulli"
 
 	"github.com/simulot/aspiratv/net/http"
 	"github.com/simulot/aspiratv/playlists/m3u8"
@@ -81,11 +82,13 @@ func (a *app) RunOnce() {
 	// Kick of providers, wait queries to finish, and exit
 	wg := sync.WaitGroup{}
 	for _, p := range providers.List() {
-		wg.Add(1)
-		go func(p providers.Provider) {
-			a.PullShows(p)
-			wg.Done()
-		}(p)
+		if a.Config.IsProviderActive(p.Name()) {
+			wg.Add(1)
+			go func(p providers.Provider) {
+				a.PullShows(p)
+				wg.Done()
+			}(p)
+		}
 	}
 	wg.Wait()
 	log.Println("Job(s) are done!")
@@ -94,8 +97,10 @@ func (a *app) RunOnce() {
 func (a *app) RunAsService() {
 	// Kick of providers loop and remain active
 	for n, p := range providers.List() {
-		go a.ProviderLoop(p)
-		log.Printf("Provider %s watch loop initialized", n)
+		if a.Config.IsProviderActive(p.Name()) {
+			go a.ProviderLoop(p)
+			log.Printf("Provider %s watch loop initialized", n)
+		}
 	}
 	<-a.Stop
 }

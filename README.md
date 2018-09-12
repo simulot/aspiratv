@@ -13,6 +13,13 @@ Le fonctionnement de ce programme n'est pas garanti. Notamment, les fournisseurs
 
 - FFMPEG: ffmpeg est utilisé pour convertir le flux vidéo en fichiers mp4. l'exécutable doit être disponible dans votre système. Page de téléchargement pour Windows: [https://ffmpeg.zeranoe.com/builds/](https://ffmpeg.zeranoe.com/builds/)
 
+# Changements
+
+- Connecteur pour Gulli
+- Changements dans le fichiers de configuration
+  - Possibilité d'activer individuellement les connecteurs
+
+
 # Installation
 
 Les binaires pour Windows, Linux et FreeBSD sont directement disponibles sur la page [releases](https://github.com/simulot/aspiratv/releases/latest). Les binaires n'ont pas de dépendance autre que FFMPEG et n'ont pas besoin d'être installés.
@@ -46,34 +53,37 @@ Le fichier config.json contient les paramètres et la liste des émissions que l
 
 ``` json
 {
-  "PullInterval": "1h30m",
+  "PullInterval": "7h30m",
   "Destinations": {
     "Documentaires": "${HOME}/Videos/Documentaires",
     "Jeunesse": "${HOME}/Videos/Jeunesse",
-    "Courts": "${HOME}/Videos/Courts"
+    "Séries": "${HOME}/Videos/Series"
+  },
+  "Providers": {
+    "artetv": {
+      "Enabled": false        
+    },
+    "gulli":{
+      "Enabled": true,
+    },
+    "francetv":{
+        "Enabled": true
+    }
   },
   "WatchList": [
     {
-      "Show": "Garfield",
+      "Show": "Doctor Who", 
       "Title": "",
       "Pitch": "",
       "Provider": "francetv",
+      "Destination": "Séries"
+    },
+    {
+      "Show": "Oggy et les cafards",
+      "Pitch": "",
+      "Provider": "gulli",
       "Destination": "Jeunesse"
-    },
-    {
-      "Show": "Les routes de l'impossible",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "francetv",
-      "Destination": "Documentaires"
-    },
-    {
-      "Playlist": "La minute vieille",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "artetv",
-      "Destination": "Courts"
-    }      
+    }
   ]
 }
 ```
@@ -99,11 +109,14 @@ Chaque provider peut traiter spécifiquement les recherches.
 # Les fournisseurs de contenu : les providers
 Un provider est un package du logiciel permettant d'implémenter les différents connecteurs.
 Les connecteurs disponibles sont :
-* France Télévision (`francetv`):
-  * Programmes en replay des chaîne France 2, France 3, France 4, France 5, France Ô, La 1ère
-* Arte France (`artetv`) :
-  * Programmes en langue française ou sous-titrés en français.
-  * Les playlists Arte peuvent être surveillées pour que les nouveaux épisodes soit téléchargés dès leur disponibilité. 
+## France Télévision (`francetv`):
+  Ce connecteur permet de surveiller les programmes en replay des chaînes France 2, France 3, France 4, France 5, France Ô, et La 1ère.
+## Arte France (`artetv`) :
+  Ce connecteur permet de surveiller les programmes de la chaîne Arte
+  
+  Les playlists Arte peuvent être surveillées pour que les nouveaux épisodes soit téléchargés dès leur disponibilité. 
+## Gulli (`gulli`)
+  Ce connecteur permet de surveiller les programmes de la chaîne Gulli. Attention Gulli tronque le nom des shows. Il convient de paramétrer les recherches avec les noms tronqués. 
 
 # Configuration de PLEX
 
@@ -116,6 +129,8 @@ Vous devez avoir un compilateur pour [le langage GO](https://golang.org/dl/).
 # Todo
 
 - [x] Provider pour Arte
-- [x] Arte.TV: Suivre les collections
-- [_] Provider pour Gulli 
+  - [x] Arte.TV: Suivre les collections
+- [X] Provider pour Gulli
+- [ ] Ajouter le pitch à Plex
+
 
