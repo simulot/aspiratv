@@ -13,6 +13,13 @@ Le fonctionnement de ce programme n'est pas garanti. Notamment, les fournisseurs
 
 - FFMPEG: ffmpeg est utilisé pour convertir le flux vidéo en fichiers mp4. l'exécutable doit être disponible dans votre système. Page de téléchargement pour Windows: [https://ffmpeg.zeranoe.com/builds/](https://ffmpeg.zeranoe.com/builds/)
 
+# Changements
+
+- Connecteur pour Gulli
+- Changements dans le fichiers de configuration
+  - Possibilité d'activer individuellement les connecteurs
+
+
 # Installation
 
 Les binaires pour Windows, Linux et FreeBSD sont directement disponibles sur la page [releases](https://github.com/simulot/aspiratv/releases/latest). Les binaires n'ont pas de dépendance autre que FFMPEG et n'ont pas besoin d'être installés.
@@ -46,34 +53,37 @@ Le fichier config.json contient les paramètres et la liste des émissions que l
 
 ``` json
 {
-  "PullInterval": "1h30m",
+  "PullInterval": "7h30m",
   "Destinations": {
     "Documentaires": "${HOME}/Videos/Documentaires",
     "Jeunesse": "${HOME}/Videos/Jeunesse",
-    "Courts": "${HOME}/Videos/Courts"
+    "Séries": "${HOME}/Videos/Series"
+  },
+  "Providers": {
+    "artetv": {
+      "Enabled": false        
+    },
+    "gulli":{
+      "Enabled": true,
+    },
+    "francetv":{
+        "Enabled": true
+    }
   },
   "WatchList": [
     {
-      "Show": "Garfield",
+      "Show": "Doctor Who", 
       "Title": "",
       "Pitch": "",
       "Provider": "francetv",
+      "Destination": "Séries"
+    },
+    {
+      "Show": "Oggy et les cafards",
+      "Pitch": "",
+      "Provider": "gulli",
       "Destination": "Jeunesse"
-    },
-    {
-      "Show": "Les routes de l'impossible",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "francetv",
-      "Destination": "Documentaires"
-    },
-    {
-      "Playlist": "La minute vieille",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "artetv",
-      "Destination": "Courts"
-    }      
+    }
   ]
 }
 ```
@@ -121,6 +131,6 @@ Vous devez avoir un compilateur pour [le langage GO](https://golang.org/dl/).
 - [x] Provider pour Arte
   - [x] Arte.TV: Suivre les collections
 - [X] Provider pour Gulli
-- [ ] Ajouter le pitch à Plex 
+- [ ] Ajouter le pitch à Plex
 
 
