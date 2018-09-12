@@ -109,6 +109,9 @@ func (ftv *FranceTV) Shows(mm []*providers.MatchRequest) ([]*providers.Show, err
 			ThumbnailURL: e.ImageLarge,
 			Title:        strings.TrimSpace(e.Soustitre),
 		}
+		if show.Title == "" {
+			show.Title = show.Show + " " + show.ID
+		}
 		if providers.IsShowMatch(mm, show) {
 			shows = append(shows, show)
 		}
@@ -168,12 +171,12 @@ func (ftv *FranceTV) GetShowInfo(s *providers.Show) error {
 //   ShowName/Season NN/ShowName - sNNeMM - Episode title
 //   Show and Episode names are sanitized to avoid problem when saving on the file system
 func (FranceTV) GetShowFileName(s *providers.Show) string {
-	if s.Season == "" && s.Episode == "" {
+	if (s.Season == "" && s.Episode == "") || (s.Season == "0" && s.Episode == "0") {
 		// Follow Plex naming convention https://support.plex.tv/articles/200381053-naming-date-based-tv-shows/
 		return filepath.Join(
 			providers.PathNameCleaner(s.Show),
 			"Season "+strconv.Itoa(s.AirDate.Year()),
-			providers.FileNameCleaner(s.Show)+" - "+s.AirDate.Format("2006-01-02")+" - "+providers.FileNameCleaner(s.Title)+".mp4",
+			providers.FileNameCleaner(s.Show)+" - s00"+"e"+s.ID+" - "+providers.FileNameCleaner(s.Title)+".mp4",
 		)
 	}
 	if s.Season != "" && s.Episode == "" {

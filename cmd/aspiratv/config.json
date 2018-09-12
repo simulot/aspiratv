@@ -10,7 +10,7 @@
       "Enabled": false        
     },
     "gulli":{
-      "Enabled": true,
+      "Enabled": false,
       "Settings":{
         "PreferedFormat": ".m38u"
       }
@@ -21,7 +21,7 @@
   },
   "WatchList": [
     {
-      "Show": "Marsupilami", 
+      "Show": "Si j'étais un animal", 
       "Title": "",
       "Pitch": "",
       "Provider": "francetv",
