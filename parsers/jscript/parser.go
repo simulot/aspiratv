@@ -62,8 +62,6 @@ func ParseObject(b []byte) (*Structure, error) {
 	jsParser := participle.MustBuild(
 		&Structure{},
 		participle.Lexer(jsLexer),
-		participle.Unquote(jsLexer, "String"),
-		participle.UseLookahead(),
 	)
 	s := &Structure{}
 	err := jsParser.ParseBytes(b, s)
