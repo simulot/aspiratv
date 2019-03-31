@@ -4,103 +4,116 @@
 <!--[if IE 9]>
 <html class="ie9" lang="fr"><![endif]-->
 <html lang="fr">
-<head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags --><title>Les programmes de Gulli de la semaine - Gulli Replay</title><meta property="og:image" content="http:" /><meta name="twitter:image" content="http:" /><link rel="Shortcut icon" href="//cdn3-gulli.ladmedia.fr/bundles/jeunesseintegrationreplay/images/favicon.ico"
-      type="image/x-icon"/><meta name="google-site-verification" content="V0sjf0UCpPirh1sC8rRHJB1v2mppugrxtKlSFNTbTgs"/><meta name="y_key" content="7f55256580cb9f8e"/><meta name="msvalidate.01" content="BDC6C8813E1F747D99D3EE9593F9A79A"/><meta name="MSSmartTagsPreventParsing" content="TRUE"/><meta name="apple-itunes-app" content="app-id=400922307"><link rel="dns-prefetch" href="http://cdn-analytics.ladmedia.fr"><link rel="stylesheet" href="//cdn2-gulli.ladmedia.fr/css/compiled/gulli/parcours_client.css"/><link rel="stylesheet" href="//cdn-gulli.ladmedia.fr/css/compiled/replay/main.css"/><script src="//cdn3-gulli.ladmedia.fr/js/compiled/replay/main.js"></script><script type="text/javascript"
-                    src="http://cdn2-gulli.ladmedia.fr/extension/lajavascript/design/standard/javascript/jquery/jquery.la/jquery.la.js?v=1452692343"></script><script type="text/javascript"
-                    src="http://cdn1-gulli.ladmedia.fr/extension/lajavascript/design/standard/javascript/jquery/jquery.la/jquery.la.promo.js?v=1452692343"></script><!--Respond JS for IE8 and HTML5 Support for IE --><!--[if lt IE 9]><script type="text/javascript"
+<head><script src="//cdn3-gulli.ladmedia.fr/js/compiled/replay/main.js"></script><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#bff2a7"><!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags --><title>Gulli Replay : Par date => Vidéos & Dessins animés Gratuits</title><meta name="description" content="Accédez aux dessins animés, vidéos, séries Gulli gratuitement ✅ classés par date. Programmes TV en replay pour toute la famille ✅" /><meta property="og:image" content="http:" /><meta name="twitter:image" content="http:" /><link rel="Shortcut icon" href="//cdn3-gulli.ladmedia.fr/bundles/jeunesseintegrationreplay/images/favicon.ico"
+      type="image/x-icon"/><meta name="google-site-verification" content="V0sjf0UCpPirh1sC8rRHJB1v2mppugrxtKlSFNTbTgs"/><meta name="y_key" content="a539e8faa7993554"/><meta name="msvalidate.01" content="043060371B228B49145B0F6A2721593A"/><meta name="apple-itunes-app" content="app-id=400922307, app-argument=gullireplay://home"><link rel="apple-touch-icon"
+      href="//cdn1-gulli.ladmedia.fr/bundles/jeunesseintegrationreplay/images/header/logo_fond_blanc.png"/><meta name="google-play-app" content="app-id=com.ldf.gulli.view"><link rel="stylesheet" href="//cdn-gulli.ladmedia.fr/css/compiled/replay/parcours_client.css"/><link rel="stylesheet" href="//cdn-gulli.ladmedia.fr/css/compiled/replay/main.css"/><!--Respond JS for IE8 and HTML5 Support for IE --><!--[if lt IE 9]><script type="text/javascript"
                 src="//cdn3-gulli.ladmedia.fr/bundles/jeunesseintegrationreplay/js/respond/respondcrossdomain.src.js"></script><script type="text/javascript"
-                src="//cdn2-gulli.ladmedia.fr/bundles/jeunesseintegrationreplay/js/html5shiv/html5shiv.js"></script><![endif]--><script type="text/javascript" src="//cdn-analytics.ladmedia.fr/gulli/analytics_gulli.js" async="true"></script><script type="text/javascript" src="//cdn-analytics.ladmedia.fr/gulli/pub_gulli.js" async="true"></script><script type="text/javascript" src="//cdn-analytics.ladmedia.fr/gulli/tech_gulli.js" async="true"></script><script type="text/javascript">//<![CDATA[
-            jQuery.la.promo.adSetZone('interstitiel', 112457);
-            jQuery.la.promo.adSetZone('page', 112458);
-            //]]></script></head><body>
-<span id="ad_zone_page">
-    <div id="replaygullifr_all_ha" ></div>
- 
-</span>
-<span id="ad_zone_interstitiel">
-<div id="replaygullifr_all_ev" ></div>
-   
-</span>
-<div id="burger-overlay"></div>
+                src="//cdn2-gulli.ladmedia.fr/bundles/jeunesseintegrationreplay/js/html5shiv/html5shiv.js"></script><![endif]--><script type="text/javascript">//<![CDATA["
+        var tc_vars, userId = 10;
 
+        tc_vars = {
+            'content_class': 'replay',
+                        'label': '',
+            'content_node_id': '0',
+            'content_object_id': '0',
+            'content_tpl': 'replay',
+            'env_dnt': 'disabled',
+            'level_0': 'replay',
+            'level_1': 'periode',
+            'level_2': '',
+            'level_3': '',
+            'content_level_0': 'replay',
+            'content_level_1': 'periode',
+            'content_level_2':'',
+            'content_level_3': '',
+        };
+
+        if (userId !== null) {
+            tc_vars.user_id = parseInt(userId, 10);
+        }
+        //]]></script><script type="text/javascript" src="//cdn-analytics.ladmedia.fr/gulli/analytics_gulli.js" async="true"></script><script type="text/javascript" src="//cdn-analytics.ladmedia.fr/gulli/pub_gulli.js" async="true"></script><script type="text/javascript" src="//cdn-analytics.ladmedia.fr/gulli/tech_gulli.js" async="true"></script></head><body>
+<div id="burger-overlay"></div>
 <div id="BurgerMenu">
-        <ul id="wrap-menu">
-        <li class="list-group panel"><a class="list-group-item" href="/dessins-animes">dessins animés</a></li>
-        <li class="list-group panel"><a class="list-group-item" href="/series">séries & films</a></li>
-        <li class="list-group panel"><a class="list-group-item" href="/emissions">émissions</a></li>
-        <li class="list-group panel list-integrale">
-                        <a href="#global-2958938" class="list-group-item collapsed" data-toggle="collapse" data-parent="#wrap-menu">l'intégrale
-                <span class="icon-bar"></span></a>
-            <ul class="collapse" id="global-2958938">
-                <li class="list-group panel"><a href="/all/always"
-                                                class="list-group-item list-group-item-success subMenu_link level_2">par
-                        dates</a></li>
-                <li class="list-group panel"><a href="/all/plus-vus"
-                                                class="list-group-item list-group-item-success subMenu_link level_2">les
-                        plus vues</a></li>
-                <li class="list-group panel"><a href="/all"
-                                                class="list-group-item list-group-item-success subMenu_link level_2">de
-                        a à z</a></li>
-                <li class="list-group panel"><a href="/derniere_chance"
-                                                class="list-group-item list-group-item-success subMenu_link level_2">dernière
-                        chance</a></li>
-                <li class="list-group panel">
-                    <a href="#programmealaune" data-toggle="collapse"
-                       class="list-group-item list-group-item-success collapsed subMenu_link subMenu_programmealaune level_2">programme
-                        à la une <span class="icon-bar"></span></a>
-                    <ul class="collapse dropdown-alaune" id="programmealaune">
-                        <li><a href="/dessins-animes/Grojband">Grojband</a></li>
-<li><a href="/dessins-animes/Sprout-a-craque-son-slip2">Sprout a craqué son slip</a></li>
-<li><a href="/series/Chica-Vampiro-mortel-d-etre-un-vampire2">Chica Vampiro</a></li>
-<li><a href="/dessins-animes/La-ferme-en-folie">La ferme en folie</a></li>
-<li><a href="/dessins-animes/Mes-parrains-sont-magiques5">Mes parrains sont magiques</a></li>
-<li><a href="/dessins-animes/Shezow">Shezow</a></li>
-<li><a href="/emissions/Intervilles-International">Intervilles International</a></li>
-<li><a href="/dessins-animes/Hubert-et-Takako">Hubert et Takako</a></li>                    </ul>
-                </li>
-            </ul>
-        </li>
-        <li class="list-group panel">
-                        <a href="#burger_mon_replay" class="list-group-item collapsed" data-toggle="collapse"
-               data-parent="#wrap-menu">mon
-                replay <span class="icon-bar"></span></a>
-            <ul class="collapse" id="burger_mon_replay">
-                                            </ul>
-        </li>
-        <li class="list-group panel"><a class="list-group-item" href="/Direct">le direct</a></li>
-        <li class="list-group panel"><a class="list-group-item" href="http://www.gulli.fr/programme-tv" target="_blank">grille
-                tv</a></li>
+            <div id="emptyburger"></div>
+    </div>
+
+    <header id="header">
+        <div class="container">
+    <div class="row">
+        <div class="col-md-6 col-sm-6 col-xs-6">
+            <div data-target="" data-toggle="collapse" class="collapsed hidden"
+                    type="button" id="openBurgerButton"><div class="picto"></div></div>
+            <a href="/" class="hidden-sm hidden-xs logo">
+               <i class="icon-gulli"></i>
+            </a>
+            <div id="nav" class="hidden-sm hidden-xs"><div class="dropdown replay">
+    <a href="http://replay.gulli.fr">
+        <i class="icon-replay"></i>Replay
+    </a>
+    <i class="icon-chevron"></i>
+
+    <ul class="dropdown-menu">
+        <li><a href="//replay.gulli.fr/dessins-animes"><i class="icon-nav-dessins-animes"></i>Dessins animés</a></li>
+        <li><a href="//replay.gulli.fr/series"><i class="icon-nav-series-films"></i>Séries & films</a></li>
+        <li><a href="//replay.gulli.fr/emissions"><i class="icon-nav-emissions"></i>Émissions</a></li>
+        <li><a href="//replay.gulli.fr/playlists/plus-grands"><i class="icon-nav-playlists"></i>Gulli non-stop</a></li>
+        <li><a href="http://www.gulli.fr/programme-tv"><i class="icon-nav-grille-tv"></i>Programme TV</a></li>
     </ul>
 </div>
+<div class="dropdown svod">
+    <a href="http://svod.gulli.fr">
+        <i class="icon-extra"></i>Max
+    </a>
+    <i class="icon-chevron"></i>
 
+    <ul class="dropdown-menu">
+        <li><a href="//svod.gulli.fr/plus-grands"><i class="icon-nav-plus-grands"></i>Plus grands</a></li>
+        <li><a href="//svod.gulli.fr/tout-petits"><i class="icon-nav-tout-petits"></i>Tout-petits</a></li>
+        <li><a href="//svod.gulli.fr/famille"><i class="icon-nav-famille"></i>Famille</a></li>
+        <li><a href="//svod.gulli.fr/Channels/LE-CHOIX-MAX"><i class="icon-nav-playlists"></i>Tes chaînes Max</a></li>
+        <li><a href="http://replay.gulli.fr/account/subscriptions/web"><i class="icon-nav-decouvrir-offre-max"></i>Découvrir l'offre Max</a></li>
+    </ul>
+</div>
 <script type="text/javascript">
     jQuery(document).ready(function () {
-        jQuery.la.profiles.burger.initMenu();
+
+        jQuery.la.authentification.initForm();
+        jQuery('#openSearchModal, #openSearchModal2').click(function () {
+            jQuery('body').removeClass('opened_burger_menu');
+            jQuery('#mySearch').load('/Concours-et-cadeaux/search/modal?site=replay' + ' #search_form', function () {
+                               jQuery("#search_form form").attr("action", '//replay.gulli.fr/search');
+                jQuery.la.autocompletion.init('replaySearch[searchText]');
+            });
+        });
     });
-</script><header id="header" class="affix-top">
-    <section class="nav-top">
-    <div class="nav-top-border visible-md-block visible-lg-block"></div>
-    <div class="container">
-        <div class="row clearfix">
-            <div class="col-md-4 visible-md-block visible-lg-block text-left"><a href="/Partenaires"
-                                                                                 class="icon-gr_03_header_app">L'App</a>
+</script></div>
+        </div>
+        <div class="col-md-6 col-sm-6 col-xs-6 tools">
+            <div class="identification-profil">
+                <a href="javascript:void(0);"
+                   onclick="window.location.href = 'https://profile.gulli.fr/login' + '?noheader=1&redirect_url=' + encodeURI(window.location.href);"
+                   class="login"><i class="icon-compte-off"></i></i><span class="hidden-sm hidden-xs">M'identifier</span></a>
+
+                <div class="logout">
+                    <div class="idt hidden-sm hidden-xs"><i class="icon-compte-on"></i><a data-security="child" href="/account">Mon compte</a></div>
+                    <div class="more">
+                        <div class="avatar"><img alt="" src="//cdn2-gulli.ladmedia.fr/bundles/jeunesseintegrationreplay/images/header/avatar.png" /></div>
+                        <div class="more_cnt">
+                            <div class="nota">Qui regarde les vidéos ?</div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-4 visible-md-block visible-lg-block text-center"><a href="/"><img
-                            src="//cdn-gulli.ladmedia.fr/bundles/jeunesseintegrationreplay/images/header/logo-gulli-replay.png"
-                            alt=""/></a></div>
-            <div class="col-md-4 visible-md-block visible-lg-block text-right"><a href="http://www.gulli.fr" target="_blank"><img
-                            src="//cdn1-gulli.ladmedia.fr/bundles/jeunesseintegrationreplay/images/header/logo-gulli.png"
-                            alt=""/></a></div>
+            <span class="link-search icon-recherche" data-toggle="modal" id="openSearchModal2"
+                  data-target="#mySearch"></span>
+            <a href="http://www.gulli.fr" target="_blank" class="hidden-sm hidden-xs logo-gulli">
+                <img alt="" src="//cdn2-gulli.ladmedia.fr/bundles/jeunesseintegrationreplay/images/header/logo-gulli-fr.png" />
+            </a>
         </div>
     </div>
-</section>
-<section id="nav">
-        <script type="text/javascript">
-        jQuery.get('/esi/nav', function (data) {
-            jQuery('#nav').html(data);
-        });
-    </script>
-</section>
+</div>
+
+
 <div class="modal fade myModalForm" id="modal_securite_enfant" role="dialog" data-backdrop="static">
     <div class="modal-dialog" role="document">
         <div class="modal-content" id="content_securite_enfant">
@@ -122,92 +135,82 @@
             </div>
         </div>
     </div>
-</div></header>
-    <ol class="breadcrumb">
-        <li><a href="/">Accueil</a></li>
-        <li class="active">Par date</li>
-    </ol>
+</div>    </header>
 
-      <div id="masthead" class="row-masthead" style="width:100%;" >
+            <div id="masthead" class="row-masthead container">
     <div id="replaygullifr_all_ac" ></div>
 
-</div> 
-<section class="clearfix" id="main">
-    <div class="container">    
-    <h1>Les programmes de Gulli de la semaine</h1>
 
+
+    <div class="container">
+	        </div>
+</div>    
+<div id="mainWrapper">
+            <section id="subheader">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-12">
+                            <ol class="breadcrumb">
+        <li><a href="/">Replay</a></li>
+        <li class="active">Par date</li>
+    </ol>
+                            <h1>Les programmes de Gulli par date</h1>
+                                                                                                </div>
+                </div>
+            </div>
+        </section>
     
-<ul class="order_by"><li>
-                            <a data-period="always"
-                   href="/all/always">Tous</a>
-                    </li><li>
-                            <a data-period="month"
-                   href="/all/month">Moins d&#039;un mois</a>
-                    </li><li>
-                            <a data-period="week"
-                   href="/all/week">Moins d&#039;une semaine</a>
-                    </li><li>
-                            <a data-period="day"
-                   href="/all/day">Moins de 24 heures</a>
-                    </li></ul>
-    <div class="block_content">
-        <ul class="row" id="infinite_scroll">
-                    </ul>
+            <section id="main">
+            
+
+<div class="order_by">
+    <ul><li>
+                                    <a  data-period="always"
+                       href="/all/always">Tous</a>
+                            </li><li>
+                                    <a  data-period="month"
+                       href="/all/month">Moins d&#039;un mois</a>
+                            </li><li>
+                                    <a class="selected" data-period="week"
+                       href="/all/week">Moins d&#039;une semaine</a>
+                            </li><li>
+                                    <span data-period="day">Moins de 24 heures</span>
+                            </li></ul>
+</div>
+
+
+    <div class=" bg-cnt">
+        <div class="bloc bloc_listing">
+            <ul class="row" id="infinite_scroll">
+                            </ul>
+        </div>
     </div>
 
-    <script type="text/javascript">
-        var nbElem = document.getElementsByClassName('order_by')[0].children.length;
-        var indexSelected = 0;
-        for (var i = 0; i < nbElem; i++) {
-            console.log(document.getElementsByClassName('order_by')[0].children[i].children[0].dataset.period);
-            if ('week' == document.getElementsByClassName('order_by')[0].children[i].children[0].dataset.period) {
-                indexSelected = i;
-                break;
-            }
-        }
-        document.getElementsByClassName('order_by')[0].children[indexSelected].children[0].className = 'selected';
-    </script>
+
 
         <script src="//cdn2-gulli.ladmedia.fr/js/compiled/scrollload.min.js" defer="defer"></script>
+            </section>
     </div>
-</section>
 <footer><div class="container">
     <div class="row">
-    <div class="col-md-12">
-        <small>
-                            Gulli Replay : streaming vidéo gratuit des programmes de la chaine de télé Gulli en intégralité. La VOD gratuite de Gulli pour visionner vos programmes en différé, sans abonnement.
-                    </small>
+        <ul class="col-md-12">
+            <li><a href="http://replay.gulli.fr/FAQ"><i class="icon-faq"></i>FAQ</a></li>
+            <li><a href="http://replay.gulli.fr/CGU"><i class="icon-cgu"></i>CGU</a></li>
+            <li><a href="http://www.gulli.fr/Conditions-Generales-d-Abonnement"><i class="icon-cga"></i>CGA</a></li>
+            <li><a href="http://replay.gulli.fr/Charte-Donnees-Personnelles-et-Cookies"><i class="icon-charte"></i>Charte données personnelles et cookies</a></li>
+            <li><a href="mailto:Support_App_Gulli@Lagardere-Active.com"><i class="icon-contact"></i>Nous Contacter</a></li>
+            <li><a href="https://itunes.apple.com/fr/app/gulli/id400922307" target="_blank"><i class="icon-apple"></i>L'app iOS</a></li>
+            <li><a href="https://play.google.com/store/apps/details?id=com.ldf.gulli.view" target="_blank"><i class="icon-android"></i>L'app Android</a></li>
+            <li><a href="http://replay.gulli.fr/Partenaires"><i class="icon-partenaires"></i>Partenaires</a></li>
+            <li><a href="/RSS"><i class="icon-rss"></i>RSS</a></li>
+            <li><a href="https://www.lagardere-pub.com" target="_blank"><i class="icon-pub"></i>Lagardère Pub</a></li>
+        </ul>
     </div>
-</div>
-        <script type="text/javascript">
-        jQuery.get('/esi/3teasers', function (data) {
-            jQuery('footer .container:first').append(data);
-        });
-    </script>
-    <div class="divider filet"></div>
-</div>
-
-<div class="container-fluid" id="myFooter">
-            <script type="text/javascript">
-            jQuery.get('/esi/footer', function (data) {
-                jQuery('#myFooter').html(data);
-            });
-        </script>
-    </div></footer>
-
+</div></footer>
 <div class="modal fade" id="mySearch" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
      aria-hidden="true"></div>
-
-        <link rel="stylesheet" href="//cdn3-gulli.ladmedia.fr/css/compiled/replay/bottom.css"/>
-            <script src="//cdn3-gulli.ladmedia.fr/js/compiled/replay/main_bottom.js"></script>
+            <script src="//cdn3-gulli.ladmedia.fr/js/compiled/gulli/main_replay_bottom.js?out"></script>
     
-
-
-<script type="text/javascript" src="//cdn-analytics.ladmedia.fr/gulli/monetisation_gulli.js" async="true"></script>
-		<script type="text/javascript" src="//cdn-analytics.ladmedia.fr/gulli/autres_gulli.js" async="true"></script>
-<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-NXZ6CDG');</script>
-			<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NXZ6CDG" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-
-
-</body>
+                <link rel="stylesheet" href="//cdn3-gulli.ladmedia.fr/css/compiled/replay/bottom.css"/>
+    </body>
 </html>

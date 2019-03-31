@@ -31,11 +31,11 @@ func (p *Gulli) getAll(mm []*providers.MatchRequest) ([]*providers.Show, error) 
 		done = true
 		parser := p.htmlParserFactory.New()
 
-		parser.OnHTML("ul#infinite_scroll>li", func(e *colly.HTMLElement) {
+		parser.OnHTML("ul#infinite_scroll>li>a", func(e *colly.HTMLElement) {
 			done = false
 
 			show := &providers.Show{}
-			show.ShowURL = e.ChildAttr("a", "href")
+			show.ShowURL = e.Attr("href")
 			show.ID = filepath.Base(show.ShowURL)
 			show.ThumbnailURL = e.ChildAttr("img", "src")
 			show.Show = e.ChildText("span.title")
