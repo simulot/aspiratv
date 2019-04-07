@@ -3,9 +3,10 @@ package gulli
 import (
 	"io"
 	"log"
+	"net/http"
 	"path/filepath"
 
-	"github.com/simulot/aspiratv/net/http"
+	tvhttp "github.com/simulot/aspiratv/net/http"
 	"github.com/simulot/aspiratv/parsers/htmlparser"
 	"github.com/simulot/aspiratv/providers"
 )
@@ -14,6 +15,7 @@ type getter interface {
 	Get(uri string) (io.Reader, error)
 }
 
+// Gulli provider gives access to Gulli catchup tv
 type Gulli struct {
 	getter            getter
 	htmlParserFactory *htmlparser.Factory
@@ -30,12 +32,23 @@ func init() {
 	providers.Register(p)
 }
 
+// New creates a Gulli provider with given configuration
 func New(conf ...func(p *Gulli)) (*Gulli, error) {
+
 	p := &Gulli{
-		getter:            http.DefaultClient,
-		htmlParserFactory: htmlparser.NewFactory(),
+		getter:            tvhttp.DefaultClient,
+		htmlParserFactory: nil,
 		seenShows:         map[string]bool{},
 	}
+	for _, f := range conf {
+		f(p)
+	}
+	if rt, ok := p.getter.(http.RoundTripper); ok {
+		p.htmlParserFactory = htmlparser.NewFactory(htmlparser.SetTransport(rt))
+	} else {
+		p.htmlParserFactory = htmlparser.NewFactory()
+	}
+
 	return p, nil
 }
 
@@ -44,14 +57,22 @@ func (p *Gulli) SetDebug(b bool) {
 	p.debug = b
 }
 
+// withGetter set a getter for Gulli
+func withGetter(g getter) func(p *Gulli) {
+	return func(p *Gulli) {
+		p.getter = g
+	}
+}
+
 // Name return the name of the provider
 func (p Gulli) Name() string { return "gulli" }
 
 // Shows download the shows catalog from the web site.
 func (p *Gulli) Shows(mm []*providers.MatchRequest) ([]*providers.Show, error) {
 	shows := []*providers.Show{}
+
 	log.Print("[gulli] Fetch Gulli's new shows")
-	shows, err := p.getAll(mm)
+	shows, err := p.searchAll(mm)
 	if err != nil {
 		return nil, err
 	}
