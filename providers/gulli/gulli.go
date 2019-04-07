@@ -15,6 +15,7 @@ type getter interface {
 	Get(uri string) (io.Reader, error)
 }
 
+// Gulli provider gives access to Gulli catchup tv
 type Gulli struct {
 	getter            getter
 	htmlParserFactory *htmlparser.Factory
@@ -31,6 +32,7 @@ func init() {
 	providers.Register(p)
 }
 
+// New creates a Gulli provider with given configuration
 func New(conf ...func(p *Gulli)) (*Gulli, error) {
 
 	p := &Gulli{
@@ -68,8 +70,9 @@ func (p Gulli) Name() string { return "gulli" }
 // Shows download the shows catalog from the web site.
 func (p *Gulli) Shows(mm []*providers.MatchRequest) ([]*providers.Show, error) {
 	shows := []*providers.Show{}
+
 	log.Print("[gulli] Fetch Gulli's new shows")
-	shows, err := p.getAll(mm)
+	shows, err := p.searchAll(mm)
 	if err != nil {
 		return nil, err
 	}
