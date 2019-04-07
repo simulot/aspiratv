@@ -4,7 +4,7 @@ import "strings"
 
 var (
 	fileNameReplacer = strings.NewReplacer("/", "-", "\\", "-", "!", "", "?", "", ":", "-", ",", "", "*", "-", "|", "-", "\"", "", ">", "", "<", "")
-	pathNameReplacer = strings.NewReplacer("!", "", "?", "", ":", "-", ",", "", "*", "", "|", "-", "\"", "", ">", "", "<", "")
+	pathNameReplacer = strings.NewReplacer("!", "", "?", "", ":", " ", ",", " ", "*", "", "|", " ", "\"", "", ">", "", "<", "", " - ", " ")
 )
 
 // FileNameCleaner return a safe file name from a given show name.
