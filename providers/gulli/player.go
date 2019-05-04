@@ -92,8 +92,10 @@ func (p *Gulli) getPlayer(ShowURL, ID string, destination string) ([]*providers.
 		}
 	}
 	if show != nil {
-		shows = append(shows, show)
-		p.seenShows[show.ID] = true
+		if _, ok := p.seenShows[show.ID]; !ok {
+			shows = append(shows, show)
+			p.seenShows[show.ID] = true
+		}
 	}
 
 	return shows, err
