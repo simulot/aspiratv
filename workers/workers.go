@@ -4,7 +4,6 @@ import (
 	"log"
 	"runtime"
 	"sync"
-	"time"
 )
 
 // WorkItem is an interface to work item used b the Workers
@@ -47,14 +46,14 @@ func (w *WorkerPool) Stop() {
 	close(w.stop)
 	w.workerg.Wait()
 	if w.debug {
-		log.Print("Workerpool is ended")
+		// log.Print("Workerpool is ended")
 	}
 }
 
 // Submit a work item to the worker pool
 func (w *WorkerPool) Submit(wi WorkItem) {
 	if w.debug {
-		log.Printf("Submit work:%s", wi.Name())
+		// log.Printf("Submit work:%s", wi.Name())
 	}
 	w.submit <- wi
 }
@@ -69,15 +68,15 @@ func (w *WorkerPool) newWorker(id int) {
 		case <-w.stop:
 			w.workerg.Done()
 			if w.debug {
-				log.Printf("Worker %d is ended", id)
+				// log.Printf("Worker %d is ended", id)
 			}
 			return
 		case i := <-w.submit:
 			// log.Printf("Start [%d]: %s\n", id, i.Name())
-			t := time.Now()
+			// t := time.Now()
 			err := i.Run()
 			if err == nil {
-				log.Printf("Done  [%d]: %s(%s)\n", id, i.Name(), time.Since(t).Round(100*time.Millisecond))
+				// log.Printf("Done  [%d]: %s(%s)\n", id, i.Name(), time.Since(t).Round(100*time.Millisecond))
 			} else {
 				log.Printf("Fail  [%d]: %s with error(%v)\n", id, i.Name(), err)
 			}

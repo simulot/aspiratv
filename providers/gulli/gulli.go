@@ -2,7 +2,6 @@ package gulli
 
 import (
 	"io"
-	"log"
 	"net/http"
 	"path/filepath"
 
@@ -71,7 +70,7 @@ func (p Gulli) Name() string { return "gulli" }
 func (p *Gulli) Shows(mm []*providers.MatchRequest) ([]*providers.Show, error) {
 	shows := []*providers.Show{}
 
-	log.Print("[gulli] Fetch Gulli's new shows")
+	// log.Print("[gulli] Fetch Gulli's new shows")
 	shows, err := p.searchAll(mm)
 	if err != nil {
 		return nil, err
