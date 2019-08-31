@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -259,7 +260,7 @@ func (a *app) DownloadShow(wg *sync.WaitGroup, p providers.Provider, s *provider
 		fileBar := pc.AddSpinner(0, mpb.SpinnerOnMiddle,
 			mpb.BarWidth(5),
 			mpb.PrependDecorators(
-				decor.Name(left(s.Title, 80), decor.WC{W: 81, C: decor.DidentRight}),
+				decor.Name(left(path.Base(p.GetShowFileName(s)), 75), decor.WC{W: 76, C: decor.DidentRight}),
 				// decor.OnComplete(decor.Spinner(nil, decor.WCSyncSpace), "done"),
 			),
 			mpb.AppendDecorators(
