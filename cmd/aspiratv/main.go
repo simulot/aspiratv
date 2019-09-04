@@ -1,14 +1,15 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -36,14 +37,31 @@ var (
 )
 
 func main() {
+
 	fmt.Printf("%s: %v, commit %v, built at %v\n", filepath.Base(os.Args[0]), version, commit, date)
 	a := &app{
 		Stop: make(chan bool),
 	}
 
+	// trap Ctrl+C and call cancel on the context
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	breakChannel := make(chan os.Signal, 1)
+	signal.Notify(breakChannel, os.Interrupt)
+	defer func() {
+		signal.Stop(breakChannel)
+		cancel()
+	}()
+	go func() {
+		select {
+		case <-breakChannel:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+
 	cliConfig := &Config{}
 
-	flag.BoolVar(&cliConfig.Service, "service", false, "Run as service.")
 	flag.BoolVar(&cliConfig.Debug, "debug", false, "Debug mode.")
 	flag.BoolVar(&cliConfig.Force, "force", false, "Force media download.")
 	flag.BoolVar(&cliConfig.Headless, "headless", false, "Headless mode. Progression bars are not displayed.")
@@ -52,15 +70,11 @@ func main() {
 
 	log.SetOutput(os.Stderr)
 
-	a.Initialize(cliConfig)
-	if a.Config.Service {
-		a.RunAsService()
-	} else {
-		a.RunOnce()
-	}
+	a.Initialize(ctx, cliConfig)
+	a.Run(ctx)
 }
 
-func (a *app) Initialize(c *Config) {
+func (a *app) Initialize(ctx context.Context, c *Config) {
 	a.Config = ReadConfigOrDie(c)
 
 	// Check ans normalize configuration file
@@ -85,22 +99,7 @@ func (a *app) Initialize(c *Config) {
 	a.getter = http.DefaultClient
 }
 
-func (a *app) RunOnce() {
-	a.RunAll()
-	a.worker.Stop()
-	log.Println("Job(s) are done!")
-}
-
-func (a *app) RunAsService() {
-	for {
-		a.RunAll()
-		s := time.Duration(a.Config.PullInterval) + time.Duration(rand.Intn(int(time.Duration(a.Config.PullInterval))/4))
-		//log.Printf("Sleeping until %s\n", time.Now().Add(s).Format("15:04:05"))
-		time.Sleep(s)
-	}
-}
-
-func (a *app) RunAll() {
+func (a *app) Run(ctx context.Context) {
 	pc := mpb.New(
 		mpb.WithWidth(64),
 		mpb.ContainerOptOnCond(
@@ -121,6 +120,8 @@ func (a *app) RunAll() {
 		}
 	}
 	pc.Wait()
+	a.worker.Stop()
+
 }
 
 type debugger interface {

@@ -16,7 +16,6 @@ type Config struct {
 	PullInterval textDuration
 	Debug        bool                      // Verbose Log output
 	Force        bool                      // True to force reload medias
-	Service      bool                      // True when runing as service. When false, query all provider en terminate
 	Destinations map[string]string         // Mapping of destination path
 	ConfigFile   string                    // Name of configuration file
 	WatchList    []*providers.MatchRequest // Slice of show matchers
@@ -100,7 +99,6 @@ func ReadConfigOrDie(cli *Config) *Config {
 	}
 	// Set flags comming from CLI
 	conf.Debug = cli.Debug
-	conf.Service = cli.Service
 	conf.Force = cli.Force
 	conf.ConfigFile = cli.ConfigFile
 	conf.Headless = cli.Headless
