@@ -49,6 +49,8 @@ func main() {
 	flag.StringVar(&cliConfig.ConfigFile, "config", "config.json", "Configuration file name.")
 	flag.Parse()
 
+	log.SetOutput(os.Stderr)
+
 	a.Initialize(cliConfig)
 	if a.Config.Service {
 		a.RunAsService()

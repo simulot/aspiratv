@@ -20,7 +20,7 @@ var reVars = regexp.MustCompile(
 		`|(?:image:\s*(?U:"(?P<image>[^"]*)"))` +
 		`|(?:description:\s*(?U:"(?P<description>[^"]*)"))`)
 
-func (p *Gulli) getPlayer(ShowURL, ID string, destination string) ([]*providers.Show, error) {
+func (p *Gulli) getPlayer(ID string) ([]*providers.Show, error) {
 
 	r, err := p.getter.Get(gullyPlayer + ID)
 	if err != nil {
@@ -29,12 +29,6 @@ func (p *Gulli) getPlayer(ShowURL, ID string, destination string) ([]*providers.
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
-	}
-
-	BaseShowURL := ShowURL
-	i := strings.LastIndex(ShowURL, "/")
-	if i >= 0 {
-		BaseShowURL = ShowURL[:i+1]
 	}
 
 	match := reVars.FindAllStringSubmatch(string(b), -1)
@@ -81,9 +75,7 @@ func (p *Gulli) getPlayer(ShowURL, ID string, destination string) ([]*providers.
 					}
 				case "mediaid":
 					show.ID = s
-					show.ShowURL = BaseShowURL + show.ID
 					show.Provider = p.Name()
-					show.Destination = destination
 					show.Channel = "Gulli"
 				case "description":
 					show.Pitch = html.UnescapeString(s)

@@ -3,7 +3,10 @@ package gulli
 import (
 	"io"
 	"net/http"
+	"os"
+	"path"
 	"path/filepath"
+	"strings"
 
 	tvhttp "github.com/simulot/aspiratv/net/http"
 	"github.com/simulot/aspiratv/parsers/htmlparser"
@@ -20,6 +23,7 @@ type Gulli struct {
 	htmlParserFactory *htmlparser.Factory
 	seenShows         map[string]bool
 	debug             bool
+	cacheFile         string
 }
 
 // init registers Gulli provider
@@ -48,6 +52,12 @@ func New(conf ...func(p *Gulli)) (*Gulli, error) {
 		p.htmlParserFactory = htmlparser.NewFactory()
 	}
 
+	cacheDir, err := os.UserCacheDir()
+	if err != nil {
+		return nil, err
+	}
+
+	p.cacheFile = path.Join(cacheDir, "aspiratv", "gulli-catalog.json")
 	return p, nil
 }
 
@@ -70,11 +80,27 @@ func (p Gulli) Name() string { return "gulli" }
 func (p *Gulli) Shows(mm []*providers.MatchRequest) ([]*providers.Show, error) {
 	shows := []*providers.Show{}
 
-	// log.Print("[gulli] Fetch Gulli's new shows")
-	shows, err := p.searchAll(mm)
+	cat, err := p.downloadCatalog()
 	if err != nil {
 		return nil, err
 	}
+
+	for _, s := range cat {
+		for _, m := range mm {
+			if strings.Contains(strings.ToLower(s.Title), m.Show) {
+				ID, err := p.getFirstEpisodeID(s)
+				showTitles, err := p.getPlayer(ID)
+				if err != nil {
+					return nil, err
+				}
+				for _, t := range showTitles {
+					t.Destination = m.Destination
+					shows = append(shows, t)
+				}
+			}
+		}
+	}
+
 	return shows, err
 }
 
