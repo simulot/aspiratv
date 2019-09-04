@@ -17,13 +17,13 @@ func Test_getPlayList(t *testing.T) {
 
 	parser := httptest.New(
 		httptest.WithURLToFile(func(u string) string {
-			return filepath.Join("testdata", "VOD69001494489000.html.txt")
+			return filepath.Join("testdata", "player.html.txt")
 		}),
 	)
 
 	p.getter = parser
 
-	shows, err := p.getPlayer("http://replay.gulli.fr/dessins-animes/Il-etait-une-fois-L-Homme/VOD68991864921000", "VOD68991864921000", "DEST")
+	shows, err := p.getPlayer("VOD68995029565000")
 
 	if err != nil {
 		t.Error(err)
