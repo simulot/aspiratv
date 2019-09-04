@@ -25,8 +25,8 @@ import (
 	"github.com/simulot/aspiratv/providers"
 
 	"github.com/simulot/aspiratv/workers"
-	"github.com/vbauerster/mpb"
-	"github.com/vbauerster/mpb/decor"
+	"github.com/vbauerster/mpb/v4"
+	"github.com/vbauerster/mpb/v4/decor"
 )
 
 var (
@@ -46,6 +46,7 @@ func main() {
 	flag.BoolVar(&cliConfig.Service, "service", false, "Run as service.")
 	flag.BoolVar(&cliConfig.Debug, "debug", false, "Debug mode.")
 	flag.BoolVar(&cliConfig.Force, "force", false, "Force media download.")
+	flag.BoolVar(&cliConfig.Headless, "headless", false, "Headless mode. Progression bars are not displayed.")
 	flag.StringVar(&cliConfig.ConfigFile, "config", "config.json", "Configuration file name.")
 	flag.Parse()
 
@@ -100,7 +101,14 @@ func (a *app) RunAsService() {
 }
 
 func (a *app) RunAll() {
-	pc := mpb.New(mpb.WithWidth(64))
+	pc := mpb.New(
+		mpb.WithWidth(64),
+		mpb.ContainerOptOnCond(
+			mpb.WithOutput(nil),
+			func() bool {
+				return a.Config.Headless
+			},
+		))
 	activeProviders := int64(0)
 	for _, p := range providers.List() {
 		if a.Config.IsProviderActive(p.Name()) {
@@ -336,6 +344,9 @@ func (a *app) DownloadShow(wg *sync.WaitGroup, p providers.Provider, s *provider
 	_, err = io.Copy(wr, tbnStream)
 	if err != nil {
 		return fmt.Errorf("[%s] Can't write %q's thumbnail: %v", p.Name(), p.GetShowFileName(s), err)
+	}
+	if a.Config.Headless {
+		log.Printf("%s downloaded.", fn)
 	}
 	return nil
 }

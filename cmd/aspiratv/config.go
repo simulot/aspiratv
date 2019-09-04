@@ -20,6 +20,7 @@ type Config struct {
 	Destinations map[string]string         // Mapping of destination path
 	ConfigFile   string                    // Name of configuration file
 	WatchList    []*providers.MatchRequest // Slice of show matchers
+	Headless     bool                      // When true, no progression bar
 	Providers    map[string]ProviderConfig
 }
 
@@ -102,6 +103,7 @@ func ReadConfigOrDie(cli *Config) *Config {
 	conf.Service = cli.Service
 	conf.Force = cli.Force
 	conf.ConfigFile = cli.ConfigFile
+	conf.Headless = cli.Headless
 	return conf
 }
 
