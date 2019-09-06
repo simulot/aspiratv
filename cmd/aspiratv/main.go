@@ -290,10 +290,6 @@ func (a *app) progressBar(ctx context.Context, fileBar *mpb.Bar, fn string, done
 		l := s.Size()
 		fileBar.IncrInt64(l - lastSize)
 		lastSize = l
-
-		// if a.Config.Debug {
-		// 	log.Printf("Bar tick %p, l:%d", fileBar, l)
-		// }
 	}
 loop:
 	for {
@@ -322,7 +318,7 @@ var dlID = int64(0)
 func (a *app) DownloadShow(ctx context.Context, wg *sync.WaitGroup, p providers.Provider, s *providers.Show, d string, pc *mpb.Progress, bar *mpb.Bar) {
 	id := atomic.AddInt64(&dlID, 1)
 	ctx, cancel := context.WithCancel(ctx)
-	if a.Config.Headless || a.Config.Debug {
+	if a.Config.Debug {
 		log.Printf("Starting  DownloadShow %d", id)
 	}
 
@@ -356,7 +352,7 @@ func (a *app) DownloadShow(ctx context.Context, wg *sync.WaitGroup, p providers.
 		close(done)
 		if shouldDeleteFile {
 			for _, f := range files {
-				log.Printf("Deleting incomplete files '%s'", f)
+				log.Printf("[%s] Cancelled %s", p.Name(), p.GetShowFileName(s))
 				os.Remove(f)
 			}
 		}
@@ -410,7 +406,7 @@ func (a *app) DownloadShow(ctx context.Context, wg *sync.WaitGroup, p providers.
 	cmd := exec.CommandContext(ctx, "ffmpeg", params...)
 	files = append(files, fn)
 
-	if a.Config.Headless {
+	if a.Config.Debug {
 		log.Printf("[%s] Downloading %q", p.Name(), p.GetShowFileName(s))
 	}
 
@@ -467,7 +463,7 @@ func (a *app) DownloadShow(ctx context.Context, wg *sync.WaitGroup, p providers.
 		log.Printf("[%s] Can't write %q's thumbnail: %v", p.Name(), p.GetShowFileName(s), err)
 	}
 	if a.Config.Headless || a.Config.Debug {
-		log.Printf("[%s] %s downloaded.", p.Name(), fn)
+		log.Printf("[%s] %s already downloaded.", p.Name(), p.GetShowFileName(s))
 	}
 	return
 }
