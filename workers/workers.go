@@ -1,106 +1,113 @@
 package workers
 
 import (
+	"context"
 	"log"
 	"runtime"
 	"sync"
+	"sync/atomic"
 )
 
 // WorkItem is an interface to work item used b the Workers
-type WorkItem interface {
-	Run() error
-	Name() string
-}
+type WorkItem func()
 
 // WorkerPool is a pool of workers.
 type WorkerPool struct {
 	stop     chan bool      // Close this channel to stop all workers
 	submit   chan WorkItem  // Send work items to this channel, one of workers will run it
-	workerg  sync.WaitGroup // To wait completion of all workers
+	wg       sync.WaitGroup // To wait completion of all workers
 	nbWorker int            // The number of concurrent workers
 	debug    bool           // True to enable logs
+	ctx      context.Context
 }
 
 // New creates a new worker pool with NumCPU runing workers
-func New() *WorkerPool {
+func New(ctx context.Context, workers int, debug bool) *WorkerPool {
+	if workers < 1 {
+		workers = runtime.NumCPU()
+	}
 	w := &WorkerPool{
 		stop:     make(chan bool),
 		submit:   make(chan WorkItem),
-		nbWorker: runtime.NumCPU(),
+		nbWorker: workers,
+		debug:    debug,
+		ctx:      ctx,
 	}
-	w.init()
-	return w
-}
-
-// init creates a goroutine for each worker
-func (w *WorkerPool) init() *WorkerPool {
-	for i := 0; i < w.nbWorker; i++ {
-		w.workerg.Add(1)
-		go w.newWorker(i)
+	for i := 0; i < workers; i++ {
+		go w.run(ctx, i)
 	}
 	return w
 }
 
-// Stop stops all runing workers and wait them to finish and then leave the workerpool.
-func (w *WorkerPool) Stop() {
-	close(w.stop)
-	w.workerg.Wait()
-	if w.debug {
-		// log.Print("Workerpool is ended")
-	}
-}
-
-// Submit a work item to the worker pool
-func (w *WorkerPool) Submit(wi WorkItem) {
-	if w.debug {
-		// log.Printf("Submit work:%s", wi.Name())
-	}
-	w.submit <- wi
-}
-
-// newWorker initializes a worker
-func (w *WorkerPool) newWorker(id int) {
-	if w.debug {
-		log.Printf("Initializing worker %d", id)
-	}
+// init creates a goroutine for worker
+func (w *WorkerPool) run(ctx context.Context, index int) {
+	defer func() {
+		if w.debug {
+			log.Printf("Worker goroutine %d is shutted down.", index)
+		}
+	}()
 	for {
 		select {
-		case <-w.stop:
-			w.workerg.Done()
+		case <-ctx.Done():
 			if w.debug {
-				// log.Printf("Worker %d is ended", id)
+				log.Printf("Worker %d has recieved a %q", index, ctx.Err())
 			}
 			return
-		case i := <-w.submit:
-			// log.Printf("Start [%d]: %s\n", id, i.Name())
-			// t := time.Now()
-			err := i.Run()
-			if err == nil {
-				// log.Printf("Done  [%d]: %s(%s)\n", id, i.Name(), time.Since(t).Round(100*time.Millisecond))
-			} else {
-				log.Printf("Fail  [%d]: %s with error(%v)\n", id, i.Name(), err)
+		case wi := <-w.submit:
+			wi()
+			w.wg.Done()
+		case <-w.stop:
+			if w.debug {
+				log.Printf("Worker %d has recieved a stop request.", index)
 			}
+			return
 		}
 	}
 }
 
-// RunAction is an helper to submit a work to the worker pool
-type RunAction struct {
-	name string
-	fn   func() error
+// Stop stops all runing workers and wait them to finish and then leave the workerpool.
+func (w *WorkerPool) Stop() {
+	// wait the end of all job
+	w.wg.Wait()
+	// Makes all goroutine ending
+	close(w.stop)
+	if w.debug {
+		log.Print("Waiting for worker to end")
+	}
+	if w.debug {
+		log.Print("Worker is ended")
+	}
 }
 
-// NewRunAction creates a work item out of a name and a function
-func NewRunAction(n string, fn func() error) RunAction {
-	return RunAction{name: n, fn: fn}
-}
+var jobID = int64(0)
 
-// Name returns the names of the work
-func (r RunAction) Name() string {
-	return r.name
-}
+// Submit a work item to the worker pool
+func (w *WorkerPool) Submit(wi WorkItem) {
+	id := atomic.AddInt64(&jobID, 1)
+	select {
+	case w.submit <- func() {
+		if w.ctx.Err() != nil {
+			log.Printf("Job %d is discarded", id)
+			return
+		}
+		if w.debug {
+			log.Printf("Job %d is started", id)
+		}
+		w.wg.Add(1)
+		wi()
+		if w.debug {
+			log.Printf("Job %d is done", id)
+		}
 
-// Run invoke the function
-func (r RunAction) Run() error {
-	return r.fn()
+	}:
+		if w.debug {
+			log.Printf("Job %d is queued", id)
+		}
+		return
+	case <-w.ctx.Done():
+		if w.debug {
+			log.Printf("Job %d cancelled", id)
+		}
+		return
+	}
 }
