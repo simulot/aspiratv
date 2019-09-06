@@ -13,14 +13,15 @@ import (
 
 // Config holds settings from configuration file
 type Config struct {
-	PullInterval textDuration
-	Debug        bool                      // Verbose Log output
-	Force        bool                      // True to force reload medias
-	Destinations map[string]string         // Mapping of destination path
-	ConfigFile   string                    // Name of configuration file
-	WatchList    []*providers.MatchRequest // Slice of show matchers
-	Headless     bool                      // When true, no progression bar
-	Providers    map[string]ProviderConfig
+	PullInterval    textDuration
+	Debug           bool                      // Verbose Log output
+	Force           bool                      // True to force reload medias
+	Destinations    map[string]string         // Mapping of destination path
+	ConfigFile      string                    // Name of configuration file
+	WatchList       []*providers.MatchRequest // Slice of show matchers
+	Headless        bool                      // When true, no progression bar
+	ConcurrentTasks int                       // Number of concurrent downloadss
+	Providers       map[string]ProviderConfig
 }
 
 type ProviderConfig struct {
@@ -102,6 +103,7 @@ func ReadConfigOrDie(cli *Config) *Config {
 	conf.Force = cli.Force
 	conf.ConfigFile = cli.ConfigFile
 	conf.Headless = cli.Headless
+	conf.ConcurrentTasks = cli.ConcurrentTasks
 	return conf
 }
 
