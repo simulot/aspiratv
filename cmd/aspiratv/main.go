@@ -386,7 +386,9 @@ func (a *app) DownloadShow(ctx context.Context, wg *sync.WaitGroup, p providers.
 		url = master.BestQuality()
 	}
 
-	//log.Println("Download url: ", url)
+	if a.Config.Debug {
+		log.Println("Download url: ", url)
+	}
 
 	params := []string{
 		"-loglevel", "quiet",

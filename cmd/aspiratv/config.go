@@ -20,7 +20,7 @@ type Config struct {
 	ConfigFile      string                    // Name of configuration file
 	WatchList       []*providers.MatchRequest // Slice of show matchers
 	Headless        bool                      // When true, no progression bar
-	ConcurrentTasks int                       // Number of concurrent downloadss
+	ConcurrentTasks int                       // Number of concurrent downloads
 	Providers       map[string]ProviderConfig
 }
 

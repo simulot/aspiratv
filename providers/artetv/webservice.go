@@ -3,113 +3,206 @@ package artetv
 import (
 	"encoding/json"
 	"time"
-
-	"github.com/simulot/aspiratv/parsers/jsonparser"
 )
 
 // cSpell:disable
 
+type APIResult struct {
+	Datakey    Datakey `json:"datakey"`
+	PageNumber int     `json:"pageNumber"`
+	NextPage   string  `json:"nextPage"`
+	Data       []Data  `json:"data"`
+}
+type Datakey struct {
+	ID    string            `json:"id"`
+	Param map[string]string `json:"param"`
+}
+type SearchAPI struct {
+	ID                   string                 `json:"id"`
+	Page                 string                 `json:"page"`
+	Language             string                 `json:"language"`
+	Support              string                 `json:"support"`
+	Level                int                    `json:"level"`
+	Parent               interface{}            `json:"parent"`
+	AlternativeLanguages []AlternativeLanguages `json:"alternativeLanguages"`
+	URL                  string                 `json:"url"`
+	Deeplink             string                 `json:"deeplink"`
+	Title                string                 `json:"title"`
+	Description          string                 `json:"description"`
+	Slug                 string                 `json:"slug"`
+	Zones                []Zones                `json:"zones"`
+}
+
+type AlternativeLanguages struct {
+	Code  string `json:"code"`
+	Label string `json:"label"`
+	Page  string `json:"page"`
+	URL   string `json:"url"`
+	Title string `json:"title"`
+}
+type Code struct {
+	Name string      `json:"name"`
+	ID   interface{} `json:"id"`
+}
+type DisplayOptions struct {
+	ZoneLayout   string      `json:"zoneLayout"`
+	ItemTemplate string      `json:"itemTemplate"`
+	Theme        interface{} `json:"theme"`
+}
+type Kind struct {
+	Code         string `json:"code"`
+	Label        string `json:"label"`
+	IsCollection bool   `json:"isCollection"`
+}
+type Resolutions struct {
+	URL string `json:"url"`
+	W   int    `json:"w"`
+	H   int    `json:"h"`
+}
+
+type Image struct {
+	Caption     string        `json:"caption"`
+	Resolutions []Resolutions `json:"resolutions"`
+	BlurURL     string        `json:"blurUrl"`
+}
+
+type Images map[string]Image
+
+type Stickers struct {
+	Code  string `json:"code"`
+	Label string `json:"label"`
+}
+
+type Data struct {
+	ID               string           `json:"id"`
+	Type             string           `json:"type"`
+	Kind             Kind             `json:"kind"`
+	ProgramID        string           `json:"programId"`
+	URL              string           `json:"url"`
+	Deeplink         string           `json:"deeplink"`
+	Title            string           `json:"title"`
+	Subtitle         string           `json:"subtitle"`
+	ShortDescription string           `json:"shortDescription"`
+	Images           map[string]Image `json:"images"`
+	Stickers         []Stickers       `json:"stickers"`
+	Duration         interface{}      `json:"duration"`
+	ChildrenCount    interface{}      `json:"childrenCount"`
+	Geoblocking      interface{}      `json:"geoblocking"`
+	Availability     interface{}      `json:"availability"`
+	AgeRating        int              `json:"ageRating"`
+}
+type Zones struct {
+	ID             string         `json:"id"`
+	Code           Code           `json:"code"`
+	Title          interface{}    `json:"title"`
+	DisplayOptions DisplayOptions `json:"displayOptions"`
+	Link           interface{}    `json:"link"`
+	PageNumber     int            `json:"pageNumber"`
+	NextPage       interface{}    `json:"nextPage"`
+	Data           []Data         `json:"data"`
+}
+
 // Day guide structure
 // Commented out fields are kept for documentation
-type guide struct {
-	// AlternativeLanguages []struct {
-	// 	Code  string `json:"code"`
-	// 	Label string `json:"label"`
-	// 	Page  string `json:"page"`
-	// 	Title string `json:"title"`
-	// 	URL   string `json:"url"`
-	// } `json:"alternativeLanguages"`
-	// Description string      `json:"description"`
-	// ID          string      `json:"id"`
-	// Images      interface{} `json:"images"`
-	// Language    string      `json:"language"`
-	// Level       int         `json:"level"`
-	// Page        string      `json:"page"`
-	// Parent      interface{} `json:"parent"`
-	// Slug        string      `json:"slug"`
-	// Stats       struct {
-	// 	Xiti struct {
-	// 		Chapter1       interface{} `json:"chapter1"`
-	// 		Chapter2       interface{} `json:"chapter2"`
-	// 		Chapter3       interface{} `json:"chapter3"`
-	// 		EnvWork        string      `json:"env_work"`
-	// 		PageName       string      `json:"page_name"`
-	// 		S2             int         `json:"s2"`
-	// 		SearchKeywords interface{} `json:"search_keywords"`
-	// 		SiteID         string      `json:"siteId"`
-	// 		X1             string      `json:"x1"`
-	// 		X2             string      `json:"x2"`
-	// 	} `json:"xiti"`
-	// } `json:"stats"`
-	// Support string `json:"support"`
-	// Title   string `json:"title"`
-	// URL     string `json:"url"`
-	Zones []zones `json:"zones"`
-}
+// type guide struct {
+// AlternativeLanguages []struct {
+// 	Code  string `json:"code"`
+// 	Label string `json:"label"`
+// 	Page  string `json:"page"`
+// 	Title string `json:"title"`
+// 	URL   string `json:"url"`
+// } `json:"alternativeLanguages"`
+// Description string      `json:"description"`
+// ID          string      `json:"id"`
+// Images      interface{} `json:"images"`
+// Language    string      `json:"language"`
+// Level       int         `json:"level"`
+// Page        string      `json:"page"`
+// Parent      interface{} `json:"parent"`
+// Slug        string      `json:"slug"`
+// Stats       struct {
+// 	Xiti struct {
+// 		Chapter1       interface{} `json:"chapter1"`
+// 		Chapter2       interface{} `json:"chapter2"`
+// 		Chapter3       interface{} `json:"chapter3"`
+// 		EnvWork        string      `json:"env_work"`
+// 		PageName       string      `json:"page_name"`
+// 		S2             int         `json:"s2"`
+// 		SearchKeywords interface{} `json:"search_keywords"`
+// 		SiteID         string      `json:"siteId"`
+// 		X1             string      `json:"x1"`
+// 		X2             string      `json:"x2"`
+// 	} `json:"xiti"`
+// } `json:"stats"`
+// Support string `json:"support"`
+// Title   string `json:"title"`
+// URL     string `json:"url"`
+// 	Zones []zones `json:"zones"`
+// }
 
-type zones struct {
-	Code code `json:"code"`
-	// ContextPage    string `json:"contextPage"`
-	Data []data `json:"data"`
-	// DisplayOptions struct {
-	// 	Layout   string      `json:"layout"`
-	// 	Template string      `json:"template"`
-	// 	Theme    interface{} `json:"theme"`
-	// } `json:"displayOptions"`
-	// Link     interface{} `json:"link"`
-	// NextPage interface{} `json:"nextPage"`
-	// Title    string      `json:"title"`
-	// Type     string      `json:"type"`
-}
+// type zones struct {
+// 	Code code `json:"code"`
+// 	// ContextPage    string `json:"contextPage"`
+// 	Data []data `json:"data"`
+// 	// DisplayOptions struct {
+// 	// 	Layout   string      `json:"layout"`
+// 	// 	Template string      `json:"template"`
+// 	// 	Theme    interface{} `json:"theme"`
+// 	// } `json:"displayOptions"`
+// 	// Link     interface{} `json:"link"`
+// 	// NextPage interface{} `json:"nextPage"`
+// 	// Title    string      `json:"title"`
+// 	// Type     string      `json:"type"`
+// }
 
-type code struct {
-	ID   interface{} `json:"id"`   // 0 for highlights, 1  for listing
-	Name string      `json:"name"` // highlights_TV_GUIDE  listing_TV_GUIDE
-}
+// type code struct {
+// 	ID   interface{} `json:"id"`   // 0 for highlights, 1  for listing
+// 	Name string      `json:"name"` // highlights_TV_GUIDE  listing_TV_GUIDE
+// }
 
-type data struct {
-	// Availability    interface{}   `json:"availability"`
-	BroadcastDates []tsGuide `json:"broadcastDates"`
-	// Credits         []interface{} `json:"credits"`
-	Duration        jsonparser.Seconds `json:"duration"`
-	Description     string             `json:"description"`
-	FullDescription string             `json:"fullDescription"`
-	// Geoblocking     interface{}   `json:"geoblocking"`
-	ID     string            `json:"id"`
-	Images map[string]thumbs `json:"images"`
-	Kind   struct {
-		Code  string      `json:"code"`
-		Label interface{} `json:"label"`
-	} `json:"kind"`
-	// LivestreamRights    interface{} `json:"livestreamRights"`
-	// OfflineAvailability interface{} `json:"offlineAvailability"`
-	// Partners            interface{} `json:"partners"`
-	// Player              struct {
-	// 	HTML        string      `json:"html"`
-	// 	LinkAndroid interface{} `json:"linkAndroid"`
-	// 	LinkIos     interface{} `json:"linkIos"`
-	// } `json:"player"`
-	ProgramID string `json:"programId"`
-	// ShopURL          interface{}   `json:"shopUrl"`
-	ShortDescription string `json:"shortDescription"`
-	// Stickers         []interface{} `json:"stickers"`
-	Subtitle string `json:"subtitle"`
-	Title    string `json:"title"`
-	Type     string `json:"type"`
-	URL      string `json:"url"`
-}
+// type data struct {
+// 	// Availability    interface{}   `json:"availability"`
+// 	BroadcastDates []tsGuide `json:"broadcastDates"`
+// 	// Credits         []interface{} `json:"credits"`
+// 	Duration        jsonparser.Seconds `json:"duration"`
+// 	Description     string             `json:"description"`
+// 	FullDescription string             `json:"fullDescription"`
+// 	// Geoblocking     interface{}   `json:"geoblocking"`
+// 	ID     string            `json:"id"`
+// 	Images map[string]thumbs `json:"images"`
+// 	Kind   struct {
+// 		Code  string      `json:"code"`
+// 		Label interface{} `json:"label"`
+// 	} `json:"kind"`
+// 	// LivestreamRights    interface{} `json:"livestreamRights"`
+// 	// OfflineAvailability interface{} `json:"offlineAvailability"`
+// 	// Partners            interface{} `json:"partners"`
+// 	// Player              struct {
+// 	// 	HTML        string      `json:"html"`
+// 	// 	LinkAndroid interface{} `json:"linkAndroid"`
+// 	// 	LinkIos     interface{} `json:"linkIos"`
+// 	// } `json:"player"`
+// 	ProgramID string `json:"programId"`
+// 	// ShopURL          interface{}   `json:"shopUrl"`
+// 	ShortDescription string `json:"shortDescription"`
+// 	// Stickers         []interface{} `json:"stickers"`
+// 	Subtitle string `json:"subtitle"`
+// 	Title    string `json:"title"`
+// 	Type     string `json:"type"`
+// 	URL      string `json:"url"`
+// }
 
-type thumbs struct {
-	BlurURL     string       `json:"blurUrl"`
-	Caption     string       `json:"caption"`
-	Resolutions []resolution `json:"resolutions"`
-}
+// type thumbs struct {
+// 	BlurURL     string       `json:"blurUrl"`
+// 	Caption     string       `json:"caption"`
+// 	Resolutions []resolution `json:"resolutions"`
+// }
 
-type resolution struct {
-	Height int    `json:"height"`
-	URL    string `json:"url"`
-	Width  int    `json:"width"`
-}
+// type resolution struct {
+// 	Height int    `json:"height"`
+// 	URL    string `json:"url"`
+// 	Width  int    `json:"width"`
+// }
 
 // tsGuide read broadcast time
 var utcTZ, _ = time.LoadLocation("UTC")
@@ -168,171 +261,158 @@ func (t tsAvailability) Time() time.Time {
 	return time.Time(t)
 }
 
-// player structure
-type player struct {
-	VideoJSONPlayer struct {
-		// V7T string `json:"V7T"`
-		// VAD bool   `json:"VAD"` // == false ?
-		// VDU int    `json:"VDU"`
-		// VGB string `json:"VGB"` //  ?
-		// VID string `json:"VID"` // ID
-		// VPI string `json:"VPI"` // Program ID
-		VRA tsAvailability `json:"VRA"` // Available from
-		VRU tsAvailability `json:"VRU"` // Available to
-		// VSO string `json:"VSO"` // =="replay"
-		VSR map[string]streamInfo `json:"VSR"` // Video streams
-		VTI string                `json:"VTI"` // Title
-		// VTR string `json:"VTR"` // Show's page
-		// VTU struct {
-		// 	IUR string `json:"IUR"` // Show's thumbnail
-		// } `json:"VTU"`
-		// VTX string `json:"VTX"` // Channel ? == "ARTE"
-		// VTY string `json:"VTY"` // ?? =="ARTE_NEXT"
-		// VUP    string `json:"VUP"` // Show's page
-		// Adtech struct {
-		// 	Kvbroadcast    bool   `json:"kvbroadcast"`
-		// 	Kvcaseprogram  string `json:"kvcaseprogram"`
-		// 	Kvcategory     string `json:"kvcategory"`
-		// 	Kvduration     int    `json:"kvduration"`
-		// 	Kvprogramid    string `json:"kvprogramid"`
-		// 	Kvsubcategory  string `json:"kvsubcategory"`
-		// 	Kvvideoisolang string `json:"kvvideoisolang"`
-		// 	Kvvty          string `json:"kvvty"`
-		// 	Kvwebonly      bool   `json:"kvwebonly"`
-		// } `json:"adtech"`
-		// ArteClub    bool   `json:"arteClub"`
-		// Autostart   bool   `json:"autostart"`
-		// CaseProgram string `json:"caseProgram"` // mangled code
-		Categories []codeName `json:"categories"` //Catergory
-		Category   codeName   `json:"category"`   // another Catergory
-		// Collections []interface{} `json:"collections"` // Empty
-		// EStat       struct {
-		// 	Level1         string `json:"level1"`
-		// 	Level2         string `json:"level2"`
-		// 	Level3         string `json:"level3"`
-		// 	Level4         string `json:"level4"`
-		// 	Level5         string `json:"level5"`
-		// 	MediaChannel   string `json:"mediaChannel"`
-		// 	MediaContentID string `json:"mediaContentId"`
-		// 	MediaDiffMode  string `json:"mediaDiffMode"`
-		// 	NewLevel1      string `json:"newLevel1"`
-		// 	NewLevel11     string `json:"newLevel11"`
-		// 	StreamDuration int    `json:"streamDuration"`
-		// 	StreamGenre    string `json:"streamGenre"`
-		// 	StreamName     string `json:"streamName"`
-		// } `json:"eStat"`
-		// EnablePreroll bool `json:"enablePreroll"`
-		// Genre            string        `json:"genre"`
-		// Illico           bool          `json:"illico"`
-		// Kind             string        `json:"kind"`             // == SHOW
-		// KindLabel        string        `json:"kindLabel"`        // == PROGRAMME
-		// Language         string        `json:"language"`         // Language code like "fr"
-		// LiveStreamRights bool          `json:"liveStreamRights"` // = true
-		// MainPlatformCode string        `json:"mainPlatformCode"` // CREATIVE / FUTURE
-		// Markings         []interface{} `json:"markings"`
-		// ParentProgramID  string        `json:"parentProgramId"` // == ProgramID
-		// Platform         string        `json:"platform"` // == "ARTE_NEXT"
-		// Postroll         string        `json:"postroll"` // Recommendation
-		ProgramID string `json:"programId"`
-		// ProgramType      string        `json:"programType"` // == "BROADCAST"
-		Subcategory codeName `json:"subcategory"` //Subcategory
-		Subtitle    string   `json:"subtitle"`
-		// TcStartFrom int      `json:"tc_start_from"` // ??
-		// Tracking    struct {
-		// 	Desktop struct {
-		// 		EMBED string `json:"EMBED"`
-		// 		WEB   string `json:"WEB"`
-		// 	} `json:"desktop"`
-		// 	Mobile struct {
-		// 		EMBED string `json:"EMBED"`
-		// 		WEB   string `json:"WEB"`
-		// 	} `json:"mobile"`
-		// 	Tablet struct {
-		// 		EMBED string `json:"EMBED"`
-		// 		WEB   string `json:"WEB"`
-		// 	} `json:"tablet"`
-		// } `json:"tracking"`
-		VideoDurationSeconds jsonparser.Seconds `json:"videoDurationSeconds"` // Secondes
-		// VideoIsoLang         string `json:"videoIsoLang"`         // Code language iso
-		// VideoPlayerURL       string `json:"videoPlayerUrl"`       // URL of this JSON
-		// VideoWarning         bool   `json:"videoWarning"`         // When true, the player add a warning
-	} `json:"videoJsonPlayer"`
+type playerAPI struct {
+	VideoJSONPlayer VideoJSONPlayer `json:"videoJsonPlayer"`
+}
+type VTU struct {
+	IUR string `json:"IUR"`
 }
 
-type codeName struct {
-	Code string `json:"code"`
-	Name string `json:"name"`
-}
-
-type streamInfo struct {
-	Bitrate             int    `json:"bitrate"`
-	Height              int    `json:"height"`
+type StreamInfo struct {
 	ID                  string `json:"id"`
+	Quality             string `json:"quality"`
+	Width               int    `json:"width"`
+	Height              int    `json:"height"`
 	MediaType           string `json:"mediaType"`
 	MimeType            string `json:"mimeType"`
-	Quality             string `json:"quality"`
+	Bitrate             int    `json:"bitrate"`
 	URL                 string `json:"url"`
+	VersionProg         int    `json:"versionProg"`
 	VersionCode         string `json:"versionCode"`
 	VersionLibelle      string `json:"versionLibelle"`
-	VersionProg         int    `json:"versionProg"`
 	VersionShortLibelle string `json:"versionShortLibelle"`
-	Width               int    `json:"width"`
 }
 
-type searchResults struct {
-	Code struct {
-		ID   string `json:"id"`
-		Name string `json:"name"`
-	} `json:"code"`
-	ContextPage interface{} `json:"contextPage"`
-	// Data []struct {
-	// 	// Availability  interface{} `json:"availability"`
-	// 	// ChildrenCount interface{} `json:"childrenCount"`
-	// 	Description string  `json:"description"`
-	// 	Duration    seconds `json:"duration"`
-	// 	// Geoblocking   struct {
-	// 	// 	Code  string `json:"code"`
-	// 	// 	Label string `json:"label"`
-	// 	// } `json:"geoblocking"`
-	// 	// ID     string `json:"id"`
-	// 	Images map[string]thumbs `json:"images"`
-	// 	// Images struct {
-	// 	// 	Banner    interface{} `json:"banner"`
-	// 	// 	Landscape struct {
-	// 	// 		BlurURL     string `json:"blurUrl"`
-	// 	// 		Caption     string `json:"caption"`
-	// 	// 		Resolutions []struct {
-	// 	// 			Height int    `json:"height"`
-	// 	// 			URL    string `json:"url"`
-	// 	// 			Width  int    `json:"width"`
-	// 	// 		} `json:"resolutions"`
-	// 	// 	} `json:"landscape"`
-	// 	// 	Portrait interface{} `json:"portrait"`
-	// 	// 	Square   interface{} `json:"square"`
-	// 	// } `json:"images"`
-	// 	Kind struct {
-	// 		Code  string `json:"code"`
-	// 		Label string `json:"label"`
-	// 	} `json:"kind"`
-	// 	ProgramID string `json:"programId"`
-	// 	// Stickers  []interface{} `json:"stickers"`
-	// 	Subtitle string `json:"subtitle"`
-	// 	Title    string `json:"title"`
-	// 	Type     string `json:"type"`
-	// 	URL      string `json:"url"`
-	// } `json:"data"`
-	Data []data `json:"data"`
-	// DisplayOptions struct {
-	// 	Layout   string      `json:"layout"`
-	// 	Template string      `json:"template"`
-	// 	Theme    interface{} `json:"theme"`
-	// } `json:"displayOptions"`
-	Link struct {
-		// Page  string `json:"page"`
-		Title string `json:"title"`
-		// URL   string `json:"url"`
-	} `json:"link"`
-	NextPage string `json:"nextPage"`
-	// Title    string      `json:"title"`
-	// Type     interface{} `json:"type"`
+// type VSR struct {
+// 	HTTPSHQ2 HTTPSHQ2 `json:"HTTPS_HQ_2"`
+// 	HTTPSEQ2 HTTPSEQ2 `json:"HTTPS_EQ_2"`
+// 	HTTPSMQ2 HTTPSMQ2 `json:"HTTPS_MQ_2"`
+// 	HTTPSSQ2 HTTPSSQ2 `json:"HTTPS_SQ_2"`
+// 	HLSXQ2   HLSXQ2   `json:"HLS_XQ_2"`
+// 	HTTPSMQ1 HTTPSMQ1 `json:"HTTPS_MQ_1"`
+// 	HTTPSEQ1 HTTPSEQ1 `json:"HTTPS_EQ_1"`
+// 	HTTPSHQ1 HTTPSHQ1 `json:"HTTPS_HQ_1"`
+// 	HTTPSSQ1 HTTPSSQ1 `json:"HTTPS_SQ_1"`
+// 	HLSXQ1   HLSXQ1   `json:"HLS_XQ_1"`
+// }
+type VSR map[string]StreamInfo
+
+/*
+func (p *VSR) UnmarshalJSON(b []byte) error {
+	s := map[string]Stream{}
+
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+	*p = s
+	return nil
+}
+*/
+
+// type Tablet struct {
+// 	WEB   string `json:"WEB"`
+// 	EMBED string `json:"EMBED"`
+// }
+// type Desktop struct {
+// 	WEB   string `json:"WEB"`
+// 	EMBED string `json:"EMBED"`
+// }
+// type Mobile struct {
+// 	WEB   string `json:"WEB"`
+// 	EMBED string `json:"EMBED"`
+// }
+// type Tracking struct {
+// 	Tablet  Tablet  `json:"tablet"`
+// 	Desktop Desktop `json:"desktop"`
+// 	Mobile  Mobile  `json:"mobile"`
+// }
+// type Categories struct {
+// 	Code string `json:"code"`
+// 	Name string `json:"name"`
+// }
+// type Category struct {
+// 	Code string `json:"code"`
+// 	Name string `json:"name"`
+// }
+// type Subcategory struct {
+// 	Code string `json:"code"`
+// 	Name string `json:"name"`
+// }
+// type Adtech struct {
+// 	Kvprogramid    string `json:"kvprogramid"`
+// 	Kvvty          string `json:"kvvty"`
+// 	Kvcategory     string `json:"kvcategory"`
+// 	Kvsubcategory  string `json:"kvsubcategory"`
+// 	Kvwebonly      bool   `json:"kvwebonly"`
+// 	Kvbroadcast    bool   `json:"kvbroadcast"`
+// 	Kvduration     int    `json:"kvduration"`
+// 	Kvcaseprogram  string `json:"kvcaseprogram"`
+// 	Kvvideoisolang string `json:"kvvideoisolang"`
+// }
+// type EStat struct {
+// 	StreamName     string `json:"streamName"`
+// 	StreamDuration int    `json:"streamDuration"`
+// 	StreamGenre    string `json:"streamGenre"`
+// 	Level1         string `json:"level1"`
+// 	Level2         string `json:"level2"`
+// 	Level3         string `json:"level3"`
+// 	Level4         string `json:"level4"`
+// 	Level5         string `json:"level5"`
+// 	NewLevel1      string `json:"newLevel1"`
+// 	NewLevel11     string `json:"newLevel11"`
+// 	MediaChannel   string `json:"mediaChannel"`
+// 	MediaContentID string `json:"mediaContentId"`
+// 	MediaDiffMode  string `json:"mediaDiffMode"`
+// }
+// type Smart struct {
+// 	URL string `json:"url"`
+// }
+type VideoJSONPlayer struct {
+	VID                  string         `json:"VID"`
+	VPI                  string         `json:"VPI"`
+	VideoDurationSeconds int            `json:"videoDurationSeconds"`
+	VideoIsoLang         string         `json:"videoIsoLang"`
+	VTY                  string         `json:"VTY"`
+	VTX                  string         `json:"VTX"`
+	VTI                  string         `json:"VTI"`
+	VDU                  int            `json:"VDU"`
+	TcStartFrom          int            `json:"tc_start_from"`
+	Autostart            bool           `json:"autostart"`
+	LiveStreamRights     bool           `json:"liveStreamRights"`
+	VGB                  string         `json:"VGB"`
+	VRA                  tsAvailability `json:"VRA"`
+	VRU                  tsAvailability `json:"VRU"`
+	VAD                  bool           `json:"VAD"`
+	VideoWarning         bool           `json:"videoWarning"`
+	VTU                  VTU            `json:"VTU"`
+	VTR                  string         `json:"VTR"`
+	VUP                  string         `json:"VUP"`
+	V7T                  string         `json:"V7T"`
+	VDE                  string         `json:"VDE"`
+	Postroll             string         `json:"postroll"`
+	VSR                  VSR            `json:"VSR"`
+	// Tracking             Tracking       `json:"tracking"`
+	Platform       string `json:"platform"`
+	VideoPlayerURL string `json:"videoPlayerUrl"`
+	CaseProgram    string `json:"caseProgram"`
+	// Categories           []Categories   `json:"categories"`
+	// Category             Category       `json:"category"`
+	// Subcategory          Subcategory    `json:"subcategory"`
+	Language         string        `json:"language"`
+	ProgramID        string        `json:"programId"`
+	Genre            string        `json:"genre"`
+	MainPlatformCode string        `json:"mainPlatformCode"`
+	VSO              string        `json:"VSO"`
+	Kind             string        `json:"kind"`
+	KindLabel        string        `json:"kindLabel"`
+	Collections      []interface{} `json:"collections"`
+	ArteClub         bool          `json:"arteClub"`
+	ProgramType      string        `json:"programType"`
+	ParentProgramID  string        `json:"parentProgramId"`
+	Markings         []interface{} `json:"markings"`
+	// Adtech           Adtech        `json:"adtech"`
+	// EStat            EStat         `json:"eStat"`
+	// Smart            Smart         `json:"smart"`
+	Illico        bool `json:"illico"`
+	EnablePreroll bool `json:"enablePreroll"`
 }
