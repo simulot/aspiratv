@@ -117,11 +117,11 @@ func (t *throttler) Get(uri string) (io.Reader, error) {
 
 // New setup a Show provider for Arte
 func New(conf ...func(p *ArteTV)) (*ArteTV, error) {
-	throttler := newThrottler(http.DefaultClient, 2, 100)
+	throttler := newThrottler(http.DefaultClient, 2, 25)
 	p := &ArteTV{
 		getter: throttler,
 		//TODO: get preferences from config file
-		preferredVersions: []string{"VF", "VF-STF", "VO-STF"}, // "VF-STMF" "VA", "VA-STA"
+		preferredVersions: []string{"VF", "VF-STF", "VO-STF", "VO"}, // "VF-STMF" "VA", "VA-STA"
 		preferredMedia:    "mp4",
 		preferredQuality:  []string{"SQ", "XQ", "EQ", "HQ", "MQ"},
 		htmlParserFactory: htmlparser.NewFactory(),
