@@ -1,0 +1,25 @@
+{
+  "PullInterval": "7h",
+  "Destinations": {
+    "Documentaires": "${HOME}/Videos/Documentaires",
+    "Jeunesse": "${HOME}/Videos/Jeunesse",
+    "Courts": "${HOME}/Videos/Courts"
+  },
+  "Providers": {
+    "francetv": {
+      "enabled": true
+    },
+    "gulli": {
+      "enabled": false
+    }
+  },
+  "WatchList": [
+      {
+      "Show": "Lapins crétins",
+      "Title": "",
+      "Pitch": "",
+      "Provider": "francetv",
+      "Destination": "Jeunesse"
+    }
+  ]
+}

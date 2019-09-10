@@ -35,6 +35,19 @@ var (
 	date    = "unknown"
 )
 
+type app struct {
+	Config Config
+	Stop   chan bool
+	ffmpeg string
+	pb     *mpb.Progress // Progress bars
+	worker *workers.WorkerPool
+	getter getter
+}
+
+type getter interface {
+	Get(uri string) (io.Reader, error)
+}
+
 func main() {
 
 	fmt.Printf("%s: %v, commit %v, built at %v\n", filepath.Base(os.Args[0]), version, commit, date)
@@ -63,48 +76,62 @@ func main() {
 		}
 	}()
 
-	cliConfig := &Config{}
-
-	flag.BoolVar(&cliConfig.Debug, "debug", false, "Debug mode.")
-	flag.BoolVar(&cliConfig.Force, "force", false, "Force media download.")
-	flag.BoolVar(&cliConfig.Headless, "headless", false, "Headless mode. Progression bars are not displayed.")
-	flag.StringVar(&cliConfig.ConfigFile, "config", "config.json", "Configuration file name.")
-	flag.IntVar(&cliConfig.ConcurrentTasks, "max-tasks", runtime.NumCPU(), "Maximum concurrent downloads at a time.")
+	flag.BoolVar(&a.Config.Debug, "debug", false, "Debug mode.")
+	flag.BoolVar(&a.Config.Force, "force", false, "Force media download.")
+	flag.BoolVar(&a.Config.Headless, "headless", false, "Headless mode. Progression bars are not displayed.")
+	flag.StringVar(&a.Config.ConfigFile, "config", "config.json", "Configuration file name.")
+	flag.IntVar(&a.Config.ConcurrentTasks, "max-tasks", runtime.NumCPU(), "Maximum concurrent downloads at a time.")
+	flag.StringVar(&a.Config.Provider, "provider", "", "Provider to be used with download command. Possible values : artetv,francetv,gulli")
+	flag.StringVar(&a.Config.Destination, "destination", "", "Provider to be used with download command. Possible values : artetv,francetv,gulli")
 	flag.Parse()
 
 	log.SetOutput(os.Stderr)
 
-	a.Initialize(cliConfig)
-	a.Run(ctx)
-}
-
-func (a *app) Initialize(c *Config) {
-	a.Config = ReadConfigOrDie(c)
-
-	// Check ans normalize configuration file
-	a.Config.Check()
-
-	// Check ffmpeg presence
-	var cmd *exec.Cmd
-	if runtime.GOOS == "windows" {
-		cmd = exec.Command("where", "ffmpeg")
-	} else {
-		cmd = exec.Command("which", "ffmpeg")
+	a.Initialize(&a.Config)
+	if len(os.Args) < 2 {
+		flag.Usage()
+		os.Exit(1)
 	}
-	b, err := cmd.Output()
-	if err != nil {
-		log.Fatal("Missing ffmpeg on your system, it's required to download video files.")
-	}
-	a.ffmpeg = strings.Trim(strings.Trim(string(b), "\r\n"), "\n")
-	if a.Config.Debug {
-		log.Printf("FFMPEG path: %q", a.ffmpeg)
+	switch flag.Arg(0) {
+	case "download":
+		a.Download(ctx)
+	default:
+		a.Run(ctx)
 	}
 }
 
-func (a *app) Run(ctx context.Context) {
+func (a *app) Download(ctx context.Context) {
 
+	log.Println(flag.Args())
+	if len(flag.Args()) < 2 {
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	a.Config.Destinations = map[string]string{
+		"DL": os.ExpandEnv(a.Config.Destination),
+	}
+
+	a.Config.WatchList = []*providers.MatchRequest{
+		&providers.MatchRequest{
+			Destination: "DL",
+			Show:        strings.ToLower(flag.Arg(1)),
+			Provider:    a.Config.Provider,
+		},
+	}
 	a.worker = workers.New(ctx, a.Config.ConcurrentTasks, a.Config.Debug)
 	a.getter = http.DefaultClient
+
+	if a.Config.Provider == "" {
+		log.Println("Missing -provider PROVIDERNAME flag")
+		os.Exit(1)
+	}
+
+	p, ok := providers.List()[a.Config.Provider]
+	if !ok {
+		log.Printf("Unknown provider %q", a.Config.Provider)
+		os.Exit(1)
+	}
 
 	var pc *mpb.Progress
 
@@ -119,6 +146,18 @@ func (a *app) Run(ctx context.Context) {
 				},
 			))
 	}
+
+	a.PullShows(ctx, p, pc)
+
+}
+
+func (a *app) Run(ctx context.Context) {
+
+	a.worker = workers.New(ctx, a.Config.ConcurrentTasks, a.Config.Debug)
+	a.getter = http.DefaultClient
+
+	var pc *mpb.Progress
+	a.Config.Headless = true
 
 	activeProviders := int64(0)
 	for _, p := range providers.List() {
@@ -468,17 +507,4 @@ func (a *app) DownloadShow(ctx context.Context, wg *sync.WaitGroup, p providers.
 		log.Printf("[%s] %s already downloaded.", p.Name(), p.GetShowFileName(s))
 	}
 	return
-}
-
-type app struct {
-	Config *Config
-	Stop   chan bool
-	ffmpeg string
-	pb     *mpb.Progress // Progress bars
-	worker *workers.WorkerPool
-	getter getter
-}
-
-type getter interface {
-	Get(uri string) (io.Reader, error)
 }

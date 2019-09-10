@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
@@ -22,6 +24,32 @@ type Config struct {
 	Headless        bool                      // When true, no progression bar
 	ConcurrentTasks int                       // Number of concurrent downloads
 	Providers       map[string]ProviderConfig
+	Provider        string // Provider for dowload command
+	Destination     string // Destination folder for dowload command
+
+}
+
+func (a *app) Initialize(c *Config) {
+	ReadConfig(c.ConfigFile, c)
+
+	// Check ans normalize configuration file
+	a.Config.Check()
+
+	// Check ffmpeg presence
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command("where", "ffmpeg")
+	} else {
+		cmd = exec.Command("which", "ffmpeg")
+	}
+	b, err := cmd.Output()
+	if err != nil {
+		log.Fatal("Missing ffmpeg on your system, it's required to download video files.")
+	}
+	a.ffmpeg = strings.Trim(strings.Trim(string(b), "\r\n"), "\n")
+	if a.Config.Debug {
+		log.Printf("FFMPEG path: %q", a.ffmpeg)
+	}
 }
 
 type ProviderConfig struct {
@@ -77,38 +105,32 @@ func WriteConfig() {
 }
 
 // ReadConfig read the JSON configuration file
-func ReadConfig(configFile string) (*Config, error) {
+func ReadConfig(configFile string, conf *Config) error {
 	f, err := os.Open(configFile)
 	if err != nil {
-		return nil, fmt.Errorf("Can't open configuration file: %v", err)
+		return fmt.Errorf("Can't open configuration file: %v", err)
 	}
 	defer f.Close()
-	conf := &Config{}
 	d := json.NewDecoder(f)
 	err = d.Decode(conf)
 	if err != nil {
-		return nil, fmt.Errorf("Can't decode configuration file: %v", err)
+		return fmt.Errorf("Can't decode configuration file: %v", err)
 	}
-	return conf, nil
+	return nil
 }
 
-// ReadConfigOrDie create a stub of config.json when it is missing from disk
-func ReadConfigOrDie(cli *Config) *Config {
-	conf, err := ReadConfig(cli.ConfigFile)
-	if err != nil {
-		log.Fatalf("Fatal: %v", err)
-	}
-	// Set flags comming from CLI
-	conf.Debug = cli.Debug
-	conf.Force = cli.Force
-	conf.ConfigFile = cli.ConfigFile
-	conf.Headless = cli.Headless
-	conf.ConcurrentTasks = cli.ConcurrentTasks
-	return conf
-}
+// // ReadConfigOrDie create a stub of config.json when it is missing from disk
+// func ReadConfigOrDie(conf *Config) {
+// 	err := ReadConfig(conf.ConfigFile, conf)
+// 	if err != nil {
+// 		log.Fatalf("Fatal: %v", err)
+// 	}
+
+// }
 
 // Check the configuration or die
 func (c *Config) Check() {
+
 	// Expand paths
 	for d, p := range c.Destinations {
 		c.Destinations[d] = os.ExpandEnv(p)
