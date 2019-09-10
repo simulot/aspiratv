@@ -101,8 +101,6 @@ func main() {
 }
 
 func (a *app) Download(ctx context.Context) {
-
-	log.Println(flag.Args())
 	if len(flag.Args()) < 2 {
 		flag.Usage()
 		os.Exit(1)
