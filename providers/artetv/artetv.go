@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -50,7 +49,8 @@ type getter interface {
 type ArteTV struct {
 	getter            getter
 	preferredVersions []string // versionCode List of version in order of preference VF,VA...
-	preferredMedia    string   // mediaType mp4,hls
+	preferredQuality  []string
+	preferredMedia    string // mediaType mp4,hls
 	debug             bool
 	htmlParserFactory *htmlparser.Factory
 	seenPrograms      map[string]bool
@@ -121,8 +121,9 @@ func New(conf ...func(p *ArteTV)) (*ArteTV, error) {
 	p := &ArteTV{
 		getter: throttler,
 		//TODO: get preferences from config file
-		preferredVersions: []string{"VF", "VOF", "VOF-STF", "VOSTF", "VF-STF"}, // "VF-STMF" "VA", "VA-STA"
+		preferredVersions: []string{"VF", "VF-STF", "VO-STF"}, // "VF-STMF" "VA", "VA-STA"
 		preferredMedia:    "mp4",
+		preferredQuality:  []string{"SQ", "XQ", "EQ", "HQ", "MQ"},
 		htmlParserFactory: htmlparser.NewFactory(),
 		seenPrograms:      map[string]bool{},
 	}
@@ -420,7 +421,7 @@ func (p *ArteTV) GetShowFileName(s *providers.Show) string {
 	}
 
 	if s.Title == "" || s.Title == s.Show {
-		episodePath += s.ID + ".mp4"
+		episodePath += " - " + s.ID + ".mp4"
 	} else {
 		episodePath += " - " + providers.FileNameCleaner(s.Title) + ".mp4"
 	}
@@ -488,96 +489,16 @@ type mapStrInt map[string]uint64
 //   - Stream quality, the highest possible
 //   - Preferred format
 // The URL's stream with the best score is returned
+
 func (p *ArteTV) getBestVideo(ss map[string]StreamInfo) string {
-	scores := mapStrInt{}
-	sortedResolution := getPlayerResolutions(ss)
-
-	for k, s := range ss {
-		scores[k] = p.getStreamScore(s, reverseSliceIndex(getResolutionKey(s), sortedResolution))
-	}
-
-	scoreSlice := sortMapStrInt(scores)
-	return ss[scoreSlice[0]].URL
-}
-
-func getPlayerResolutions(ss map[string]StreamInfo) []string {
-	scoreResolution := mapStrInt{}
-	for _, s := range ss {
-		p := uint64(s.Height) * uint64(s.Width) * uint64(s.Bitrate)
-		scoreResolution[getResolutionKey(s)] = p
-	}
-	return sortMapStrInt(scoreResolution)
-}
-
-func getResolutionKey(s StreamInfo) string {
-	return strconv.Itoa(s.Width) + "*" + strconv.Itoa(s.Height) + "*" + strconv.Itoa(s.Bitrate)
-}
-
-func (p *ArteTV) getStreamScore(s StreamInfo, resolutionIndex uint64) uint64 {
-	grade := uint64(0)
-
-	// Best grade for the preferred version
-	grade += reverseSliceIndex(s.VersionCode, p.preferredVersions) * 1000000
-
-	// Then best resolution
-	grade += resolutionIndex * 1000
-
-	// Add points for the preferred format
-	if s.MediaType == p.preferredMedia {
-		grade += 10
-	}
-	return grade
-}
-
-// sortMapStrInt return a slice of string in the order int
-func sortMapStrInt(m mapStrInt) []string {
-	type kv struct {
-		k string
-		v uint64
-	}
-	s := make([]kv, len(m))
-	i := 0
-	for k, v := range m {
-		s[i] = kv{k: k, v: v}
-		i++
-	}
-	sort.Slice(s, func(i, j int) bool {
-		return s[i].v > s[j].v
-	})
-	r := make([]string, len(m))
-	for i, v := range s {
-		r[i] = v.k
-	}
-	return r
-}
-
-func sliceIndex(k string, ls []string) uint64 {
-	for i, s := range ls {
-		if s == k {
-			return uint64(i + 1)
+	for _, r := range p.preferredQuality {
+		for _, v := range p.preferredVersions {
+			for _, s := range ss {
+				if s.Quality == r && s.VersionCode == v {
+					return s.URL
+				}
+			}
 		}
 	}
-	return 0
-}
-
-func reverseSliceIndex(k string, ls []string) uint64 {
-	r := sliceIndex(k, ls)
-	if r == 0 {
-		return r
-	}
-	return uint64(len(ls)+1) - r
-
-}
-
-func episodeFromID(ID string) string {
-	b := ""
-	for _, c := range ID {
-		if c >= '0' && c <= '9' {
-			b += string(c)
-		}
-	}
-	for len(b) > 0 && b[0] == '0' {
-		b = b[1:]
-	}
-	return b
+	return ""
 }
