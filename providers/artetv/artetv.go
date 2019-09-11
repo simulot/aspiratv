@@ -178,7 +178,7 @@ func (p *ArteTV) getShowList(m *providers.MatchRequest) chan *providers.Show {
 
 		u, err := url.Parse(apiSEARCH)
 		if err != nil {
-			log.Printf("[%s] Can't call search API: %q", err)
+			log.Printf("[%s] Can't call search API: %q", p.Name(), err)
 			return
 		}
 		v := u.Query()
@@ -194,7 +194,7 @@ func (p *ArteTV) getShowList(m *providers.MatchRequest) chan *providers.Show {
 
 		r, err := p.getter.Get(u.String())
 		if err != nil {
-			log.Printf("[%s] Can't call search API: %q", err)
+			log.Printf("[%s] Can't call search API: %q", p.Name(), err)
 			return
 		}
 

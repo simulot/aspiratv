@@ -18,8 +18,7 @@ import (
 
 	_ "github.com/simulot/aspiratv/providers/artetv"
 	_ "github.com/simulot/aspiratv/providers/francetv"
-
-	// _ "github.com/simulot/aspiratv/providers/gulli"
+	_ "github.com/simulot/aspiratv/providers/gulli"
 
 	"github.com/simulot/aspiratv/net/http"
 	"github.com/simulot/aspiratv/playlists/m3u8"
