@@ -120,7 +120,7 @@ func New(conf ...func(p *ArteTV)) (*ArteTV, error) {
 	p := &ArteTV{
 		getter: throttler,
 		//TODO: get preferences from config file
-		preferredVersions: []string{"VF", "VF-STF", "VO-STF", "VO"}, // "VF-STMF" "VA", "VA-STA"
+		preferredVersions: []string{"VF", "VOF", "VF-STF", "VO-STF", "VO"}, // "VF-STMF" "VA", "VA-STA"
 		preferredMedia:    "mp4",
 		preferredQuality:  []string{"SQ", "XQ", "EQ", "HQ", "MQ"},
 		htmlParserFactory: htmlparser.NewFactory(),
