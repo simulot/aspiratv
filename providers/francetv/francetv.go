@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -28,9 +29,6 @@ const (
 	WSListURL    = "http://pluzz.webservices.francetelevisions.fr/pluzz/liste/type/replay/nb/%d/debut/0"           // Available show
 	WSInfoOeuvre = "http://webservices.francetelevisions.fr/tools/getInfosOeuvre/v2/?catalogue=Pluzz&idDiffusion=" // Show's video link and details
 )
-
-// Track when this is the first time the Show is invoked
-var runCounter = 0
 
 type getter interface {
 	Get(uri string) (io.Reader, error)
@@ -63,59 +61,56 @@ func New(conf ...func(ftv *FranceTV)) (*FranceTV, error) {
 func (ftv FranceTV) Name() string { return "francetv" }
 
 // Shows return shows that match with matching list.
-func (ftv *FranceTV) Shows(mm []*providers.MatchRequest) ([]*providers.Show, error) {
-	//log.Print("[francetv] Fetch France.tv's new shows")
+func (ftv *FranceTV) Shows(mm []*providers.MatchRequest) chan *providers.Show {
+	shows := make(chan *providers.Show)
 
-	shows := []*providers.Show{}
+	go func() {
+		defer close(shows)
+		url := fmt.Sprintf(WSListURL, 3000) // Limit to the last 3000th shows
 
-	var url string
-	if runCounter == 0 {
-		url = fmt.Sprintf(WSListURL, 3000)
-	} else {
-		url = fmt.Sprintf(WSListURL, 500)
-	}
-
-	// Get JSON catalog of available shows on France Télévisions
-	r, err := ftv.getter.Get(url)
-	if err != nil {
-		return nil, err
-	}
-
-	d := json.NewDecoder(r)
-	list := &pluzzList{}
-	err = d.Decode(list)
-	if err != nil {
-		return nil, fmt.Errorf("Can't decode PLUZZ list: %v", err)
-	}
-
-	for _, e := range list.Reponse.Emissions {
-		// Map JSON object to provider.Show common structure
-		show := &providers.Show{
-			AirDate:      time.Time(e.TsDiffusionUtc),
-			Channel:      e.ChaineID,
-			Category:     strings.TrimSpace(e.Rubrique),
-			Detailed:     false,
-			DRM:          false, //TBD
-			Duration:     time.Duration(e.DureeReelle),
-			Episode:      e.Episode,
-			ID:           e.IDDiffusion,
-			Pitch:        strings.TrimSpace(e.Accroche),
-			Season:       e.Saison,
-			Show:         strings.TrimSpace(e.Titre),
-			Provider:     ProviderName,
-			ShowURL:      e.OasSitepage,
-			StreamURL:    "", // Must call GetShowStreamURL to get the show's URL
-			ThumbnailURL: e.ImageLarge,
-			Title:        strings.TrimSpace(e.Soustitre),
+		// Get JSON catalog of available shows on France Télévisions
+		r, err := ftv.getter.Get(url)
+		if err != nil {
+			log.Printf("[%s] Can't call catalog API: %q", err)
+			return
 		}
-		if show.Title == "" {
-			show.Title = show.Show + " " + show.ID
+
+		d := json.NewDecoder(r)
+		list := &pluzzList{}
+		err = d.Decode(list)
+		if err != nil {
+			log.Printf("[%s] Can't decode catalog: %q", err)
 		}
-		if providers.IsShowMatch(mm, show) {
-			shows = append(shows, show)
+
+		for _, e := range list.Reponse.Emissions {
+			// Map JSON object to provider.Show common structure
+			show := &providers.Show{
+				AirDate:      time.Time(e.TsDiffusionUtc),
+				Channel:      e.ChaineID,
+				Category:     strings.TrimSpace(e.Rubrique),
+				Detailed:     false,
+				DRM:          false, //TBD
+				Duration:     time.Duration(e.DureeReelle),
+				Episode:      e.Episode,
+				ID:           e.IDDiffusion,
+				Pitch:        strings.TrimSpace(e.Accroche),
+				Season:       e.Saison,
+				Show:         strings.TrimSpace(e.Titre),
+				Provider:     ProviderName,
+				ShowURL:      e.OasSitepage,
+				StreamURL:    "", // Must call GetShowStreamURL to get the show's URL
+				ThumbnailURL: e.ImageLarge,
+				Title:        strings.TrimSpace(e.Soustitre),
+			}
+			if show.Title == "" {
+				show.Title = show.Show + " " + show.ID
+			}
+			if providers.IsShowMatch(mm, show) {
+				shows <- show
+			}
 		}
-	}
-	return shows, nil
+	}()
+	return shows
 }
 
 // GetShowStreamURL return the show's URL, a m3u8 playlist
