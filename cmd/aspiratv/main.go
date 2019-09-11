@@ -322,7 +322,6 @@ func (a *app) progressBar(ctx context.Context, fileBar *mpb.Bar, fn string, done
 	}
 
 	lastSize := int64(0)
-	_ = lastSize
 	t := time.NewTicker(500 * time.Millisecond)
 	f := func() {
 		s, err := os.Stat(fn)
@@ -406,6 +405,7 @@ func (a *app) DownloadShow(ctx context.Context, wg *sync.WaitGroup, p providers.
 		}
 		wg.Done()
 		if !a.Config.Headless {
+			fileBar.SetTotal(1, true)
 			bar.Increment()
 		}
 	}()
@@ -419,6 +419,10 @@ func (a *app) DownloadShow(ctx context.Context, wg *sync.WaitGroup, p providers.
 	url, err := p.GetShowStreamURL(s)
 	if err != nil {
 		log.Println(err)
+		return
+	}
+	if len(url) == 0 {
+		log.Printf("[%s] Can't get url from %s.", p.Name(), p.GetShowFileName(s))
 		return
 	}
 	if strings.ToLower(filepath.Ext(url)) == ".m38u" {

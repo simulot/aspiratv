@@ -118,6 +118,7 @@ func (ftv *FranceTV) GetShowStreamURL(s *providers.Show) (string, error) {
 	if s.StreamURL == "" {
 		err := ftv.GetShowInfo(s)
 		if err != nil {
+			s.StreamURL = "error"
 			return "", fmt.Errorf("Can't get detailed information for the show: %v", err)
 		}
 	}
@@ -133,14 +134,14 @@ func (ftv *FranceTV) GetShowInfo(s *providers.Show) error {
 	url := WSInfoOeuvre + s.ID
 	r, err := ftv.getter.Get(url)
 	if err != nil {
-		return fmt.Errorf("Can't get show's detailled information: %v", err)
+		return fmt.Errorf("Can't get show's detailed information: %v", err)
 	}
 
 	d := json.NewDecoder(r)
 	i := &infoOeuvre{}
 	err = d.Decode(&i)
 	if err != nil {
-		return fmt.Errorf("Can't decode show's detailled information: %v", err)
+		return fmt.Errorf("Can't decode show's detailed information: %v", err)
 	}
 
 	// May have better information than the global list
