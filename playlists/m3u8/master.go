@@ -4,13 +4,14 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"github.com/simulot/aspiratv/net/http"
 	"strconv"
 	"strings"
+
+	"github.com/simulot/aspiratv/net/http"
 )
 
 type Getter interface {
-	Get(uri string) (io.Reader, error)
+	Get(uri string) (io.ReadCloser, error)
 }
 
 type Master struct {
@@ -38,6 +39,7 @@ func NewMaster(URL string, getter Getter) (*Master, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer r.Close()
 	err = m.decode(r)
 	if err != nil {
 		return nil, err

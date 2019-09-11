@@ -26,6 +26,7 @@ func (p *Gulli) getPlayer(ID string) ([]*providers.Show, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer r.Close()
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err

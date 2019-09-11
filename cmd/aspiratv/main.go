@@ -45,7 +45,7 @@ type app struct {
 }
 
 type getter interface {
-	Get(uri string) (io.Reader, error)
+	Get(uri string) (io.ReadCloser, error)
 }
 
 func main() {

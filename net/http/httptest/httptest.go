@@ -83,7 +83,7 @@ func (ht *HTTPTest) RoundTrip(r *http.Request) (*http.Response, error) {
 }
 
 // Get implement the Getter interface
-func (ht *HTTPTest) Get(u string) (io.Reader, error) {
+func (ht *HTTPTest) Get(u string) (io.ReadCloser, error) {
 	url, err := url.Parse(u)
 	if err != nil {
 		return nil, err
@@ -100,17 +100,6 @@ func (ht *HTTPTest) Get(u string) (io.Reader, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("Can't get response :%s", resp.Status)
 	}
-	// the pipe allows to close the response body and close the pipe
-	pr, pw := io.Pipe()
-	go func() {
-		defer resp.Body.Close()
-		_, err := io.Copy(pw, resp.Body)
-		if err != nil {
-			pw.CloseWithError(fmt.Errorf("Can't get: %v", err))
-			return
-		}
-		pw.Close()
-	}()
 
-	return pr, nil
+	return resp.Body, nil
 }
