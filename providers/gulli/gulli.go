@@ -15,7 +15,7 @@ import (
 )
 
 type getter interface {
-	Get(uri string) (io.Reader, error)
+	Get(uri string) (io.ReadCloser, error)
 }
 
 // Gulli provider gives access to Gulli catchup tv

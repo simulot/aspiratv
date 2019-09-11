@@ -197,6 +197,7 @@ func TestClient_Get(t *testing.T) {
 				t.Errorf("Client.Get() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+			defer got.Close()
 			if err == nil {
 				b := &strings.Builder{}
 				_, err = io.Copy(b, got)

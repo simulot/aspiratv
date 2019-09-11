@@ -15,7 +15,7 @@ import (
 )
 
 type Getter interface {
-	Get(uri string) (io.Reader, error)
+	Get(uri string) (io.ReadCloser, error)
 }
 type Factory struct {
 	jar          *cookiejar.Jar

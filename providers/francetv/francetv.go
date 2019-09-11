@@ -31,7 +31,7 @@ const (
 )
 
 type getter interface {
-	Get(uri string) (io.Reader, error)
+	Get(uri string) (io.ReadCloser, error)
 }
 
 // FranceTV structure handles france-tv catalog of shows
@@ -74,6 +74,7 @@ func (ftv *FranceTV) Shows(mm []*providers.MatchRequest) chan *providers.Show {
 			log.Printf("[%s] Can't call catalog API: %q", err)
 			return
 		}
+		defer r.Close()
 
 		d := json.NewDecoder(r)
 		list := &pluzzList{}
