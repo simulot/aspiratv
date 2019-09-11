@@ -53,7 +53,7 @@ func NewClient(conf ...func(c *Client)) *Client {
 }
 
 // Get establish a GET request and return a reader with the response body
-func (c *Client) Get(u string) (io.Reader, error) {
+func (c *Client) Get(u string) (io.ReadCloser, error) {
 	req, err := http.NewRequest("GET", u, nil)
 	if err != nil {
 		err = fmt.Errorf("Can't get url: %v", err)
@@ -74,17 +74,6 @@ func (c *Client) Get(u string) (io.Reader, error) {
 		log.Println(err)
 		return nil, err
 	}
-	// the pipe allows to close the response body and close the pipe
-	pr, pw := io.Pipe()
-	go func() {
-		defer resp.Body.Close()
-		_, err := io.Copy(pw, resp.Body)
-		if err != nil {
-			pw.CloseWithError(fmt.Errorf("Can't get: %v", err))
-			return
-		}
-		pw.Close()
-	}()
 
-	return pr, nil
+	return resp.Body, nil
 }

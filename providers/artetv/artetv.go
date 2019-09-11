@@ -41,7 +41,7 @@ const (
 var runCounter = 0
 
 type getter interface {
-	Get(uri string) (io.Reader, error)
+	Get(uri string) (io.ReadCloser, error)
 }
 
 // ArteTV structure handles arte  catalog of shows
@@ -108,7 +108,7 @@ func (t *throttler) Stop() {
 	<-t.stop
 }
 
-func (t *throttler) Get(uri string) (io.Reader, error) {
+func (t *throttler) Get(uri string) (io.ReadCloser, error) {
 	t.once.Do(t.init)
 	<-t.throttle
 	return t.g.Get(uri)
@@ -198,6 +198,8 @@ func (p *ArteTV) getShowList(m *providers.MatchRequest) chan *providers.Show {
 			return
 		}
 
+		defer r.Close()
+
 		err = json.NewDecoder(r).Decode(&result)
 		if err != nil {
 			log.Printf("[%s] Can't decode search API result: %q", err)
@@ -281,6 +283,7 @@ func (p *ArteTV) getSerie(d Data) chan *providers.Show {
 
 				var result APIResult
 				err = json.NewDecoder(r).Decode(&result)
+				r.Close()
 				if err != nil {
 					log.Printf("[%s] Can't get decode collection: %q", p.Name(), err)
 					return
@@ -475,6 +478,7 @@ func (p *ArteTV) GetShowInfo(s *providers.Show) error {
 	if err != nil {
 		return fmt.Errorf("Can't get show's detailled information: %v", err)
 	}
+	defer r.Close()
 	player := playerAPI{}
 	err = json.NewDecoder(r).Decode(&player)
 	if err != nil {
@@ -492,10 +496,8 @@ type mapStrInt map[string]uint64
 
 // getBestVideo return the best video stream given preferences
 //   Streams are scored in following order:
-//   - Version (VF,VF_ST) that match preference
 //   - Stream quality, the highest possible
-//   - Preferred format
-// The URL's stream with the best score is returned
+//   - Version (VF,VF_ST) that match preference
 
 func (p *ArteTV) getBestVideo(ss map[string]StreamInfo) string {
 	for _, r := range p.preferredQuality {
