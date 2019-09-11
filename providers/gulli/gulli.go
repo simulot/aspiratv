@@ -2,6 +2,7 @@ package gulli
 
 import (
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path"
@@ -77,31 +78,35 @@ func withGetter(g getter) func(p *Gulli) {
 func (p Gulli) Name() string { return "gulli" }
 
 // Shows download the shows catalog from the web site.
-func (p *Gulli) Shows(mm []*providers.MatchRequest) ([]*providers.Show, error) {
-	shows := []*providers.Show{}
+func (p *Gulli) Shows(mm []*providers.MatchRequest) chan *providers.Show {
+	shows := make(chan *providers.Show)
 
-	cat, err := p.downloadCatalog()
-	if err != nil {
-		return nil, err
-	}
+	go func() {
+		defer close(shows)
+		cat, err := p.downloadCatalog()
+		if err != nil {
+			log.Printf("[%s] Can't call replay catalog: %q", p.Name(), err)
+			return
+		}
 
-	for _, s := range cat {
-		for _, m := range mm {
-			if strings.Contains(strings.ToLower(s.Title), m.Show) {
-				ID, err := p.getFirstEpisodeID(s)
-				showTitles, err := p.getPlayer(ID)
-				if err != nil {
-					return nil, err
-				}
-				for _, t := range showTitles {
-					t.Destination = m.Destination
-					shows = append(shows, t)
+		for _, s := range cat {
+			for _, m := range mm {
+				if strings.Contains(strings.ToLower(s.Title), m.Show) {
+					ID, err := p.getFirstEpisodeID(s)
+					showTitles, err := p.getPlayer(ID)
+					if err != nil {
+						log.Printf("[%s] Can't decode replay catalog: %q", p.Name(), err)
+						return
+					}
+					for _, t := range showTitles {
+						t.Destination = m.Destination
+						shows <- t
+					}
 				}
 			}
 		}
-	}
-
-	return shows, err
+	}()
+	return shows
 }
 
 // GetShowStreamURL return the show's URL, a mp4 file

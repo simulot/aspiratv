@@ -1,36 +1,24 @@
 {
-  "PullInterval": "7h30m",
+  "PullInterval": "7h",
   "Destinations": {
     "Documentaires": "${HOME}/Videos/Documentaires",
     "Jeunesse": "${HOME}/Videos/Jeunesse",
     "Courts": "${HOME}/Videos/Courts"
   },
   "Providers": {
-    "artetv": {
-      "Enabled": false        
+    "francetv": {
+      "enabled": true
     },
-    "gulli":{
-      "Enabled": false,
-      "Settings":{
-        "PreferedFormat": ".m38u"
-      }
-    },
-    "francetv":{
-        "Enabled": true
+    "gulli": {
+      "enabled": false
     }
   },
   "WatchList": [
-    {
-      "Show": "Si j'étais un animal", 
+      {
+      "Show": "Lapins crétins",
       "Title": "",
       "Pitch": "",
       "Provider": "francetv",
-      "Destination": "Jeunesse"
-    },
-    {
-      "Show": "Oggy et les cafards",
-      "Pitch": "",
-      "Provider": "gulli",
       "Destination": "Jeunesse"
     }
   ]
