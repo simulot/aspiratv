@@ -29,8 +29,8 @@ type Config struct {
 
 }
 
-func (a *app) Initialize(c *Config) {
-	ReadConfig(c.ConfigFile, c)
+func (a *app) Initialize() {
+	a.ReadConfig(a.Config.ConfigFile)
 
 	// Check ans normalize configuration file
 	a.Config.Check()
@@ -105,14 +105,14 @@ func WriteConfig() {
 }
 
 // ReadConfig read the JSON configuration file
-func ReadConfig(configFile string, conf *Config) error {
+func (a *app) ReadConfig(configFile string) error {
 	f, err := os.Open(configFile)
 	if err != nil {
 		return fmt.Errorf("Can't open configuration file: %v", err)
 	}
 	defer f.Close()
 	d := json.NewDecoder(f)
-	err = d.Decode(conf)
+	err = d.Decode(&a.Config)
 	if err != nil {
 		return fmt.Errorf("Can't decode configuration file: %v", err)
 	}

@@ -18,7 +18,8 @@ import (
 
 	_ "github.com/simulot/aspiratv/providers/artetv"
 	_ "github.com/simulot/aspiratv/providers/francetv"
-	_ "github.com/simulot/aspiratv/providers/gulli"
+
+	// _ "github.com/simulot/aspiratv/providers/gulli"
 
 	"github.com/simulot/aspiratv/net/http"
 	"github.com/simulot/aspiratv/playlists/m3u8"
@@ -87,7 +88,7 @@ func main() {
 
 	log.SetOutput(os.Stderr)
 
-	a.Initialize(&a.Config)
+	a.Initialize()
 	if len(os.Args) < 2 {
 		flag.Usage()
 		os.Exit(1)
@@ -217,42 +218,43 @@ func (a *app) PullShows(ctx context.Context, p providers.Provider, pc *mpb.Progr
 		}
 	}()
 
-	//log.Printf("Get shows list for %s", p.Name())
-	pName := p.Name()
-	shows, err := p.Shows(a.Config.WatchList)
-	if err != nil {
-		log.Printf("[%s] Can't get shows list of provider: %v", pName, err)
-		return
-	}
+	var providerBar *mpb.Bar
 
-	seen := map[string]bool{}
-	var bar *mpb.Bar
 	if !a.Config.Headless {
-		bar = pc.AddBar(int64(len(shows)),
+		providerBar = pc.AddBar(0,
+			mpb.BarWidth(50),
 			mpb.PrependDecorators(
-				// simple name decorator
-				decor.Name(left(p.Name(), 20), decor.WC{W: 20 + 1, C: decor.DidentRight}),
-				decor.CountersNoUnit(" %3d/%3d", decor.WC{W: 5 + 1, C: decor.DidentRight}),
-			))
-	} else {
-		log.Printf("[%s] %d shows available on server.", p.Name(), len(shows))
+				decor.Spinner([]string{"●∙∙", "∙●∙", "∙∙●", "∙●∙"}, decor.WCSyncSpace),
+				decor.Name(" Pulling "+p.Name()),
+			),
+			mpb.AppendDecorators(
+				decor.Counters(0, "  %d/%d"),
+			),
+		)
+		if a.Config.Debug {
+			log.Printf("Provider Bar created %p", providerBar)
+		}
 	}
 
+	//log.Printf("Get shows list for %s", p.Name())
+	seen := map[string]bool{}
 	wg := sync.WaitGroup{}
+
+	showCount := int64(0)
 showLoop:
-	for id, s := range shows {
-		if a.Config.Debug {
-			log.Printf("PullShows %s, handling %d", p.Name(), id)
+	for s := range p.Shows(a.Config.WatchList) {
+		showCount++
+		if !a.Config.Headless {
+			providerBar.SetTotal(showCount, false)
 		}
 		if _, ok := seen[s.ID]; ok {
 			if !a.Config.Headless {
-				bar.Increment()
+				// providerBar.Increment()
 			}
 			continue
 		}
 		seen[s.ID] = true
 
-		d := a.Config.Destinations[s.Destination]
 		select {
 		case <-ctx.Done():
 			break showLoop
@@ -260,23 +262,25 @@ showLoop:
 			if ctx.Err() != nil {
 				break showLoop
 			}
+			d := a.Config.Destinations[s.Destination]
 			if a.Config.Force || a.MustDownload(p, s, d) {
 				if a.Config.Debug {
-					log.Printf("PullShows %s, submitting %d", p.Name(), id)
+					log.Printf("[%s] submitting %d", p.Name(), showCount)
 				}
 				wg.Add(1)
-				a.SubmitDownload(ctx, &wg, p, s, d, pc, bar)
+				a.SubmitDownload(ctx, &wg, p, s, d, pc, providerBar)
 			} else {
 				if !a.Config.Headless {
-					bar.Increment()
+					providerBar.Increment()
 				} else {
 					log.Printf("[%s] %s already downloaded.", p.Name(), p.GetShowFileName(s))
 				}
 			}
+
 		}
 	}
 	if !a.Config.Headless {
-		bar.SetTotal(int64(len(shows)), true)
+		providerBar.SetTotal(showCount, true)
 	}
 	if ctx.Err() == nil {
 		if a.Config.Debug {
@@ -305,7 +309,7 @@ func (a *app) MustDownload(p providers.Provider, s *providers.Show, d string) bo
 }
 
 func (a *app) SubmitDownload(ctx context.Context, wg *sync.WaitGroup, p providers.Provider, s *providers.Show, d string, pc *mpb.Progress, bar *mpb.Bar) {
-	a.worker.Submit(func() {
+	go a.worker.Submit(func() {
 		a.DownloadShow(ctx, wg, p, s, d, pc, bar)
 	})
 }
@@ -367,7 +371,6 @@ func (a *app) DownloadShow(ctx context.Context, wg *sync.WaitGroup, p providers.
 
 	var fileBar *mpb.Bar
 	if !a.Config.Headless {
-		bar.Increment()
 		fileBar = pc.AddBar(100*1024*1024*1024,
 			mpb.BarWidth(3),
 			mpb.PrependDecorators(
@@ -389,7 +392,7 @@ func (a *app) DownloadShow(ctx context.Context, wg *sync.WaitGroup, p providers.
 		close(done)
 		if shouldDeleteFile {
 			for _, f := range files {
-				log.Printf("[%s] Cancelled %s", p.Name(), p.GetShowFileName(s))
+				log.Printf("[%s] %s is cancelled.", p.Name(), p.GetShowFileName(s))
 				os.Remove(f)
 			}
 		}
@@ -401,6 +404,9 @@ func (a *app) DownloadShow(ctx context.Context, wg *sync.WaitGroup, p providers.
 			log.Printf("DownloadShow %d terminated", id)
 		}
 		wg.Done()
+		if !a.Config.Headless {
+			bar.Increment()
+		}
 	}()
 
 	err := os.MkdirAll(filepath.Dir(fn), 0777)
@@ -455,12 +461,10 @@ func (a *app) DownloadShow(ctx context.Context, wg *sync.WaitGroup, p providers.
 
 	err = cmd.Run()
 	if err != nil {
-		log.Println(err)
 		shouldDeleteFile = true
 		return
 	}
 	if ctx.Err() != nil {
-		log.Println(ctx.Err())
 		shouldDeleteFile = true
 		return
 	}
@@ -502,7 +506,7 @@ func (a *app) DownloadShow(ctx context.Context, wg *sync.WaitGroup, p providers.
 		log.Printf("[%s] Can't write %q's thumbnail: %v", p.Name(), p.GetShowFileName(s), err)
 	}
 	if a.Config.Headless || a.Config.Debug {
-		log.Printf("[%s] %s already downloaded.", p.Name(), p.GetShowFileName(s))
+		log.Printf("[%s] %s downloaded.", p.Name(), p.GetShowFileName(s))
 	}
 	return
 }

@@ -7,7 +7,7 @@ import (
 // Provider is the interface for a provider
 type Provider interface {
 	Name() string                           // Provider's name
-	Shows([]*MatchRequest) ([]*Show, error) // List of available shows that match one of MatchRequest
+	Shows([]*MatchRequest) chan *Show       // List of available shows that match one of MatchRequest
 	GetShowStreamURL(*Show) (string, error) // Give video stream url ofr a give show
 	GetShowFileName(*Show) string           // Give a sensible name for the given show
 	GetShowFileNameMatcher(*Show) string    // Give a file name matcher for searching duplicates having different episode number

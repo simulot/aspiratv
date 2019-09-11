@@ -2,7 +2,6 @@ package artetv
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -149,79 +148,84 @@ func withGetter(g getter) func(p *ArteTV) {
 func (p ArteTV) Name() string { return "artetv" }
 
 // Shows download the shows catalog from the web site.
-func (p *ArteTV) Shows(mm []*providers.MatchRequest) ([]*providers.Show, error) {
-	shows := []*providers.Show{}
+func (p *ArteTV) Shows(mm []*providers.MatchRequest) chan *providers.Show {
+	shows := make(chan *providers.Show)
 
-	for _, m := range mm {
-		if m.Provider == p.Name() {
-			r, err := p.getShowList(m)
-			if err != nil {
-				return nil, err
-			}
-			shows = append(shows, r...)
-			for _, s := range shows {
-				s.Destination = m.Destination
+	go func() {
+		defer close(shows)
+		for _, m := range mm {
+			if m.Provider == p.Name() {
+				for s := range p.getShowList(m) {
+					s.Destination = m.Destination
+					shows <- s
+				}
+
 			}
 		}
-	}
+	}()
 
-	return shows, nil
+	return shows
 }
 
-func (p *ArteTV) getShowList(m *providers.MatchRequest) ([]*providers.Show, error) {
-	//TODO: use user's preferred language
-	const apiSEARCH = "https://www.arte.tv/guide/api/emac/v3/fr/web/data/SEARCH_LISTING"
+func (p *ArteTV) getShowList(m *providers.MatchRequest) chan *providers.Show {
+	shows := make(chan *providers.Show)
 
-	u, err := url.Parse(apiSEARCH)
-	if err != nil {
-		return nil, err
-	}
-	v := u.Query()
-	v.Set("imageFormats", "square,banner,landscape")
-	v.Set("query", m.Show)
-	v.Set("mainZonePage", "1")
-	v.Set("page", "1")
-	v.Set("limit", "100")
+	go func() {
+		defer close(shows)
 
-	u.RawQuery = v.Encode()
+		//TODO: use user's preferred language
+		const apiSEARCH = "https://www.arte.tv/guide/api/emac/v3/fr/web/data/SEARCH_LISTING"
 
-	var result APIResult
+		u, err := url.Parse(apiSEARCH)
+		if err != nil {
+			log.Printf("[%s] Can't call search API: %q", err)
+			return
+		}
+		v := u.Query()
+		v.Set("imageFormats", "square,banner,landscape")
+		v.Set("query", m.Show)
+		v.Set("mainZonePage", "1")
+		v.Set("page", "1")
+		v.Set("limit", "100")
 
-	r, err := p.getter.Get(u.String())
-	if err != nil {
-		return nil, err
-	}
+		u.RawQuery = v.Encode()
 
-	err = json.NewDecoder(r).Decode(&result)
-	if err != nil {
-		return nil, err
-	}
+		var result APIResult
 
-	matchedSeries := []Data{}
-	matchedShows := []Data{}
+		r, err := p.getter.Get(u.String())
+		if err != nil {
+			log.Printf("[%s] Can't call search API: %q", err)
+			return
+		}
 
-	for _, d := range result.Data {
-		if strings.Contains(strings.ToLower(d.Title), m.Show) {
-			if d.Kind.IsCollection {
-				matchedSeries = append(matchedSeries, d)
-			} else {
-				matchedShows = append(matchedShows, d)
+		err = json.NewDecoder(r).Decode(&result)
+		if err != nil {
+			log.Printf("[%s] Can't decode search API result: %q", err)
+			return
+		}
+
+		matchedSeries := []Data{}
+		matchedShows := []Data{}
+
+		for _, d := range result.Data {
+			if strings.Contains(strings.ToLower(d.Title), m.Show) {
+				if d.Kind.IsCollection {
+					matchedSeries = append(matchedSeries, d)
+				} else {
+					matchedShows = append(matchedShows, d)
+				}
 			}
 		}
-	}
 
-	shows := []*providers.Show{}
-
-	if len(matchedSeries) > 0 {
-		for _, d := range matchedSeries {
-			ss, err := p.getSerie(d)
-			if err != nil {
-				return nil, err
+		if len(matchedSeries) > 0 {
+			for _, d := range matchedSeries {
+				for s := range p.getSerie(d) {
+					shows <- s
+				}
 			}
-			shows = append(shows, ss...)
 		}
-	}
-	return shows, nil
+	}()
+	return shows
 }
 
 //https://www.arte.tv/guide/api/emac/v3/fr/web/programs/044892-008-A/?
@@ -232,120 +236,123 @@ var (
 	parseSeason          = regexp.MustCompile(`Saison (\d+)`)
 )
 
-func (p *ArteTV) getSerie(d Data) ([]*providers.Show, error) {
-	//TODO: use user's preferred language
-	const apiSEARCH = "https://www.arte.tv/guide/api/emac/v3/fr/web/data/COLLECTION_VIDEOS/?collectionId=%s&page=%d&limit=12"
+func (p *ArteTV) getSerie(d Data) chan *providers.Show {
+	shows := make(chan *providers.Show)
 
-	shows := []*providers.Show{}
-	collectionIDs := map[string]string{"": d.ProgramID} // Collection per season
+	go func() {
+		defer close(shows)
 
-	seasonSearched := false
+		//TODO: use user's preferred language
+		const apiSEARCH = "https://www.arte.tv/guide/api/emac/v3/fr/web/data/COLLECTION_VIDEOS/?collectionId=%s&page=%d&limit=12"
 
-collectionLoop:
-	for len(collectionIDs) > 0 {
-		seasons := []string{}
-		for k := range collectionIDs {
-			seasons = append(seasons, k)
-		}
-		sort.Strings(seasons)
-		u := fmt.Sprintf(apiSEARCH, collectionIDs[seasons[0]], 1)
+		collectionIDs := map[string]string{"": d.ProgramID} // Collection per season
+		seasonSearched := false
 
-		// Loop collections's pages
-		for len(u) > 0 {
-
-			u2, err := url.Parse(u)
-			if err != nil {
-				return nil, err
+	collectionLoop:
+		for len(collectionIDs) > 0 {
+			seasons := []string{}
+			for k := range collectionIDs {
+				seasons = append(seasons, k)
 			}
-			u2.Host = "www.arte.tv"
-			u2.Path = "guide/api/emac/v3/fr/web/data/COLLECTION_VIDEOS"
-			u = u2.String()
+			sort.Strings(seasons)
+			u := fmt.Sprintf(apiSEARCH, collectionIDs[seasons[0]], 1)
 
-			if p.debug {
-				log.Println(u)
-			}
+			// Loop collections's pages
+			for len(u) > 0 {
 
-			r, err := p.getter.Get(u)
-			if err != nil {
-				return nil, err
-			}
-			/*
-				b, _ := ioutil.ReadAll(r)
-				f, _ := os.Create("coll.json")
-
-				f.Write(b)
-				f.Close()
-			*/
-			var result APIResult
-			err = json.NewDecoder(r).Decode(&result)
-			if err != nil {
-				return nil, err
-			}
-
-			if len(result.Data) == 0 {
-				// A collection of collection (a serie, indeed) enrty hasn't any Data. We have to fetch collections for each season
-				if seasonSearched {
-					return nil, errors.New("Collection not found " + d.ProgramID)
-				}
-				seasonSearched = true
-
-				// No results on a collection ID? this means this is a collection of collections...
-				// Let's scrap the web page to get the collection list, most likely all seasons
-				delete(collectionIDs, "")
-
-				parser := p.htmlParserFactory.New()
-
-				parser.OnHTML("a.next-navbar__slide", func(e *colly.HTMLElement) {
-					var season, id string
-					m := parseSeason.FindAllStringSubmatch(e.Text, -1)
-					if len(m) == 1 {
-						season = m[0][1]
-					}
-					m = parseCollectionInURL.FindAllStringSubmatch(e.Attr("href"), -1)
-					if len(m) == 2 {
-						id = m[1][0]
-					}
-					collectionIDs[season] = id
-				})
-
-				err := parser.Visit(d.URL)
+				u2, err := url.Parse(u)
 				if err != nil {
-					return nil, err
+					log.Printf("[%s] Can't get collection: %q", p.Name(), err)
+					return
 				}
-				continue collectionLoop
-			}
+				u2.Host = "www.arte.tv"
+				u2.Path = "guide/api/emac/v3/fr/web/data/COLLECTION_VIDEOS"
+				u = u2.String()
 
-			for _, ep := range result.Data {
-				show := &providers.Show{
-					ID:      ep.ProgramID,
-					Show:    d.Title, //Takes collection's title
-					Title:   ep.Subtitle,
-					Pitch:   ep.ShortDescription,
-					ShowURL: ep.URL,
-					Season:  seasons[0],
+				if p.debug {
+					log.Println(u)
 				}
 
-				img := getBestImage(ep.Images, "square")
-				if len(img) == 0 {
-					img = getBestImage(ep.Images, "landscape")
-				}
-				show.ThumbnailURL = img
-				err := p.GetShowInfo(show)
+				r, err := p.getter.Get(u)
 				if err != nil {
-					log.Println(err)
-					continue
+					log.Printf("[%s] Can't get collection: %q", p.Name(), err)
+					return
 				}
-				setEpisodeFormTitle(show, ep.Title)
-				shows = append(shows, show)
+
+				var result APIResult
+				err = json.NewDecoder(r).Decode(&result)
+				if err != nil {
+					log.Printf("[%s] Can't get decode collection: %q", p.Name(), err)
+					return
+				}
+
+				if len(result.Data) == 0 {
+					// A collection of collection (a serie, indeed) enrty hasn't any Data. We have to fetch collections for each season
+					if seasonSearched {
+						log.Printf("[%s] Can't found collection with ID(%s): %q", p.Name(), d.ProgramID, err)
+						return
+					}
+					seasonSearched = true
+
+					// No results on a collection ID? this means this is a collection of collections...
+					// Let's scrap the web page to get the collection list, most likely all seasons
+					delete(collectionIDs, "")
+
+					parser := p.htmlParserFactory.New()
+
+					parser.OnHTML("a.next-navbar__slide", func(e *colly.HTMLElement) {
+						var season, id string
+						m := parseSeason.FindAllStringSubmatch(e.Text, -1)
+						if len(m) == 1 {
+							season = m[0][1]
+						}
+						m = parseCollectionInURL.FindAllStringSubmatch(e.Attr("href"), -1)
+						if len(m) == 2 {
+							id = m[1][0]
+						}
+						collectionIDs[season] = id
+					})
+
+					err := parser.Visit(d.URL)
+					if err != nil {
+						log.Printf("[%s] Can't get collection: %q", p.Name(), err)
+						return
+					}
+					continue collectionLoop
+				}
+
+				for _, ep := range result.Data {
+					show := &providers.Show{
+						ID:      ep.ProgramID,
+						Show:    d.Title, //Takes collection's title
+						Title:   ep.Subtitle,
+						Pitch:   ep.ShortDescription,
+						ShowURL: ep.URL,
+						Season:  seasons[0],
+					}
+
+					img := getBestImage(ep.Images, "square")
+					if len(img) == 0 {
+						img = getBestImage(ep.Images, "landscape")
+					}
+					show.ThumbnailURL = img
+					err := p.GetShowInfo(show)
+					if err != nil {
+						log.Println(err)
+						continue
+					}
+					setEpisodeFormTitle(show, ep.Title)
+					shows <- show
+				}
+
+				u = result.NextPage
+
 			}
-
-			u = result.NextPage
-
+			delete(collectionIDs, seasons[0]) // Season on top of the stack is done.
 		}
-		delete(collectionIDs, seasons[0]) // Season on top of the stack is done.
-	}
+	}()
 
-	return shows, nil
+	return shows
 }
 
 var (
