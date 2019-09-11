@@ -147,7 +147,9 @@ func (a *app) Download(ctx context.Context) {
 	}
 
 	a.PullShows(ctx, p, pc)
-
+	if !a.Config.Headless {
+		pc.Wait()
+	}
 }
 
 func (a *app) Run(ctx context.Context) {

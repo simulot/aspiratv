@@ -28,7 +28,10 @@ type MatchRequest struct {
 // When there is a match, it adds  MatchRequest.Destination into Show record.
 // Criteria is ignored when it is empty in the MatchRequest
 // When the list of MatchRequest is nil or empty, all show will match.
+//
 // Note: Playlist match isn't handled generically, it must be implemented in the provider's implementation
+// Note: side effect show's destination is changed
+//
 func IsShowMatch(mm []*MatchRequest, s *Show) bool {
 	if mm == nil || len(mm) == 0 {
 		return true
