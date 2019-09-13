@@ -488,9 +488,7 @@ func (a *app) DownloadShow(ctx context.Context, wg *sync.WaitGroup, p providers.
 	tbnStream, err := a.getter.Get(s.ThumbnailURL)
 	if err != nil {
 		log.Printf("[%s] Can't download %q's thumbnail: %v", p.Name(), p.GetShowFileName(s), err)
-
 	}
-
 	ws := []io.Writer{}
 	tbnFile, err := os.Create(tbnFileName)
 	if err != nil {
