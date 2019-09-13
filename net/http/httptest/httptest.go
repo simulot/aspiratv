@@ -3,6 +3,8 @@ package httptest
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -102,4 +104,31 @@ func (ht *HTTPTest) Get(u string) (io.ReadCloser, error) {
 	}
 
 	return resp.Body, nil
+}
+
+type myCloser struct {
+	io.Reader
+	w io.WriteCloser
+}
+
+func (mc *myCloser) Close() error {
+	if mc.w != nil {
+		mc.w.Close()
+	}
+	if c, ok := mc.Reader.(io.Closer); ok {
+		return c.Close()
+	}
+	return nil
+}
+
+func DumpReaderToFile(r io.Reader, prefix string) io.ReadCloser {
+	f, err := ioutil.TempFile(os.TempDir(), prefix)
+	if err != nil {
+		log.Panic(err)
+	}
+	log.Printf("Dump reader to %q", f.Name())
+	return &myCloser{
+		Reader: io.TeeReader(r, f),
+		w:      f,
+	}
 }
