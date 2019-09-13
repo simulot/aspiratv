@@ -410,6 +410,9 @@ func (a *app) DownloadShow(ctx context.Context, wg *sync.WaitGroup, p providers.
 		}
 	}()
 
+	if a.Config.Debug {
+		log.Printf("Download stream to: %q", fn)
+	}
 	err := os.MkdirAll(filepath.Dir(fn), 0777)
 	if err != nil {
 		log.Println(err)
