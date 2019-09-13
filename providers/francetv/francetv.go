@@ -116,7 +116,6 @@ func (ftv *FranceTV) GetShowStreamURL(s *providers.Show) (string, error) {
 	if s.StreamURL == "" {
 		err := ftv.GetShowInfo(s)
 		if err != nil {
-			s.StreamURL = "error"
 			return "", fmt.Errorf("Can't get detailed information for the show: %v", err)
 		}
 	}
@@ -141,6 +140,7 @@ func (ftv *FranceTV) GetShowInfo(s *providers.Show) error {
 		return fmt.Errorf("Can't decode show's detailed information: %v", err)
 	}
 
+	s.ThumbnailURL = i.ImageSecure
 	for _, v := range i.Videos {
 		if v.Format == "hls_v5_os" {
 			s.StreamURL = v.URL
