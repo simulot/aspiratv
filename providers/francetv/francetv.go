@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -74,6 +73,7 @@ func (ftv *FranceTV) Shows(mm []*providers.MatchRequest) chan *providers.Show {
 			log.Printf("[%s] Can't call catalog API: %q", err)
 			return
 		}
+		// r = httptest.DumpReaderToFile(r, "francetv-catalog-")
 		defer r.Close()
 
 		d := json.NewDecoder(r)
@@ -86,25 +86,22 @@ func (ftv *FranceTV) Shows(mm []*providers.MatchRequest) chan *providers.Show {
 		for _, e := range list.Reponse.Emissions {
 			// Map JSON object to provider.Show common structure
 			show := &providers.Show{
+				ID:           e.IDDiffusion,
+				Show:         strings.TrimSpace(e.Titre),
+				Title:        strings.TrimSpace(e.Soustitre),
+				Season:       e.Saison,
+				Episode:      e.Episode,
+				Pitch:        strings.TrimSpace(e.Accroche),
 				AirDate:      time.Time(e.TsDiffusionUtc),
 				Channel:      e.ChaineID,
-				Category:     strings.TrimSpace(e.Rubrique),
 				Detailed:     false,
 				DRM:          false, //TBD
 				Duration:     time.Duration(e.DureeReelle),
-				Episode:      e.Episode,
-				ID:           e.IDDiffusion,
-				Pitch:        strings.TrimSpace(e.Accroche),
-				Season:       e.Saison,
-				Show:         strings.TrimSpace(e.Titre),
+				Category:     strings.TrimSpace(e.Rubrique),
 				Provider:     ProviderName,
 				ShowURL:      e.OasSitepage,
 				StreamURL:    "", // Must call GetShowStreamURL to get the show's URL
 				ThumbnailURL: e.ImageLarge,
-				Title:        strings.TrimSpace(e.Soustitre),
-			}
-			if show.Title == "" {
-				show.Title = show.Show + " " + show.ID
 			}
 			if providers.IsShowMatch(mm, show) {
 				shows <- show
@@ -131,24 +128,18 @@ func (ftv *FranceTV) GetShowInfo(s *providers.Show) error {
 	if s.Detailed {
 		return nil
 	}
+	i := infoOeuvre{}
 
 	url := WSInfoOeuvre + s.ID
 	r, err := ftv.getter.Get(url)
 	if err != nil {
 		return fmt.Errorf("Can't get show's detailed information: %v", err)
 	}
-
-	d := json.NewDecoder(r)
-	i := &infoOeuvre{}
-	err = d.Decode(&i)
+	// r = httptest.DumpReaderToFile(r, "francetv-info-"+s.ID+"-")
+	err = json.NewDecoder(r).Decode(&i)
 	if err != nil {
 		return fmt.Errorf("Can't decode show's detailed information: %v", err)
 	}
-
-	// May have better information than the global list
-	s.Season = strconv.Itoa(i.Saison)
-	s.Episode = strconv.Itoa(i.Episode)
-	s.ThumbnailURL = i.ImageSecure
 
 	for _, v := range i.Videos {
 		if v.Format == "hls_v5_os" {
@@ -167,36 +158,38 @@ func (ftv *FranceTV) GetShowInfo(s *providers.Show) error {
 //   ShowName/Season NN/ShowName - sNNeMM - Episode title
 //   Show and Episode names are sanitized to avoid problem when saving on the file system
 func (FranceTV) GetShowFileName(s *providers.Show) string {
-	if (s.Season == "" && s.Episode == "") || (s.Season == "0" && s.Episode == "0") {
-		// Follow Plex naming convention https://support.plex.tv/articles/200381053-naming-date-based-tv-shows/
-		return filepath.Join(
-			providers.PathNameCleaner(s.Show),
-			"Season "+strconv.Itoa(s.AirDate.Year()),
-			providers.FileNameCleaner(s.Show)+" - s00"+"e"+s.ID+" - "+providers.FileNameCleaner(s.Title)+".mp4",
-		)
+
+	var showPath, seasonPath, episodePath string
+	showPath = providers.PathNameCleaner(s.Show)
+
+	if s.Season == "" {
+		seasonPath = "Season " + s.AirDate.Format("2006")
+	} else {
+		seasonPath = "Season " + providers.Format2Digits(s.Season)
 	}
-	if s.Season != "" && s.Episode == "" {
-		// When episode is missing, use the ID as episode number
-		return filepath.Join(
-			providers.PathNameCleaner(s.Show),
-			"Season "+providers.Format2Digits(s.Season),
-			providers.FileNameCleaner(s.Show)+" - s"+providers.Format2Digits(s.Season)+"e"+s.ID+" - "+providers.FileNameCleaner(s.Title)+".mp4",
-		)
+
+	if s.Episode == "" {
+		episodePath = providers.FileNameCleaner(s.Show) + " - " + s.AirDate.Format("2006-01-02")
+	} else {
+		episodePath = providers.FileNameCleaner(s.Show) + " - s" + providers.Format2Digits(s.Season) + "e" + providers.Format2Digits(s.Episode)
 	}
-	// Normal case: https://support.plex.tv/articles/200220687-naming-series-season-based-tv-shows/
-	return filepath.Join(
-		providers.PathNameCleaner(s.Show),
-		"Season "+providers.Format2Digits(s.Season),
-		providers.FileNameCleaner(s.Show)+" - s"+providers.Format2Digits(s.Season)+"e"+providers.Format2Digits(s.Episode)+" - "+providers.FileNameCleaner(s.Title)+".mp4",
-	)
+
+	if s.Episode == "" && (s.Title == "" || s.Title == s.Show) {
+		episodePath += " - " + s.ID + ".mp4"
+	} else {
+		if s.Title != "" && s.Title != s.Show {
+			episodePath += " - " + providers.FileNameCleaner(s.Title) + ".mp4"
+		} else {
+			episodePath += ".mp4"
+		}
+	}
+
+	return filepath.Join(showPath, seasonPath, episodePath)
+
 }
 
 // GetShowFileNameMatcher return a file pattern of this show
 // used for detecting already got episode even when episode or season is different
-func (FranceTV) GetShowFileNameMatcher(s *providers.Show) string {
-	return filepath.Join(
-		providers.PathNameCleaner(s.Show),
-		"Season *",
-		providers.FileNameCleaner(s.Show)+" * "+providers.FileNameCleaner(s.Title)+".mp4",
-	)
+func (p *FranceTV) GetShowFileNameMatcher(s *providers.Show) string {
+	return p.GetShowFileName(s)
 }
