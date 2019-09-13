@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -83,9 +84,23 @@ func main() {
 	flag.IntVar(&a.Config.ConcurrentTasks, "max-tasks", runtime.NumCPU(), "Maximum concurrent downloads at a time.")
 	flag.StringVar(&a.Config.Provider, "provider", "", "Provider to be used with download command. Possible values : artetv,francetv,gulli")
 	flag.StringVar(&a.Config.Destination, "destination", "", "Provider to be used with download command. Possible values : artetv,francetv,gulli")
+	flag.StringVar(&a.Config.LogFile, "log", "", "Give the log file name. When empty, no log.")
 	flag.Parse()
 
-	log.SetOutput(os.Stderr)
+	if len(a.Config.LogFile) > 0 {
+		logFile, err := os.Create(a.Config.LogFile)
+		if err != nil {
+			log.Printf("Can't create log file: %q", err)
+			os.Exit(1)
+		}
+		defer func() {
+			logFile.Sync()
+			logFile.Close()
+		}()
+		log.SetOutput(logFile)
+	} else {
+		log.SetOutput(ioutil.Discard)
+	}
 
 	a.Initialize()
 	if len(os.Args) < 2 {

@@ -26,6 +26,7 @@ type Config struct {
 	Providers       map[string]ProviderConfig
 	Provider        string // Provider for dowload command
 	Destination     string // Destination folder for dowload command
+	LogFile         string // Log file
 
 }
 
