@@ -378,7 +378,7 @@ func (a *app) DownloadShow(ctx context.Context, wg *sync.WaitGroup, p providers.
 			),
 			mpb.AppendDecorators(
 				decor.AverageSpeed(decor.UnitKB, " %.1f", decor.WC{W: 15, C: decor.DidentRight}),
-				decor.Name(p.GetShowFileName(s)),
+				decor.Name(filepath.Base(p.GetShowFileName(s))),
 			),
 			mpb.BarRemoveOnComplete(),
 		)
