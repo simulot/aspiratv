@@ -10,15 +10,53 @@
       "enabled": true
     },
     "gulli": {
-      "enabled": false
+      "enabled": true
+    },
+    "artetv": {
+      "enabled": true
     }
   },
   "WatchList": [
-      {
+    {
+      "Show": "Arthur et les Minimoys",
+      "Title": "",
+      "Pitch": "",
+      "Provider": "gulli",
+      "Destination": "Jeunesse"
+    },
+    {
+      "Show": "Des racines et des ailes",
+      "Title": "",
+      "Pitch": "",
+      "Provider": "francetv",
+      "Destination": "Jeunesse"
+    },
+    {
       "Show": "Lapins crétins",
       "Title": "",
       "Pitch": "",
       "Provider": "francetv",
+      "Destination": "Jeunesse"
+    },
+    {
+      "Show": "Les Daltons",
+      "Title": "",
+      "Pitch": "",
+      "Provider": "francetv",
+      "Destination": "Jeunesse"
+    }, 
+    {
+      "Show": "La minute vieille",
+      "Title": "",
+      "Pitch": "",
+      "Provider": "artetv",
+      "Destination": "Jeunesse"
+    },  
+    {
+      "Show": "TAPE",
+      "Title": "",
+      "Pitch": "",
+      "Provider": "artetv",
       "Destination": "Jeunesse"
     }
   ]

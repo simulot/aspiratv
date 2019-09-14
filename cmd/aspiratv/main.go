@@ -146,6 +146,15 @@ func (a *app) Download(ctx context.Context) {
 		os.Exit(1)
 	}
 
+	pc := a.getProgres(ctx)
+
+	a.PullShows(ctx, p, pc)
+	if !a.Config.Headless {
+		pc.Wait()
+	}
+}
+
+func (a *app) getProgres(ctx context.Context) *mpb.Progress {
 	var pc *mpb.Progress
 
 	if !a.Config.Headless {
@@ -159,11 +168,7 @@ func (a *app) Download(ctx context.Context) {
 				},
 			))
 	}
-
-	a.PullShows(ctx, p, pc)
-	if !a.Config.Headless {
-		pc.Wait()
-	}
+	return pc
 }
 
 func (a *app) Run(ctx context.Context) {
@@ -171,8 +176,7 @@ func (a *app) Run(ctx context.Context) {
 	a.worker = workers.New(ctx, a.Config.ConcurrentTasks, a.Config.Debug)
 	a.getter = http.DefaultClient
 
-	var pc *mpb.Progress
-	a.Config.Headless = true
+	pc := a.getProgres(ctx)
 
 	activeProviders := int64(0)
 	for _, p := range providers.List() {
@@ -181,6 +185,7 @@ func (a *app) Run(ctx context.Context) {
 		}
 	}
 
+	wg := sync.WaitGroup{}
 providerLoop:
 	for _, p := range providers.List() {
 		if a.Config.IsProviderActive(p.Name()) {
@@ -191,9 +196,17 @@ providerLoop:
 				if ctx.Err() != nil {
 					break providerLoop
 				}
-				a.PullShows(ctx, p, pc)
+				wg.Add(1)
+				go func(p providers.Provider) {
+					a.PullShows(ctx, p, pc)
+					wg.Done()
+				}(p)
 			}
 		}
+	}
+
+	if ctx.Err() == nil {
+		wg.Wait()
 	}
 	if !a.Config.Headless {
 		pc.Wait()
@@ -221,6 +234,8 @@ func left(s string, l int) string {
 	return s
 }
 
+var nbPuller = int32(0)
+
 // PullShows pull provider and download matched shows
 func (a *app) PullShows(ctx context.Context, p providers.Provider, pc *mpb.Progress) {
 	if a.Config.Debug {
@@ -237,16 +252,16 @@ func (a *app) PullShows(ctx context.Context, p providers.Provider, pc *mpb.Progr
 	var providerBar *mpb.Bar
 
 	if !a.Config.Headless {
-		providerBar = pc.AddBar(0,
+		providerBar = pc.AddBar(1,
 			mpb.BarWidth(50),
 			mpb.PrependDecorators(
-				decor.Spinner([]string{"●∙∙", "∙●∙", "∙∙●", "∙●∙"}, decor.WCSyncSpace),
-				decor.Name(" Pulling "+p.Name()),
+				decor.Name("Pulling "+p.Name(), decor.WC{W: 20, C: decor.DidentRight}),
 			),
 			mpb.AppendDecorators(
-				decor.Counters(0, "  %d/%d"),
+				decor.OnComplete(decor.Counters(0, "  %d/%d"), "completed"),
 			),
 		)
+		providerBar.SetPriority(int(atomic.AddInt32(&nbPuller, 1)))
 		if a.Config.Debug {
 			log.Printf("Provider Bar created %p", providerBar)
 		}
@@ -265,7 +280,7 @@ showLoop:
 		}
 		if _, ok := seen[s.ID]; ok {
 			if !a.Config.Headless {
-				// providerBar.Increment()
+				providerBar.Increment()
 			}
 			continue
 		}
@@ -295,14 +310,23 @@ showLoop:
 
 		}
 	}
+	if a.Config.Debug {
+		log.Println("Waiting end of PullShows loop")
+	}
+	shutDownChan := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(shutDownChan)
+	}()
+
+	// gracefull wait the end of show download or cancellation
+	select {
+	case <-ctx.Done():
+	case <-shutDownChan:
+	}
+
 	if !a.Config.Headless {
 		providerBar.SetTotal(showCount, true)
-	}
-	if ctx.Err() == nil {
-		if a.Config.Debug {
-			log.Println("PullShows waiting wg")
-		}
-		wg.Wait()
 	}
 	if a.Config.Debug {
 		log.Println("Exit PullShows")
@@ -326,7 +350,9 @@ func (a *app) MustDownload(p providers.Provider, s *providers.Show, d string) bo
 
 func (a *app) SubmitDownload(ctx context.Context, wg *sync.WaitGroup, p providers.Provider, s *providers.Show, d string, pc *mpb.Progress, bar *mpb.Bar) {
 	go a.worker.Submit(func() {
-		a.DownloadShow(ctx, wg, p, s, d, pc, bar)
+		a.DownloadShow(ctx, p, s, d, pc)
+		bar.Increment()
+		wg.Done()
 	})
 }
 
@@ -369,10 +395,10 @@ loop:
 	}
 }
 
-var dlID = int64(0)
+var dlID = int32(0)
 
-func (a *app) DownloadShow(ctx context.Context, wg *sync.WaitGroup, p providers.Provider, s *providers.Show, d string, pc *mpb.Progress, bar *mpb.Bar) {
-	id := atomic.AddInt64(&dlID, 1)
+func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *providers.Show, d string, pc *mpb.Progress) {
+	id := atomic.AddInt32(&dlID, 1)
 	ctx, cancel := context.WithCancel(ctx)
 	if a.Config.Debug {
 		log.Printf("Starting  DownloadShow %d", id)
@@ -400,6 +426,7 @@ func (a *app) DownloadShow(ctx context.Context, wg *sync.WaitGroup, p providers.
 		if a.Config.Debug {
 			log.Printf("Bar created %p", fileBar)
 		}
+		fileBar.SetPriority(int(100 + dlID))
 	}
 
 	fn := filepath.Join(d, p.GetShowFileName(s))
@@ -418,10 +445,8 @@ func (a *app) DownloadShow(ctx context.Context, wg *sync.WaitGroup, p providers.
 		if a.Config.Debug {
 			log.Printf("DownloadShow %d terminated", id)
 		}
-		wg.Done()
 		if !a.Config.Headless {
 			fileBar.SetTotal(1, true)
-			bar.Increment()
 		}
 	}()
 
