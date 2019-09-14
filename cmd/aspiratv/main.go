@@ -107,7 +107,7 @@ func main() {
 	}
 
 	a.Initialize()
-	if len(os.Args) < 2 {
+	if len(os.Args) < 1 {
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -299,7 +299,7 @@ showLoop:
 				}
 				showCount++
 				if !a.Config.Headless {
-					providerBar.SetTotal(showCount, false)
+					providerBar.SetTotal(showCount+1, false)
 				}
 
 				wg.Add(1)
@@ -489,7 +489,7 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 	}
 
 	params := []string{
-		"-loglevel", "quiet",
+		"-loglevel", "error",
 		"-hide_banner",
 		"-i", url,
 		"-metadata", "title=" + s.Title,
@@ -516,6 +516,9 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 
 	err = cmd.Run()
 	if err != nil {
+		if err, ok := err.(*exec.ExitError); ok {
+			log.Printf("[%s] FFMEPG exits with error:\n%s", p.Name(), err.Stderr)
+		}
 		shouldDeleteFile = true
 		return
 	}
