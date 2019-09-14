@@ -19,8 +19,7 @@ import (
 
 	_ "github.com/simulot/aspiratv/providers/artetv"
 	_ "github.com/simulot/aspiratv/providers/francetv"
-
-	// _ "github.com/simulot/aspiratv/providers/gulli"
+	_ "github.com/simulot/aspiratv/providers/gulli"
 
 	"github.com/simulot/aspiratv/net/http"
 	"github.com/simulot/aspiratv/playlists/m3u8"
@@ -100,7 +99,11 @@ func main() {
 		}()
 		log.SetOutput(logFile)
 	} else {
-		log.SetOutput(ioutil.Discard)
+		if a.Config.Headless {
+			log.SetOutput(os.Stdout)
+		} else {
+			log.SetOutput(ioutil.Discard)
+		}
 	}
 
 	a.Initialize()
@@ -199,8 +202,12 @@ providerLoop:
 				}
 				wg.Add(1)
 				go func(p providers.Provider) {
+					if a.Config.Headless {
+						log.Printf("[%s] Pulling shows", p.Name())
+					}
 					a.PullShows(ctx, p, pc)
 					wg.Done()
+					log.Printf("[%s] Pulling completed", p.Name())
 				}(p)
 			}
 		}
@@ -285,9 +292,6 @@ showLoop:
 		case <-ctx.Done():
 			break showLoop
 		default:
-			if ctx.Err() != nil {
-				break showLoop
-			}
 			d := a.Config.Destinations[s.Destination]
 			if a.Config.Force || a.MustDownload(ctx, p, s, d) {
 				if a.Config.Debug {
@@ -304,6 +308,9 @@ showLoop:
 				if a.Config.Headless {
 					log.Printf("[%s] %s already downloaded.", p.Name(), p.GetShowFileName(ctx, s))
 				}
+			}
+			if ctx.Err() != nil {
+				break showLoop
 			}
 
 		}
@@ -349,7 +356,9 @@ func (a *app) MustDownload(ctx context.Context, p providers.Provider, s *provide
 func (a *app) SubmitDownload(ctx context.Context, wg *sync.WaitGroup, p providers.Provider, s *providers.Show, d string, pc *mpb.Progress, bar *mpb.Bar) {
 	go a.worker.Submit(func() {
 		a.DownloadShow(ctx, p, s, d, pc)
-		bar.Increment()
+		if !a.Config.Headless {
+			bar.Increment()
+		}
 		wg.Done()
 	})
 }

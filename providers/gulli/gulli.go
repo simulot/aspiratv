@@ -1,6 +1,7 @@
 package gulli
 
 import (
+	"context"
 	"io"
 	"log"
 	"net/http"
@@ -15,7 +16,7 @@ import (
 )
 
 type getter interface {
-	Get(uri string) (io.ReadCloser, error)
+	Get(ctx context.Context, uri string) (io.ReadCloser, error)
 }
 
 // Gulli provider gives access to Gulli catchup tv
@@ -62,8 +63,8 @@ func New(conf ...func(p *Gulli)) (*Gulli, error) {
 	return p, nil
 }
 
-// SetDebug set debug mode
-func (p *Gulli) SetDebug(b bool) {
+// DebugMode set debug mode
+func (p *Gulli) DebugMode(b bool) {
 	p.debug = b
 }
 
@@ -78,12 +79,12 @@ func withGetter(g getter) func(p *Gulli) {
 func (p Gulli) Name() string { return "gulli" }
 
 // Shows download the shows catalog from the web site.
-func (p *Gulli) Shows(mm []*providers.MatchRequest) chan *providers.Show {
+func (p *Gulli) Shows(ctx context.Context, mm []*providers.MatchRequest) chan *providers.Show {
 	shows := make(chan *providers.Show)
 
 	go func() {
 		defer close(shows)
-		cat, err := p.downloadCatalog()
+		cat, err := p.downloadCatalog(ctx)
 		if err != nil {
 			log.Printf("[%s] Can't call replay catalog: %q", p.Name(), err)
 			return
@@ -92,8 +93,8 @@ func (p *Gulli) Shows(mm []*providers.MatchRequest) chan *providers.Show {
 		for _, s := range cat {
 			for _, m := range mm {
 				if strings.Contains(strings.ToLower(s.Title), m.Show) {
-					ID, err := p.getFirstEpisodeID(s)
-					showTitles, err := p.getPlayer(ID)
+					ID, err := p.getFirstEpisodeID(ctx, s)
+					showTitles, err := p.getPlayer(ctx, ID)
 					if err != nil {
 						log.Printf("[%s] Can't decode replay catalog: %q", p.Name(), err)
 						return
@@ -110,20 +111,20 @@ func (p *Gulli) Shows(mm []*providers.MatchRequest) chan *providers.Show {
 }
 
 // GetShowStreamURL return the show's URL, a mp4 file
-func (p *Gulli) GetShowStreamURL(s *providers.Show) (string, error) {
+func (p *Gulli) GetShowStreamURL(ctx context.Context, s *providers.Show) (string, error) {
 	return s.StreamURL, nil
 }
 
 // GetShowInfo gather show information from dedicated web page.
 // It load the html page of the show to extract availability date used as airdate and production year as season
-func (p *Gulli) GetShowInfo(s *providers.Show) error {
+func (p *Gulli) GetShowInfo(ctx context.Context, s *providers.Show) error {
 	return nil
 }
 
 // GetShowFileName return a file name with a path that is compatible with PLEX server:
 //   ShowName/Season NN/ShowName - sNNeMM - Episode title
 //   Show and Episode names are sanitized to avoid problem when saving on the file system
-func (p *Gulli) GetShowFileName(s *providers.Show) string {
+func (p *Gulli) GetShowFileName(ctx context.Context, s *providers.Show) string {
 	return filepath.Join(
 		providers.PathNameCleaner(s.Show),
 		"Season "+providers.Format2Digits(s.Season),
@@ -133,7 +134,7 @@ func (p *Gulli) GetShowFileName(s *providers.Show) string {
 
 // GetShowFileNameMatcher return a file pattern of this show
 // used for detecting already got episode even when episode or season is different
-func (Gulli) GetShowFileNameMatcher(s *providers.Show) string {
+func (Gulli) GetShowFileNameMatcher(ctx context.Context, s *providers.Show) string {
 	return filepath.Join(
 		providers.PathNameCleaner(s.Show),
 		"*",

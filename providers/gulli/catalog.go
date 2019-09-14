@@ -1,7 +1,10 @@
 package gulli
 
 import (
+	"context"
+	"log"
 	"strings"
+	"time"
 
 	"github.com/gocolly/colly"
 )
@@ -13,8 +16,10 @@ type ShowEntry struct {
 
 var catalogURL = "https://replay.gulli.fr/"
 
-func (p *Gulli) downloadCatalog() ([]ShowEntry, error) {
+func (p *Gulli) downloadCatalog(ctx context.Context) ([]ShowEntry, error) {
+	ctx, done := context.WithTimeout(ctx, 30*time.Second)
 	cat := []ShowEntry{}
+	defer done()
 
 	parser := p.htmlParserFactory.New()
 
@@ -27,6 +32,9 @@ func (p *Gulli) downloadCatalog() ([]ShowEntry, error) {
 		cat = append(cat, entry)
 	})
 
+	if p.debug {
+		log.Println("[%s] Catalog url: %q", p.Name(), catalogURL)
+	}
 	err := parser.Visit(catalogURL)
 	if err != nil {
 		return nil, err
