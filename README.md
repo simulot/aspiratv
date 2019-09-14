@@ -19,7 +19,7 @@ Ce programme interroge les serveurs de télévision de rattrapage et télécharg
 ``` sh
 ./aspiratv
 ```
-Cette commande vérifie les serveurs pour télécharger les nouveaux épisodes.
+Cette commande vérifie les serveurs et télécharge les épisodes qui ne le sont pas encore.
 
 
 ## :warning: Avertissement :warning: 
