@@ -10,10 +10,10 @@
       "enabled": true
     },
     "gulli": {
-      "enabled": false
+      "enabled": true
     },
     "artetv": {
-      "enabled": false
+      "enabled": true
     }
   },
   "WatchList": [

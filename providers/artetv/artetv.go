@@ -1,6 +1,7 @@
 package artetv
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +13,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/simulot/aspiratv/net/http/httptest"
 
 	"github.com/gocolly/colly"
 
@@ -41,7 +44,7 @@ const (
 var runCounter = 0
 
 type getter interface {
-	Get(uri string) (io.ReadCloser, error)
+	Get(ctx context.Context, uri string) (io.ReadCloser, error)
 }
 
 // ArteTV structure handles arte  catalog of shows
@@ -108,10 +111,10 @@ func (t *throttler) Stop() {
 	<-t.stop
 }
 
-func (t *throttler) Get(uri string) (io.ReadCloser, error) {
+func (t *throttler) Get(ctx context.Context, uri string) (io.ReadCloser, error) {
 	t.once.Do(t.init)
 	<-t.throttle
-	return t.g.Get(uri)
+	return t.g.Get(ctx, uri)
 }
 
 // New setup a Show provider for Arte
@@ -132,8 +135,8 @@ func New(conf ...func(p *ArteTV)) (*ArteTV, error) {
 	return p, nil
 }
 
-// SetDebug set debug mode
-func (p *ArteTV) SetDebug(b bool) {
+// DebugMode set debug mode
+func (p *ArteTV) DebugMode(b bool) {
 	p.debug = b
 }
 
@@ -148,18 +151,20 @@ func withGetter(g getter) func(p *ArteTV) {
 func (p ArteTV) Name() string { return "artetv" }
 
 // Shows download the shows catalog from the web site.
-func (p *ArteTV) Shows(mm []*providers.MatchRequest) chan *providers.Show {
+func (p *ArteTV) Shows(ctx context.Context, mm []*providers.MatchRequest) chan *providers.Show {
 	shows := make(chan *providers.Show)
 
 	go func() {
 		defer close(shows)
 		for _, m := range mm {
+			if ctx.Err() != nil {
+				return
+			}
 			if m.Provider == p.Name() {
-				for s := range p.getShowList(m) {
+				for s := range p.getShowList(ctx, m) {
 					s.Destination = m.Destination
 					shows <- s
 				}
-
 			}
 		}
 	}()
@@ -167,11 +172,14 @@ func (p *ArteTV) Shows(mm []*providers.MatchRequest) chan *providers.Show {
 	return shows
 }
 
-func (p *ArteTV) getShowList(m *providers.MatchRequest) chan *providers.Show {
+func (p *ArteTV) getShowList(ctx context.Context, m *providers.MatchRequest) chan *providers.Show {
 	shows := make(chan *providers.Show)
 
 	go func() {
-		defer close(shows)
+		defer func() {
+			close(shows)
+
+		}()
 
 		//TODO: use user's preferred language
 		const apiSEARCH = "https://www.arte.tv/guide/api/emac/v3/fr/web/data/SEARCH_LISTING"
@@ -190,21 +198,38 @@ func (p *ArteTV) getShowList(m *providers.MatchRequest) chan *providers.Show {
 
 		u.RawQuery = v.Encode()
 
-		var result APIResult
+		if p.debug {
+			log.Printf("[%s] Search url: %q", p.Name(), u.String())
+		}
 
-		r, err := p.getter.Get(u.String())
+		var result APIResult
+		ctxLocal, done := context.WithTimeout(ctx, 30*time.Second)
+
+		r, err := p.getter.Get(ctxLocal, u.String())
 		if err != nil {
 			log.Printf("[%s] Can't call search API: %q", p.Name(), err)
+			done()
 			return
 		}
 
 		defer r.Close()
 
+		if p.debug {
+			r = httptest.DumpReaderToFile(r, "artetv-search-")
+		}
+
 		err = json.NewDecoder(r).Decode(&result)
 		if err != nil {
-			log.Printf("[%s] Can't decode search API result: %q", err)
+			log.Printf("[%s] Can't decode search API result: %q", p.Name(), err)
+			done()
 			return
 		}
+		if ctxLocal.Err() != nil {
+			done()
+			return
+		}
+
+		done()
 
 		matchedSeries := []Data{}
 		matchedShows := []Data{}
@@ -221,7 +246,7 @@ func (p *ArteTV) getShowList(m *providers.MatchRequest) chan *providers.Show {
 
 		if len(matchedSeries) > 0 {
 			for _, d := range matchedSeries {
-				for s := range p.getSerie(d) {
+				for s := range p.getSerie(ctx, d) {
 					shows <- s
 				}
 			}
@@ -238,11 +263,15 @@ var (
 	parseSeason          = regexp.MustCompile(`Saison (\d+)`)
 )
 
-func (p *ArteTV) getSerie(d Data) chan *providers.Show {
+func (p *ArteTV) getSerie(ctx context.Context, d Data) chan *providers.Show {
 	shows := make(chan *providers.Show)
+	ctx, done := context.WithTimeout(ctx, 30*time.Second)
 
 	go func() {
-		defer close(shows)
+		defer func() {
+			close(shows)
+			done()
+		}()
 
 		//TODO: use user's preferred language
 		const apiSEARCH = "https://www.arte.tv/guide/api/emac/v3/fr/web/data/COLLECTION_VIDEOS/?collectionId=%s&page=%d&limit=12"
@@ -252,6 +281,10 @@ func (p *ArteTV) getSerie(d Data) chan *providers.Show {
 
 	collectionLoop:
 		for len(collectionIDs) > 0 {
+			if ctx.Err() != nil {
+				return
+			}
+
 			seasons := []string{}
 			for k := range collectionIDs {
 				seasons = append(seasons, k)
@@ -275,12 +308,18 @@ func (p *ArteTV) getSerie(d Data) chan *providers.Show {
 					log.Println(u)
 				}
 
-				r, err := p.getter.Get(u)
+				r, err := p.getter.Get(ctx, u)
+
+				if p.debug {
+					r = httptest.DumpReaderToFile(r, "artetv-getcollection-")
+				}
 				if err != nil {
 					log.Printf("[%s] Can't get collection: %q", p.Name(), err)
 					return
 				}
-
+				if ctx.Err() != nil {
+					return
+				}
 				var result APIResult
 				err = json.NewDecoder(r).Decode(&result)
 				r.Close()
@@ -325,6 +364,9 @@ func (p *ArteTV) getSerie(d Data) chan *providers.Show {
 				}
 
 				for _, ep := range result.Data {
+					if ctx.Err() != nil {
+						return
+					}
 					show := &providers.Show{
 						ID:      ep.ProgramID,
 						Show:    d.Title, //Takes collection's title
@@ -339,7 +381,7 @@ func (p *ArteTV) getSerie(d Data) chan *providers.Show {
 						img = getBestImage(ep.Images, "landscape")
 					}
 					show.ThumbnailURL = img
-					err := p.GetShowInfo(show)
+					err := p.GetShowInfo(ctx, show)
 					if err != nil {
 						log.Println(err)
 						continue
@@ -410,8 +452,8 @@ func getBestImage(images Images, t string) string {
 // GetShowFileName return a file name with a path that is compatible with PLEX server:
 //   ShowName/Season NN/ShowName - sNNeMM - Episode title
 //   Show and Episode names are sanitized to avoid problem when saving on the file system
-func (p *ArteTV) GetShowFileName(s *providers.Show) string {
-	err := p.GetShowInfo(s)
+func (p *ArteTV) GetShowFileName(ctx context.Context, s *providers.Show) string {
+	err := p.GetShowInfo(ctx, s)
 	if err != nil {
 		return ""
 	}
@@ -441,8 +483,8 @@ func (p *ArteTV) GetShowFileName(s *providers.Show) string {
 
 // GetShowFileNameMatcher return a file pattern of this show
 // used for detecting already got episode even when episode or season is different
-func (p *ArteTV) GetShowFileNameMatcher(s *providers.Show) string {
-	return p.GetShowFileName(s)
+func (p *ArteTV) GetShowFileNameMatcher(ctx context.Context, s *providers.Show) string {
+	return p.GetShowFileName(ctx, s)
 }
 
 // https://api.arte.tv/api/player/v1/config/fr/083668-012-A?autostart=1&lifeCycle=1
@@ -450,12 +492,12 @@ func (p *ArteTV) GetShowFileNameMatcher(s *providers.Show) string {
 const arteDetails = "https://api.arte.tv/api/player/v1/config/fr/%s?autostart=1&lifeCycle=1" // Player to get Video streams ProgID
 
 // GetShowStreamURL return the show's URL, a mp4 file
-func (p *ArteTV) GetShowStreamURL(s *providers.Show) (string, error) {
+func (p *ArteTV) GetShowStreamURL(ctx context.Context, s *providers.Show) (string, error) {
 	if s.StreamURL != "" {
 		return s.StreamURL, nil
 	}
 
-	err := p.GetShowInfo(s)
+	err := p.GetShowInfo(ctx, s)
 	if err != nil {
 		return "", err
 	}
@@ -465,7 +507,7 @@ func (p *ArteTV) GetShowStreamURL(s *providers.Show) (string, error) {
 
 // GetShowInfo gather show information from dedicated web page.
 // It load the html page of the show to extract availability date used as airdate and production year as season
-func (p *ArteTV) GetShowInfo(s *providers.Show) error {
+func (p *ArteTV) GetShowInfo(ctx context.Context, s *providers.Show) error {
 	if s.Detailed {
 		return nil
 	}
@@ -474,7 +516,7 @@ func (p *ArteTV) GetShowInfo(s *providers.Show) error {
 	if p.debug {
 		log.Println(url)
 	}
-	r, err := p.getter.Get(url)
+	r, err := p.getter.Get(ctx, url)
 	if err != nil {
 		return fmt.Errorf("Can't get show's detailled information: %v", err)
 	}
