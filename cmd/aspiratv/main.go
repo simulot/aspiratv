@@ -247,15 +247,12 @@ var nbPuller = int32(0)
 // PullShows pull provider and download matched shows
 func (a *app) PullShows(ctx context.Context, p providers.Provider, pc *mpb.Progress) {
 	if a.Config.Debug {
-		log.Printf("Starting %s PullShows", p.Name())
+		log.Printf("[%s] Starting PullShows", p.Name())
 		p.DebugMode(true)
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	defer func() {
 		cancel()
-		if a.Config.Debug {
-			log.Printf("Starting %s PullShows", p.Name())
-		}
 	}()
 
 	var providerBar *mpb.Bar
@@ -271,9 +268,6 @@ func (a *app) PullShows(ctx context.Context, p providers.Provider, pc *mpb.Progr
 			),
 		)
 		providerBar.SetPriority(int(atomic.AddInt32(&nbPuller, 1)))
-		if a.Config.Debug {
-			log.Printf("Provider Bar created %p", providerBar)
-		}
 	}
 
 	//log.Printf("Get shows list for %s", p.Name())
@@ -408,7 +402,7 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 	id := atomic.AddInt32(&dlID, 1)
 	ctx, cancel := context.WithCancel(ctx)
 	if a.Config.Debug {
-		log.Printf("Starting  DownloadShow %d", id)
+		log.Printf("[%s] Starting  DownloadShow %d", p.Name(), id)
 	}
 
 	// Make a context for DownloadShow
@@ -430,9 +424,6 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 			),
 			mpb.BarRemoveOnComplete(),
 		)
-		if a.Config.Debug {
-			log.Printf("Bar created %p", fileBar)
-		}
 		fileBar.SetPriority(int(100 + dlID))
 	}
 
@@ -458,7 +449,7 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 	}()
 
 	if a.Config.Debug {
-		log.Printf("Download stream to: %q", fn)
+		log.Printf("[%s] Download stream to: %q", p.Name(), fn)
 	}
 	err := os.MkdirAll(filepath.Dir(fn), 0777)
 	if err != nil {
@@ -489,13 +480,13 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 	}
 
 	params := []string{
-		"-loglevel", "error",
-		"-hide_banner",
-		"-i", url,
-		"-metadata", "title=" + s.Title,
-		"-metadata", "comment=" + s.Pitch,
-		"-metadata", "show=" + s.Show,
-		"-metadata", "channel=" + s.Channel,
+		"-loglevel", "error", // I wan't errors
+		"-hide_banner", // I don't want banner
+		"-i", url,      // Where is the stream
+		"-metadata", "title=" + s.Title, // Force title
+		"-metadata", "comment=" + s.Pitch, // Force comment
+		"-metadata", "show=" + s.Show, //Force show
+		"-metadata", "channel=" + s.Channel, // Force channel
 		"-y",              // Override output file
 		"-vcodec", "copy", // copy video
 		"-acodec", "copy", // copy audio
