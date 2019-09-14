@@ -17,8 +17,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	// _ "github.com/simulot/aspiratv/providers/artetv"
+	_ "github.com/simulot/aspiratv/providers/artetv"
 	_ "github.com/simulot/aspiratv/providers/francetv"
+
 	// _ "github.com/simulot/aspiratv/providers/gulli"
 
 	"github.com/simulot/aspiratv/net/http"
@@ -253,7 +254,7 @@ func (a *app) PullShows(ctx context.Context, p providers.Provider, pc *mpb.Progr
 	var providerBar *mpb.Bar
 
 	if !a.Config.Headless {
-		providerBar = pc.AddBar(1,
+		providerBar = pc.AddBar(0,
 			mpb.BarWidth(50),
 			mpb.PrependDecorators(
 				decor.Name("Pulling "+p.Name(), decor.WC{W: 20, C: decor.DidentRight}),
@@ -275,14 +276,7 @@ func (a *app) PullShows(ctx context.Context, p providers.Provider, pc *mpb.Progr
 	showCount := int64(0)
 showLoop:
 	for s := range p.Shows(ctx, a.Config.WatchList) {
-		showCount++
-		if !a.Config.Headless {
-			providerBar.SetTotal(showCount, false)
-		}
 		if _, ok := seen[s.ID]; ok {
-			if !a.Config.Headless {
-				providerBar.Increment()
-			}
 			continue
 		}
 		seen[s.ID] = true
@@ -299,12 +293,15 @@ showLoop:
 				if a.Config.Debug {
 					log.Printf("[%s] submitting %d", p.Name(), showCount)
 				}
+				showCount++
+				if !a.Config.Headless {
+					providerBar.SetTotal(showCount, false)
+				}
+
 				wg.Add(1)
 				a.SubmitDownload(ctx, &wg, p, s, d, pc, providerBar)
 			} else {
-				if !a.Config.Headless {
-					providerBar.Increment()
-				} else {
+				if a.Config.Headless {
 					log.Printf("[%s] %s already downloaded.", p.Name(), p.GetShowFileName(ctx, s))
 				}
 			}
