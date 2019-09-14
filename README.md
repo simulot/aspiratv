@@ -1,48 +1,108 @@
 # aspiratv
 
-Ce programme interroge les serveurs de télévision de rattrapage et télécharge les émissions souhaitées selon une organisation reconnue par le programme [PLEX](https://www.plex.tv/).
+Ce programme interroge les serveurs de télévision de rattrapage et télécharge les émissions souhaitées selon une organisation reconnue par des programmes comme [PLEX](https://www.plex.tv/) ou [EMBY](https://emby.media/).
 
-## Avertissement
+## Télécharger un programme, une série
+<p align="center">
+  <img src="_images/aspiratv.svg" width="800" alt="aspiratv command line">
+</p>
+
+``` sh
+./aspiratv -provider=artetv -destination=$HOME/Videos/DL download "La minute vieille"
+```
+
+## Télécharger les dernières diffusions à partir d'une liste
+<p align="center">
+  <img src="_images/download.svg" width="800" alt="aspiratv command line">
+</p>
+
+``` sh
+./aspiratv
+```
+Cette commande vérifie les serveurs pour télécharger les nouveaux épisodes.
+
+
+## :warning: Avertissement :warning: 
 Les contenus mis à disposition par les diffuseurs sont soumis aux droits d'auteur. Ne les utilisez pas en dehors du cadre privé.
 
 Aspiratv ne fait que garder une copie de l’œuvre sur votre disque dur, comme vous l'auriez fait avec votre enregistreur vidéo, votre box TV ou une clé USB branchée sur votre TV. Cette opération est seulement rendue plus simple qu'en gérant manuellement les enregistrements.
 
 Le fonctionnement de ce programme n'est pas garanti. Notamment, les fournisseurs de contenus sont susceptibles de changer leurs APIs ou interdire leur utilisation sans pré-avis. 
 
-## Prérequis
-
-- FFMPEG: ffmpeg est utilisé pour convertir le flux vidéo en fichiers mp4. l'exécutable doit être disponible dans votre système. Page de téléchargement pour Windows: [https://ffmpeg.zeranoe.com/builds/](https://ffmpeg.zeranoe.com/builds/)
-
-# Changements
-
-- Connecteur pour Gulli
-- Changements dans le fichiers de configuration
-  - Possibilité d'activer individuellement les connecteurs
 
 
 # Installation
 
+## Prérequis
+
+- FFMPEG: ffmpeg est utilisé pour convertir le flux vidéo en fichiers mp4. l'exécutable doit être disponible dans votre système. Page de téléchargement pour Windows: [https://ffmpeg.zeranoe.com/builds/](https://ffmpeg.zeranoe.com/builds/)
+
+## Installation des binaires
 Les binaires pour Windows, Linux et FreeBSD sont directement disponibles sur la page [releases](https://github.com/simulot/aspiratv/releases/latest). Les binaires n'ont pas de dépendance autre que FFMPEG et n'ont pas besoin d'être installés.
+
+### linux
+- Télécharger les binaires correspondant à votre système sur la page de la dernière release de le répertoire de votre choix.
+- Puis décompresser l'archive
+```
+tar -czvf aspiratv_0.4.0_Linux_x86_64.tar.gz
+```
+
 
 # Ligne de commande
 
 ```
 Usage of ./aspiratv:
+  -config string
+    	Configuration file name. (default "./config.json")
   -debug
-        Debug mode.
+    	Debug mode.
+  -destination string
+    	Provider to be used with download command. Possible values : artetv,francetv,gulli
   -force
-        Force media download.
-  -service
-        Run as service.
+    	Force media download.
+  -headless
+    	Headless mode. Progression bars are not displayed.
+  -log string
+    	Give the log file name. When empty, no log.
+  -max-tasks int
+    	Maximum concurrent downloads at a time. (default 8)
+  -provider string
+    	Provider to be used with download command. Possible values : artetv,francetv,gulli
+
 ```
+Le programme fonctionne selon deux modilités :
+## Pour surveiller la mise à disposition de nouveaux épisodes d'une émission
+Dans ce mode, le fichiers de configuration `config.json` placé dans le même répertoire que le programe est lu pour pour interroger les différents serveur.
+
+### -headless
+L'option `-headless` désactive les barres de progressions et produit une log sur la console.
+
+
+Note: L'option -server a été supprimée. Pour interroger automatiquement les serveur, ajouter une ligne dans crontab, ou une tâche planifiée dans windows.
+
+### -config votreconfig.json
+
+L'option `-config` indique le fichier de configuration à utiliser.
+
+## Pour télécharger une émission, ou une série
+```sh
+./aspiratv -provider=francetv -destination=$HOME/Videos/DL download "Les Dalton"
+```
+Cette commande cherchera les épisodes de la série "Les Dalton" sur france télévisions, et les téléchargera dans le répertoire ~/Video/DL
+
+
+
+## Les options communes aux deux modes :
+
 ## -debug
-Augmente le nombre de message de log.
+Ajoute au fichier de log des informations utiles au débugage.
 
 ## -force
 Télécharge toutes les émissions correspondant à la liste de recherche, même si elles ont été déjà téléchargées.
 
-## -service
-Dans ce mode, le programme reste actif et interroge les serveurs régulièrement.
+## -log LOG_FILE
+
+L'option `-log` redirige les messages d'erreur dans le fichier indiqué. 
 
 
 # Configuration
@@ -53,7 +113,6 @@ Le fichier config.json contient les paramètres et la liste des émissions que l
 
 ``` json
 {
-  "PullInterval": "7h30m",
   "Destinations": {
     "Documentaires": "${HOME}/Videos/Documentaires",
     "Jeunesse": "${HOME}/Videos/Jeunesse",
@@ -87,9 +146,6 @@ Le fichier config.json contient les paramètres et la liste des émissions que l
   ]
 }
 ```
-### PullInterval
-Intervalle entre deux recherches sur le serveur de la télévision, selon le format "1h30" pour un intervalle d'une heure trente.
-Le délai exact est aléatoire pour ne pas interroger le serveur à heures fixes.
 
 ### Destinations
 Défini les répertoires de destination des fichiers. A noter que les variables d'environnement peuvent être utilisées.
@@ -126,11 +182,5 @@ Pour obtenir un résultat acceptable, il faut configurer une librairie de type "
 # Compilation des sources
 Vous devez avoir un compilateur pour [le langage GO](https://golang.org/dl/).
 
-# Todo
-
-- [x] Provider pour Arte
-  - [x] Arte.TV: Suivre les collections
-- [X] Provider pour Gulli
-- [ ] Ajouter le pitch à Plex
 
 
