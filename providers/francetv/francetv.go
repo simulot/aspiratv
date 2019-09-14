@@ -1,6 +1,7 @@
 package francetv
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/simulot/aspiratv/net/http"
+	"github.com/simulot/aspiratv/net/http/httptest"
 	"github.com/simulot/aspiratv/providers"
 )
 
@@ -30,12 +32,13 @@ const (
 )
 
 type getter interface {
-	Get(uri string) (io.ReadCloser, error)
+	Get(ctx context.Context, uri string) (io.ReadCloser, error)
 }
 
 // FranceTV structure handles france-tv catalog of shows
 type FranceTV struct {
 	getter getter
+	debug  bool
 }
 
 // WithGetter inject a getter in FranceTV object instead of normal one
@@ -57,30 +60,46 @@ func New(conf ...func(ftv *FranceTV)) (*FranceTV, error) {
 }
 
 // Name return the name of the provider
-func (ftv FranceTV) Name() string { return "francetv" }
+func (FranceTV) Name() string { return "francetv" }
+
+// DebugMode switch debug mode
+func (p *FranceTV) DebugMode(mode bool) {
+	p.debug = mode
+}
 
 // Shows return shows that match with matching list.
-func (ftv *FranceTV) Shows(mm []*providers.MatchRequest) chan *providers.Show {
+func (p *FranceTV) Shows(ctx context.Context, mm []*providers.MatchRequest) chan *providers.Show {
 	shows := make(chan *providers.Show)
+	ctx, done := context.WithTimeout(ctx, 30*time.Second)
 
 	go func() {
-		defer close(shows)
+		defer func() {
+			close(shows)
+			done()
+		}()
 		url := fmt.Sprintf(WSListURL, 3000) // Limit to the last 3000th shows
+		if p.debug {
+			log.Printf("[%s] Catalog url %q", p.Name(), url)
+		}
 
 		// Get JSON catalog of available shows on France Télévisions
-		r, err := ftv.getter.Get(url)
+		r, err := p.getter.Get(ctx, url)
 		if err != nil {
-			log.Printf("[%s] Can't call catalog API: %q", err)
+			log.Printf("[%s] Can't call catalog API: %q", p.Name(), err)
 			return
 		}
-		// r = httptest.DumpReaderToFile(r, "francetv-catalog-")
+		if p.debug {
+			r = httptest.DumpReaderToFile(r, "francetv-catalog-")
+		}
 		defer r.Close()
 
-		d := json.NewDecoder(r)
-		list := &pluzzList{}
-		err = d.Decode(list)
+		list := pluzzList{}
+		err = json.NewDecoder(r).Decode(&list)
 		if err != nil {
-			log.Printf("[%s] Can't decode catalog: %q", err)
+			log.Printf("[%s] Can't decode catalog: %q", p.Name(), err)
+		}
+		if ctx.Err() != nil {
+			return
 		}
 
 		for _, e := range list.Reponse.Emissions {
@@ -106,15 +125,18 @@ func (ftv *FranceTV) Shows(mm []*providers.MatchRequest) chan *providers.Show {
 			if providers.IsShowMatch(mm, show) {
 				shows <- show
 			}
+			if ctx.Err() != nil {
+				return
+			}
 		}
 	}()
 	return shows
 }
 
 // GetShowStreamURL return the show's URL, a m3u8 playlist
-func (ftv *FranceTV) GetShowStreamURL(s *providers.Show) (string, error) {
+func (p *FranceTV) GetShowStreamURL(ctx context.Context, s *providers.Show) (string, error) {
 	if s.StreamURL == "" {
-		err := ftv.GetShowInfo(s)
+		err := p.GetShowInfo(ctx, s)
 		if err != nil {
 			return "", fmt.Errorf("Can't get detailed information for the show: %v", err)
 		}
@@ -123,21 +145,30 @@ func (ftv *FranceTV) GetShowStreamURL(s *providers.Show) (string, error) {
 }
 
 // GetShowInfo query the URL from InfoOeuvre web service
-func (ftv *FranceTV) GetShowInfo(s *providers.Show) error {
+func (p *FranceTV) GetShowInfo(ctx context.Context, s *providers.Show) error {
 	if s.Detailed {
 		return nil
 	}
 	i := infoOeuvre{}
 
 	url := WSInfoOeuvre + s.ID
-	r, err := ftv.getter.Get(url)
+	if p.debug {
+		log.Printf("[%s] Get details url: %q", p.Name(), url)
+	}
+	r, err := p.getter.Get(ctx, url)
 	if err != nil {
 		return fmt.Errorf("Can't get show's detailed information: %v", err)
 	}
-	// r = httptest.DumpReaderToFile(r, "francetv-info-"+s.ID+"-")
+	if p.debug {
+		r = httptest.DumpReaderToFile(r, "francetv-info-"+s.ID+"-")
+	}
+
 	err = json.NewDecoder(r).Decode(&i)
 	if err != nil {
 		return fmt.Errorf("Can't decode show's detailed information: %v", err)
+	}
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 
 	s.ThumbnailURL = i.ImageSecure
@@ -157,7 +188,7 @@ func (ftv *FranceTV) GetShowInfo(s *providers.Show) error {
 // GetShowFileName return a file name with a path that is compatible with PLEX server:
 //   ShowName/Season NN/ShowName - sNNeMM - Episode title
 //   Show and Episode names are sanitized to avoid problem when saving on the file system
-func (FranceTV) GetShowFileName(s *providers.Show) string {
+func (FranceTV) GetShowFileName(ctx context.Context, s *providers.Show) string {
 
 	var showPath, seasonPath, episodePath string
 	showPath = providers.PathNameCleaner(s.Show)
@@ -190,6 +221,6 @@ func (FranceTV) GetShowFileName(s *providers.Show) string {
 
 // GetShowFileNameMatcher return a file pattern of this show
 // used for detecting already got episode even when episode or season is different
-func (p *FranceTV) GetShowFileNameMatcher(s *providers.Show) string {
-	return p.GetShowFileName(s)
+func (p *FranceTV) GetShowFileNameMatcher(ctx context.Context, s *providers.Show) string {
+	return p.GetShowFileName(ctx, s)
 }
