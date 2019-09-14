@@ -2,6 +2,7 @@ package m3u8
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"strconv"
@@ -11,7 +12,7 @@ import (
 )
 
 type Getter interface {
-	Get(uri string) (io.ReadCloser, error)
+	Get(ctx context.Context, uri string) (io.ReadCloser, error)
 }
 
 type Master struct {
@@ -27,7 +28,7 @@ type Variant struct {
 	URL           string
 }
 
-func NewMaster(URL string, getter Getter) (*Master, error) {
+func NewMaster(ctx context.Context, URL string, getter Getter) (*Master, error) {
 	if getter == nil {
 		getter = http.DefaultClient
 	}
@@ -35,7 +36,7 @@ func NewMaster(URL string, getter Getter) (*Master, error) {
 		getter: getter,
 		URL:    URL,
 	}
-	r, err := m.getter.Get(URL)
+	r, err := m.getter.Get(ctx, URL)
 	if err != nil {
 		return nil, err
 	}

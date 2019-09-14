@@ -1,6 +1,7 @@
 package m3u8
 
 import (
+	"context"
 	"testing"
 	"time"
 )
@@ -25,8 +26,9 @@ func TestPlayListContent(t *testing.T) {
 
 	for _, tc := range testCases {
 		getter := &fileGet{}
+		ctx := context.TODO()
 
-		p, err := NewPlayList(tc.name, getter)
+		p, err := NewPlayList(ctx, tc.name, getter)
 		if err != nil {
 			t.Fatal(err)
 			return
