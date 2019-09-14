@@ -1,10 +1,15 @@
 package gulli
 
 import (
+	"context"
 	"html"
 	"io/ioutil"
+	"log"
 	"regexp"
 	"strings"
+	"time"
+
+	"github.com/simulot/aspiratv/net/http/httptest"
 
 	"github.com/simulot/aspiratv/providers"
 )
@@ -20,11 +25,19 @@ var reVars = regexp.MustCompile(
 		`|(?:image:\s*(?U:"(?P<image>[^"]*)"))` +
 		`|(?:description:\s*(?U:"(?P<description>[^"]*)"))`)
 
-func (p *Gulli) getPlayer(ID string) ([]*providers.Show, error) {
+func (p *Gulli) getPlayer(ctx context.Context, ID string) ([]*providers.Show, error) {
+	ctx, done := context.WithTimeout(ctx, 30*time.Second)
+	defer done()
 
-	r, err := p.getter.Get(gullyPlayer + ID)
+	if p.debug {
+		log.Printf("[%s] Player URL: %q", p.Name(), gullyPlayer+ID)
+	}
+	r, err := p.getter.Get(ctx, gullyPlayer+ID)
 	if err != nil {
 		return nil, err
+	}
+	if p.debug {
+		r = httptest.DumpReaderToFile(r, "gulli-player-")
 	}
 	defer r.Close()
 	b, err := ioutil.ReadAll(r)
