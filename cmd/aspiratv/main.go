@@ -17,9 +17,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	_ "github.com/simulot/aspiratv/providers/artetv"
+	// _ "github.com/simulot/aspiratv/providers/artetv"
 	_ "github.com/simulot/aspiratv/providers/francetv"
-	_ "github.com/simulot/aspiratv/providers/gulli"
+	// _ "github.com/simulot/aspiratv/providers/gulli"
 
 	"github.com/simulot/aspiratv/net/http"
 	"github.com/simulot/aspiratv/playlists/m3u8"
@@ -46,7 +46,7 @@ type app struct {
 }
 
 type getter interface {
-	Get(uri string) (io.ReadCloser, error)
+	Get(ctx context.Context, uri string) (io.ReadCloser, error)
 }
 
 func main() {
@@ -240,6 +240,7 @@ var nbPuller = int32(0)
 func (a *app) PullShows(ctx context.Context, p providers.Provider, pc *mpb.Progress) {
 	if a.Config.Debug {
 		log.Printf("Starting %s PullShows", p.Name())
+		p.DebugMode(true)
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	defer func() {
@@ -273,7 +274,7 @@ func (a *app) PullShows(ctx context.Context, p providers.Provider, pc *mpb.Progr
 
 	showCount := int64(0)
 showLoop:
-	for s := range p.Shows(a.Config.WatchList) {
+	for s := range p.Shows(ctx, a.Config.WatchList) {
 		showCount++
 		if !a.Config.Headless {
 			providerBar.SetTotal(showCount, false)
@@ -294,7 +295,7 @@ showLoop:
 				break showLoop
 			}
 			d := a.Config.Destinations[s.Destination]
-			if a.Config.Force || a.MustDownload(p, s, d) {
+			if a.Config.Force || a.MustDownload(ctx, p, s, d) {
 				if a.Config.Debug {
 					log.Printf("[%s] submitting %d", p.Name(), showCount)
 				}
@@ -304,7 +305,7 @@ showLoop:
 				if !a.Config.Headless {
 					providerBar.Increment()
 				} else {
-					log.Printf("[%s] %s already downloaded.", p.Name(), p.GetShowFileName(s))
+					log.Printf("[%s] %s already downloaded.", p.Name(), p.GetShowFileName(ctx, s))
 				}
 			}
 
@@ -334,13 +335,13 @@ showLoop:
 }
 
 // MustDownload check if the show isn't yet downloaded.
-func (a *app) MustDownload(p providers.Provider, s *providers.Show, d string) bool {
+func (a *app) MustDownload(ctx context.Context, p providers.Provider, s *providers.Show, d string) bool {
 
-	fn := filepath.Join(d, p.GetShowFileName(s))
+	fn := filepath.Join(d, p.GetShowFileName(ctx, s))
 	if _, err := os.Stat(fn); err == nil {
 		return false
 	}
-	showPath := filepath.Join(d, p.GetShowFileNameMatcher(s))
+	showPath := filepath.Join(d, p.GetShowFileNameMatcher(ctx, s))
 	files, err := filepath.Glob(showPath)
 	if err != nil {
 		log.Fatalf("Can't glob %s: %v", showPath, err)
@@ -419,7 +420,7 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 			),
 			mpb.AppendDecorators(
 				decor.AverageSpeed(decor.UnitKB, " %.1f", decor.WC{W: 15, C: decor.DidentRight}),
-				decor.Name(filepath.Base(p.GetShowFileName(s))),
+				decor.Name(filepath.Base(p.GetShowFileName(ctx, s))),
 			),
 			mpb.BarRemoveOnComplete(),
 		)
@@ -429,12 +430,12 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 		fileBar.SetPriority(int(100 + dlID))
 	}
 
-	fn := filepath.Join(d, p.GetShowFileName(s))
+	fn := filepath.Join(d, p.GetShowFileName(ctx, s))
 	defer func() {
 		close(done)
 		if shouldDeleteFile {
 			for _, f := range files {
-				log.Printf("[%s] %s is cancelled.", p.Name(), p.GetShowFileName(s))
+				log.Printf("[%s] %s is cancelled.", p.Name(), p.GetShowFileName(ctx, s))
 				os.Remove(f)
 			}
 		}
@@ -459,17 +460,17 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 		return
 	}
 
-	url, err := p.GetShowStreamURL(s)
+	url, err := p.GetShowStreamURL(ctx, s)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	if len(url) == 0 {
-		log.Printf("[%s] Can't get url from %s.", p.Name(), p.GetShowFileName(s))
+		log.Printf("[%s] Can't get url from %s.", p.Name(), p.GetShowFileName(ctx, s))
 		return
 	}
 	if strings.ToLower(filepath.Ext(url)) == ".m38u" {
-		master, err := m3u8.NewMaster(url, a.getter)
+		master, err := m3u8.NewMaster(ctx, url, a.getter)
 		if err != nil {
 			log.Println(err)
 			return
@@ -500,7 +501,7 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 	files = append(files, fn)
 
 	if a.Config.Debug {
-		log.Printf("[%s] Downloading %q", p.Name(), p.GetShowFileName(s))
+		log.Printf("[%s] Downloading %q", p.Name(), p.GetShowFileName(ctx, s))
 	}
 
 	if !a.Config.Headless {
@@ -525,14 +526,14 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 		mustDownloadShowTbnFile = true
 	}
 
-	tbnStream, err := a.getter.Get(s.ThumbnailURL)
+	tbnStream, err := a.getter.Get(ctx, s.ThumbnailURL)
 	if err != nil {
-		log.Printf("[%s] Can't download %q's thumbnail: %v", p.Name(), p.GetShowFileName(s), err)
+		log.Printf("[%s] Can't download %q's thumbnail: %v", p.Name(), p.GetShowFileName(ctx, s), err)
 	}
 	ws := []io.Writer{}
 	tbnFile, err := os.Create(tbnFileName)
 	if err != nil {
-		log.Printf("[%s] Can't create %q's thumbnail: %v", p.Name(), p.GetShowFileName(s), err)
+		log.Printf("[%s] Can't create %q's thumbnail: %v", p.Name(), p.GetShowFileName(ctx, s), err)
 	}
 	defer tbnFile.Close()
 	ws = append(ws, tbnFile)
@@ -549,10 +550,10 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 	wr := io.MultiWriter(ws...)
 	_, err = io.Copy(wr, tbnStream)
 	if err != nil {
-		log.Printf("[%s] Can't write %q's thumbnail: %v", p.Name(), p.GetShowFileName(s), err)
+		log.Printf("[%s] Can't write %q's thumbnail: %v", p.Name(), p.GetShowFileName(ctx, s), err)
 	}
 	if a.Config.Headless || a.Config.Debug {
-		log.Printf("[%s] %s downloaded.", p.Name(), p.GetShowFileName(s))
+		log.Printf("[%s] %s downloaded.", p.Name(), p.GetShowFileName(ctx, s))
 	}
 	return
 }
