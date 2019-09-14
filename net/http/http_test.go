@@ -4,6 +4,7 @@
 package http
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
@@ -141,7 +142,8 @@ func TestGet(t *testing.T) {
 	defer ts.Close()
 
 	c := NewClient()
-	res, err := c.Get(ts.URL)
+	ctx := context.TODO()
+	res, err := c.Get(ctx, ts.URL)
 	if err != nil {
 		t.Errorf("Can't get: %v", err)
 		return
@@ -191,8 +193,8 @@ func TestClient_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ts := httptest.NewServer(tt.testSrv)
 			c := NewClient()
-
-			got, err := c.Get(ts.URL)
+			ctx := context.TODO()
+			got, err := c.Get(ctx, ts.URL)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Client.Get() error = %v, wantErr %v", err, tt.wantErr)
 				return
