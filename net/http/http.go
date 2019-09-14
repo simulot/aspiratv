@@ -4,6 +4,7 @@
 package http
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -14,6 +15,7 @@ import (
 // DefaultClient is the client
 var DefaultClient = NewClient()
 
+// UserAgent default
 const UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/66.0.3359.181 Chrome/66.0.3359.181 Safari/537.36"
 
 // Client is the classic http client with a cookie jar and a given user agent string
@@ -53,8 +55,8 @@ func NewClient(conf ...func(c *Client)) *Client {
 }
 
 // Get establish a GET request and return a reader with the response body
-func (c *Client) Get(u string) (io.ReadCloser, error) {
-	req, err := http.NewRequest("GET", u, nil)
+func (c *Client) Get(ctx context.Context, u string) (io.ReadCloser, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", u, nil)
 	if err != nil {
 		err = fmt.Errorf("Can't get url: %v", err)
 		log.Println(err)
