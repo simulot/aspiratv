@@ -1,9 +1,11 @@
 package m3u8
 
 import (
+	"context"
 	"crypto/md5"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -112,8 +114,9 @@ func TestMasterWorstBestQuality(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			getter := &fileGet{}
+			ctx := context.TODO()
 
-			m, err := NewMaster(tc.name, getter)
+			m, err := NewMaster(ctx, tc.name, getter)
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 				return
@@ -135,7 +138,7 @@ func TestMasterWorstBestQuality(t *testing.T) {
 type fileGet struct {
 }
 
-func (*fileGet) Get(url string) (io.Reader, error) {
+func (*fileGet) Get(ctx context.Context, url string) (io.ReadCloser, error) {
 	f, err := os.Open(url)
 	if err != nil {
 		return nil, err
@@ -214,19 +217,19 @@ seq-{{$i }}.ts
 	return s
 }
 
-func (s *stringGet) Get(url string) (io.Reader, error) {
+func (s *stringGet) Get(ctx context.Context, url string) (io.ReadCloser, error) {
 	switch {
 	case url == "master.m3u8":
-		return strings.NewReader(s.master.String()), nil
+		return ioutil.NopCloser(strings.NewReader(s.master.String())), nil
 	case url == "playlist.m3u8":
-		return strings.NewReader(s.playlist.String()), nil
+		return ioutil.NopCloser(strings.NewReader(s.playlist.String())), nil
 	}
 	var i int
 	_, err := fmt.Sscanf(url, "seq-%d.ts", &i)
 	if err != nil {
 		return nil, err
 	}
-	return strings.NewReader(s.s[i]), nil
+	return ioutil.NopCloser(strings.NewReader(s.s[i])), nil
 }
 
 func TestMultiPartPlayList(t *testing.T) {
@@ -239,19 +242,20 @@ func TestMultiPartPlayList(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Test with %d chunks", tc), func(t *testing.T) {
 			getter := newStringGet(tc)
+			ctx := context.TODO()
 
-			m, err := NewMaster("master.m3u8", getter)
+			m, err := NewMaster(ctx, "master.m3u8", getter)
 			if err != nil {
 				t.Fatal(err)
 				return
 			}
-			p, err := NewPlayList(m.BestQuality(), getter)
+			p, err := NewPlayList(ctx, m.BestQuality(), getter)
 			if err != nil {
 				t.Fatal(err)
 				return
 			}
 
-			r, err := p.Download()
+			r, err := p.Download(ctx)
 			if err != nil {
 				t.Fatal(err)
 				return

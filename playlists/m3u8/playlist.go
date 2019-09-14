@@ -2,6 +2,7 @@ package m3u8
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"strings"
@@ -24,7 +25,7 @@ type chunk struct {
 	url      string
 }
 
-func NewPlayList(url string, getter Getter) (*Playlist, error) {
+func NewPlayList(ctx context.Context, url string, getter Getter) (*Playlist, error) {
 	if getter == nil {
 		getter = http.DefaultClient
 	}
@@ -34,7 +35,7 @@ func NewPlayList(url string, getter Getter) (*Playlist, error) {
 		getter: getter,
 	}
 
-	r, err := p.getter.Get(url)
+	r, err := p.getter.Get(ctx, url)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +83,7 @@ func (p *Playlist) decode(r io.Reader) error {
 	return nil
 }
 
-func (p *Playlist) Download() (io.Reader, error) {
+func (p *Playlist) Download(ctx context.Context) (io.Reader, error) {
 	pr, pw := io.Pipe()
 	go func() {
 		for _, c := range p.chunks {
@@ -90,7 +91,7 @@ func (p *Playlist) Download() (io.Reader, error) {
 			if !http.IsAbs(c.url) {
 				url = http.Base(p.URL) + c.url
 			}
-			r, err := p.getter.Get(url)
+			r, err := p.getter.Get(ctx, url)
 			if err != nil {
 				pw.CloseWithError(err)
 				return
