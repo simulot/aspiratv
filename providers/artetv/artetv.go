@@ -56,6 +56,7 @@ type ArteTV struct {
 	debug             bool
 	htmlParserFactory *htmlparser.Factory
 	seenPrograms      map[string]bool
+	deadline          time.Duration
 }
 
 // WithGetter inject a getter in FranceTV object instead of normal one
@@ -123,11 +124,12 @@ func New(conf ...func(p *ArteTV)) (*ArteTV, error) {
 	p := &ArteTV{
 		getter: throttler,
 		//TODO: get preferences from config file
-		preferredVersions: []string{"VF", "VOF", "VF-STF", "VO-STF", "VO"}, // "VF-STMF" "VA", "VA-STA"
+		preferredVersions: []string{"VF", "VOF", "VF-STF", "VOF-STF", "VO-STF", "VOF-STMF", "VO"}, // "VF-STMF" "VA", "VA-STA"
 		preferredMedia:    "mp4",
 		preferredQuality:  []string{"SQ", "XQ", "EQ", "HQ", "MQ"},
 		htmlParserFactory: htmlparser.NewFactory(),
 		seenPrograms:      map[string]bool{},
+		deadline:          30 * time.Second,
 	}
 	for _, fn := range conf {
 		fn(p)
@@ -138,6 +140,9 @@ func New(conf ...func(p *ArteTV)) (*ArteTV, error) {
 // DebugMode set debug mode
 func (p *ArteTV) DebugMode(b bool) {
 	p.debug = b
+	if b {
+		p.deadline = 1 * time.Hour
+	}
 }
 
 // withGetter set a getter for ArteTV
@@ -203,7 +208,7 @@ func (p *ArteTV) getShowList(ctx context.Context, m *providers.MatchRequest) cha
 		}
 
 		var result APIResult
-		ctxLocal, done := context.WithTimeout(ctx, 30*time.Second)
+		ctxLocal, done := context.WithTimeout(ctx, p.deadline)
 
 		r, err := p.getter.Get(ctxLocal, u.String())
 		if err != nil {
@@ -265,7 +270,7 @@ var (
 
 func (p *ArteTV) getSerie(ctx context.Context, d Data) chan *providers.Show {
 	shows := make(chan *providers.Show)
-	ctx, done := context.WithTimeout(ctx, 30*time.Second)
+	ctx, done := context.WithTimeout(ctx, p.deadline)
 
 	go func() {
 		defer func() {
@@ -387,6 +392,9 @@ func (p *ArteTV) getSerie(ctx context.Context, d Data) chan *providers.Show {
 						continue
 					}
 					setEpisodeFormTitle(show, ep.Title)
+					// if p.debug {
+					// 	log.Printf("[%s] Selected shows: %#v", p.Name(), show)
+					// }
 					shows <- show
 				}
 
@@ -401,8 +409,9 @@ func (p *ArteTV) getSerie(ctx context.Context, d Data) chan *providers.Show {
 }
 
 var (
-	parseTitleSeasonEpisode = regexp.MustCompile(`([^-]+) - Saison (\d+) \((\d+)\/\d+\)`)
-	parseTitle              = regexp.MustCompile(`([^-]+) - (.+)`)
+	parseTitleSeasonEpisode = regexp.MustCompile(`^(.+) - Saison (\d+) \((\d+)\/\d+\)$`)
+	parseTitleEpisode       = regexp.MustCompile(`^(.+) \((\d+)\/\d+\)$`)
+	// parseTitle              = regexp.MustCompile(`(.+) - (.+)`)
 )
 
 func setEpisodeFormTitle(show *providers.Show, t string) {
@@ -414,11 +423,11 @@ func setEpisodeFormTitle(show *providers.Show, t string) {
 		show.Episode = m[0][3]
 		return
 	}
-	m = parseTitleSeasonEpisode.FindAllStringSubmatch(show.Title, -1)
+	m = parseTitleEpisode.FindAllStringSubmatch(t, -1)
 	if len(m) > 0 {
 		show.Show = m[0][1]
-		show.Season = ""
-		show.Episode = ""
+		show.Season = "1"
+		show.Episode = m[0][2]
 		return
 	}
 	if show.Title == "" {
@@ -542,14 +551,17 @@ type mapStrInt map[string]uint64
 //   - Version (VF,VF_ST) that match preference
 
 func (p *ArteTV) getBestVideo(ss map[string]StreamInfo) string {
-	for _, r := range p.preferredQuality {
-		for _, v := range p.preferredVersions {
+	for _, v := range p.preferredVersions {
+		for _, r := range p.preferredQuality {
 			for _, s := range ss {
 				if s.Quality == r && s.VersionCode == v {
 					return s.URL
 				}
 			}
 		}
+	}
+	if p.debug {
+		log.Printf("[%s] Couln'd find a suitable stream", p.Name())
 	}
 	return ""
 }
