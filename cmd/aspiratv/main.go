@@ -309,6 +309,7 @@ showLoop:
 
 		}
 	}
+	providerBar.SetTotal(showCount, false)
 	if a.Config.Debug {
 		log.Println("Waiting end of PullShows loop")
 	}
@@ -391,9 +392,6 @@ loop:
 		}
 	}
 	fileBar.SetTotal(100, true)
-	if a.Config.Debug {
-		log.Printf("Bar terminated %p", fileBar)
-	}
 }
 
 var dlID = int32(0)
