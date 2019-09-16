@@ -244,18 +244,23 @@ func (p *ArteTV) getShowList(ctx context.Context, m *providers.MatchRequest) cha
 				if d.Kind.IsCollection {
 					matchedSeries = append(matchedSeries, d)
 				} else {
-					matchedShows = append(matchedShows, d)
+					if strings.ToLower(d.Title) == m.Show {
+						matchedShows = append(matchedShows, d)
+					}
 				}
 			}
 		}
 
 		if len(matchedSeries) > 0 {
 			for _, d := range matchedSeries {
-				for s := range p.getSerie(ctx, d) {
-					shows <- s
-				}
+				p.getSerie(ctx, d, shows)
 			}
+			return
 		}
+		if len(matchedShows) > 0 {
+			p.emitShows(ctx, shows, matchedShows, "", "")
+		}
+
 	}()
 	return shows
 }
@@ -264,12 +269,13 @@ func (p *ArteTV) getShowList(ctx context.Context, m *providers.MatchRequest) cha
 //https://    www.arte.tv/guide/api/emac/v3/fr/web/data/COLLECTION_VIDEOS/?collectionId=RC-014408&page=1&limit=100
 //https://api-cdn.arte.tv/      api/emac/v3/fr/web/data/COLLECTION_VIDEOS/?collectionId=RC-015842&page=2&limit=12
 var (
-	parseCollectionInURL = regexp.MustCompile(`RC-\d+`)
-	parseSeason          = regexp.MustCompile(`Saison (\d+)`)
+	parseCollectionInURL = regexp.MustCompile(`RC-\d+`)       // Detect Season URL
+	parseSeason          = regexp.MustCompile(`Saison (\d+)`) // Detect season number in web page
 )
 
-func (p *ArteTV) getSerie(ctx context.Context, d Data) chan *providers.Show {
-	shows := make(chan *providers.Show)
+// getSerie
+// Arte presents a serie either as collection of episodes for a single season or as a collection of collection of episodes for multiple seasons.
+func (p *ArteTV) getSerie(ctx context.Context, d Data, shows chan *providers.Show) {
 	ctx, done := context.WithTimeout(ctx, p.deadline)
 
 	go func() {
@@ -367,51 +373,53 @@ func (p *ArteTV) getSerie(ctx context.Context, d Data) chan *providers.Show {
 					}
 					continue collectionLoop
 				}
-
-				for _, ep := range result.Data {
-					if ctx.Err() != nil {
-						return
-					}
-					show := &providers.Show{
-						ID:      ep.ProgramID,
-						Show:    d.Title, //Takes collection's title
-						Title:   ep.Subtitle,
-						Pitch:   ep.ShortDescription,
-						ShowURL: ep.URL,
-						Season:  seasons[0],
-					}
-
-					img := getBestImage(ep.Images, "square")
-					if len(img) == 0 {
-						img = getBestImage(ep.Images, "landscape")
-					}
-					show.ThumbnailURL = img
-					err := p.GetShowInfo(ctx, show)
-					if err != nil {
-						log.Println(err)
-						continue
-					}
-					setEpisodeFormTitle(show, ep.Title)
-					// if p.debug {
-					// 	log.Printf("[%s] Selected shows: %#v", p.Name(), show)
-					// }
-					shows <- show
-				}
-
+				p.emitShows(ctx, shows, result.Data, seasons[0], d.Title)
 				u = result.NextPage
 
 			}
 			delete(collectionIDs, seasons[0]) // Season on top of the stack is done.
 		}
 	}()
+}
 
-	return shows
+// emitShows collected
+func (p *ArteTV) emitShows(ctx context.Context, shows chan *providers.Show, eps []Data, season, title string) {
+	for _, ep := range eps {
+		if ctx.Err() != nil {
+			return
+		}
+		show := &providers.Show{
+			ID:      ep.ProgramID,
+			Show:    title, //Takes collection's title
+			Title:   ep.Subtitle,
+			Pitch:   ep.ShortDescription,
+			ShowURL: ep.URL,
+			Season:  season,
+		}
+
+		img := getBestImage(ep.Images, "square")
+		if len(img) == 0 {
+			img = getBestImage(ep.Images, "landscape")
+		}
+		show.ThumbnailURL = img
+		player, err := p.getPlayer(ctx, show)
+		if err != nil {
+			log.Printf("[%s] Can't get player info  for show %q: %q", p.Name(), ep.ProgramID, err)
+			continue
+		}
+		if player.VideoJSONPlayer.Kind == "TRAILER" {
+			log.Printf("[%s] Show %q is a trailer. Discarded.", p.Name(), ep.ProgramID)
+			continue
+		}
+
+		setEpisodeFormTitle(show, ep.Title)
+		shows <- show
+	}
 }
 
 var (
 	parseTitleSeasonEpisode = regexp.MustCompile(`^(.+) - Saison (\d+) \((\d+)\/\d+\)$`)
 	parseTitleEpisode       = regexp.MustCompile(`^(.+) \((\d+)\/\d+\)$`)
-	// parseTitle              = regexp.MustCompile(`(.+) - (.+)`)
 )
 
 func setEpisodeFormTitle(show *providers.Show, t string) {
@@ -430,8 +438,10 @@ func setEpisodeFormTitle(show *providers.Show, t string) {
 		show.Episode = m[0][2]
 		return
 	}
+
 	if show.Title == "" {
 		show.Title = t
+		return
 	}
 }
 
@@ -465,6 +475,10 @@ func (p *ArteTV) GetShowFileName(ctx context.Context, s *providers.Show) string 
 	err := p.GetShowInfo(ctx, s)
 	if err != nil {
 		return ""
+	}
+
+	if s.Season == "" && s.Episode == "" && s.Show == "" {
+		return providers.FileNameCleaner(s.Title) + ".mp4"
 	}
 	var showPath, seasonPath, episodePath string
 	showPath = providers.PathNameCleaner(s.Show)
@@ -514,11 +528,9 @@ func (p *ArteTV) GetShowStreamURL(ctx context.Context, s *providers.Show) (strin
 	return s.StreamURL, nil
 }
 
-// GetShowInfo gather show information from dedicated web page.
-// It load the html page of the show to extract availability date used as airdate and production year as season
-func (p *ArteTV) GetShowInfo(ctx context.Context, s *providers.Show) error {
+func (p *ArteTV) getPlayer(ctx context.Context, s *providers.Show) (*playerAPI, error) {
 	if s.Detailed {
-		return nil
+		return nil, nil
 	}
 
 	url := fmt.Sprintf(arteDetails, s.ID)
@@ -527,20 +539,32 @@ func (p *ArteTV) GetShowInfo(ctx context.Context, s *providers.Show) error {
 	}
 	r, err := p.getter.Get(ctx, url)
 	if err != nil {
-		return fmt.Errorf("Can't get show's detailled information: %v", err)
+		return nil, fmt.Errorf("Can't get show's detailled information: %v", err)
+	}
+	if p.debug {
+		r = httptest.DumpReaderToFile(r, "artetv-info-"+s.ID+"-")
 	}
 	defer r.Close()
 	player := playerAPI{}
 	err = json.NewDecoder(r).Decode(&player)
 	if err != nil {
-		return fmt.Errorf("Can't decode show's detailled information: %v", err)
+		return nil, fmt.Errorf("Can't decode show's detailled information: %v", err)
 	}
 
 	s.StreamURL = p.getBestVideo(player.VideoJSONPlayer.VSR)
 	s.AirDate = time.Time(player.VideoJSONPlayer.VRA)
 	s.Detailed = true
+	return &player, nil
+}
 
-	return nil
+// GetShowInfo gather show information from dedicated web page.
+// It load the html page of the show to extract availability date used as airdate and production year as season
+func (p *ArteTV) GetShowInfo(ctx context.Context, s *providers.Show) error {
+	if s.Detailed {
+		return nil
+	}
+	_, err := p.getPlayer(ctx, s)
+	return err
 }
 
 type mapStrInt map[string]uint64
