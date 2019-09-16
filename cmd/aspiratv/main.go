@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -111,12 +112,48 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
+
 	switch flag.Arg(0) {
 	case "download":
 		a.Download(ctx)
 	default:
 		a.Run(ctx)
 	}
+}
+
+func (a *app) CheckPaths() {
+	for k, v := range a.Config.Destinations {
+		var err error
+		v, err = sanitizePath(v)
+		if err != nil {
+			log.Printf("Destination %q is unsafe", k)
+			os.Exit(1)
+		}
+		if a.Config.Debug {
+			log.Printf("Destination %q is expanded into %q", k, v)
+		}
+		err = os.MkdirAll(v, 0755)
+		if err != nil {
+			log.Printf("Can't create destination directory %q: %s", v, err)
+			os.Exit(1)
+		}
+
+		a.Config.Destinations[k] = v
+	}
+}
+
+func sanitizePath(p string) (string, error) {
+	abs, err := filepath.Abs(p)
+	if !filepath.IsAbs(p) {
+		p = filepath.Clean(p)
+	}
+	if err != nil {
+		return "", fmt.Errorf("Unsafe path: %w", err)
+	}
+	if !strings.Contains(abs, p) {
+		return "", errors.New("Unsafe path")
+	}
+	return abs, nil
 }
 
 func (a *app) Download(ctx context.Context) {
@@ -128,7 +165,7 @@ func (a *app) Download(ctx context.Context) {
 	a.Config.Destinations = map[string]string{
 		"DL": os.ExpandEnv(a.Config.Destination),
 	}
-
+	a.CheckPaths()
 	a.Config.WatchList = []*providers.MatchRequest{
 		&providers.MatchRequest{
 			Destination: "DL",
@@ -176,7 +213,7 @@ func (a *app) getProgres(ctx context.Context) *mpb.Progress {
 }
 
 func (a *app) Run(ctx context.Context) {
-
+	a.CheckPaths()
 	a.worker = workers.New(ctx, a.Config.ConcurrentTasks, a.Config.Debug)
 	a.getter = http.DefaultClient
 
