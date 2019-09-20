@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"path/filepath"
-	"strings"
 	"time"
 
-	"github.com/simulot/aspiratv/net/http"
-	"github.com/simulot/aspiratv/net/http/httptest"
+	"github.com/simulot/aspiratv/net/myhttp/httptest"
+	"github.com/simulot/aspiratv/net/myhttp"
 	"github.com/simulot/aspiratv/providers"
 )
 
@@ -27,18 +27,20 @@ func init() {
 // Provider constants
 const (
 	ProviderName = "francetv"
-	WSListURL    = "http://pluzz.webservices.francetelevisions.fr/pluzz/liste/type/replay/nb/%d/debut/0"           // Available show
 	WSInfoOeuvre = "http://webservices.francetelevisions.fr/tools/getInfosOeuvre/v2/?catalogue=Pluzz&idDiffusion=" // Show's video link and details
 )
 
 type getter interface {
 	Get(ctx context.Context, uri string) (io.ReadCloser, error)
+	DoWithContext(ctx context.Context, method string, theURL string, headers http.Header, body io.Reader) (io.ReadCloser, error)
 }
 
 // FranceTV structure handles france-tv catalog of shows
 type FranceTV struct {
-	getter getter
-	debug  bool
+	getter   getter
+	debug    bool
+	deadline time.Duration
+	algolia  *AlgoliaConfig
 }
 
 // WithGetter inject a getter in FranceTV object instead of normal one
@@ -50,13 +52,15 @@ func WithGetter(g getter) func(ftv *FranceTV) {
 
 // New setup a Show provider for France Télévisions
 func New(conf ...func(ftv *FranceTV)) (*FranceTV, error) {
-	ftv := &FranceTV{
-		getter: http.DefaultClient,
+	p := &FranceTV{
+		getter: myhttp.DefaultClient,
 	}
+	p.deadline = 30 * time.Second
+
 	for _, fn := range conf {
-		fn(ftv)
+		fn(p)
 	}
-	return ftv, nil
+	return p, nil
 }
 
 // Name return the name of the provider
@@ -65,68 +69,30 @@ func (FranceTV) Name() string { return "francetv" }
 // DebugMode switch debug mode
 func (p *FranceTV) DebugMode(mode bool) {
 	p.debug = mode
+	if mode {
+		p.deadline = time.Hour
+	} else {
+		p.deadline = 30 * time.Second
+	}
 }
 
 // Shows return shows that match with matching list.
 func (p *FranceTV) Shows(ctx context.Context, mm []*providers.MatchRequest) chan *providers.Show {
+	err := p.getAlgoliaConfig(ctx)
+
+	if err != nil {
+		return nil
+	}
 	shows := make(chan *providers.Show)
-	ctx, done := context.WithTimeout(ctx, 30*time.Second)
 
 	go func() {
-		defer func() {
-			close(shows)
-			done()
-		}()
-		url := fmt.Sprintf(WSListURL, 3000) // Limit to the last 3000th shows
-		if p.debug {
-			log.Printf("[%s] Catalog url %q", p.Name(), url)
-		}
-
-		// Get JSON catalog of available shows on France Télévisions
-		r, err := p.getter.Get(ctx, url)
-		if err != nil {
-			log.Printf("[%s] Can't call catalog API: %q", p.Name(), err)
-			return
-		}
-		if p.debug {
-			r = httptest.DumpReaderToFile(r, "francetv-catalog-")
-		}
-		defer r.Close()
-
-		list := pluzzList{}
-		err = json.NewDecoder(r).Decode(&list)
-		if err != nil {
-			log.Printf("[%s] Can't decode catalog: %q", p.Name(), err)
-		}
-		if ctx.Err() != nil {
-			return
-		}
-
-		for _, e := range list.Reponse.Emissions {
-			// Map JSON object to provider.Show common structure
-			show := &providers.Show{
-				ID:           e.IDDiffusion,
-				Show:         strings.TrimSpace(e.Titre),
-				Title:        strings.TrimSpace(e.Soustitre),
-				Season:       e.Saison,
-				Episode:      e.Episode,
-				Pitch:        strings.TrimSpace(e.Accroche),
-				AirDate:      time.Time(e.TsDiffusionUtc),
-				Channel:      e.ChaineID,
-				Detailed:     false,
-				DRM:          false, //TBD
-				Duration:     time.Duration(e.DureeReelle),
-				Category:     strings.TrimSpace(e.Rubrique),
-				Provider:     ProviderName,
-				ShowURL:      e.OasSitepage,
-				StreamURL:    "", // Must call GetShowStreamURL to get the show's URL
-				ThumbnailURL: e.ImageLarge,
+		defer close(shows)
+		for _, m := range mm {
+			if m.Provider != "francetv" {
+				continue
 			}
-			if providers.IsShowMatch(mm, show) {
-				shows <- show
-			}
-			if ctx.Err() != nil {
-				return
+			for s := range p.queryAlgolia(ctx, m) {
+				shows <- s
 			}
 		}
 	}()

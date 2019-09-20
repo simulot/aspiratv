@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/simulot/aspiratv/net/http/httptest"
+	"github.com/simulot/aspiratv/net/myhttp/httptest"
 
 	"github.com/simulot/aspiratv/providers"
 )

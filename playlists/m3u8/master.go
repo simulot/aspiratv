@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/simulot/aspiratv/net/http"
+	"github.com/simulot/aspiratv/net/myhttp"
 )
 
 type Getter interface {
@@ -30,7 +30,7 @@ type Variant struct {
 
 func NewMaster(ctx context.Context, URL string, getter Getter) (*Master, error) {
 	if getter == nil {
-		getter = http.DefaultClient
+		getter = myhttp.DefaultClient
 	}
 	m := &Master{
 		getter: getter,
@@ -57,7 +57,7 @@ func (m *Master) WorstQuality() string {
 			worstPix = v.worstURL
 		}
 	}
-	return http.Rel(m.URL, m.Variants[worstURL].URL)
+	return myhttp.Rel(m.URL, m.Variants[worstURL].URL)
 }
 
 func (m *Master) BestQuality() string {
@@ -69,7 +69,7 @@ func (m *Master) BestQuality() string {
 			bestPix = v.worstURL
 		}
 	}
-	return http.Rel(m.URL, m.Variants[bestURL].URL)
+	return myhttp.Rel(m.URL, m.Variants[bestURL].URL)
 }
 
 func (m *Master) decode(r io.Reader) error {

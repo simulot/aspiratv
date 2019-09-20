@@ -1,7 +1,7 @@
 // The http package provides an HTTP client for the aplication.
 // It handles a common cookie jar and same user agent string
 
-package http
+package myhttp
 
 import (
 	"context"

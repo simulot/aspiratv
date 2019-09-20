@@ -5,7 +5,7 @@ package htmlparser
 import (
 	"io"
 
-	httplocal "github.com/simulot/aspiratv/net/http"
+	httplocal "github.com/simulot/aspiratv/net/myhttp"
 
 	"net/http"
 	"net/http/cookiejar"

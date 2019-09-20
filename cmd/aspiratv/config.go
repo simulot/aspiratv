@@ -13,23 +13,6 @@ import (
 	"github.com/simulot/aspiratv/providers"
 )
 
-// Config holds settings from configuration file
-type Config struct {
-	PullInterval    textDuration
-	Debug           bool                      // Verbose Log output
-	Force           bool                      // True to force reload medias
-	Destinations    map[string]string         // Mapping of destination path
-	ConfigFile      string                    // Name of configuration file
-	WatchList       []*providers.MatchRequest // Slice of show matchers
-	Headless        bool                      // When true, no progression bar
-	ConcurrentTasks int                       // Number of concurrent downloads
-	Providers       map[string]ProviderConfig
-	Provider        string // Provider for dowload command
-	Destination     string // Destination folder for dowload command
-	LogFile         string // Log file
-
-}
-
 func (a *app) Initialize() {
 	a.ReadConfig(a.Config.ConfigFile)
 
@@ -78,8 +61,7 @@ func (t *textDuration) UnmarshalJSON(b []byte) error {
 }
 
 // Almost empty configuration for testing purpose
-var defaultConfig = &Config{
-	PullInterval: textDuration(time.Hour),
+var defaultConfig = &config{
 	WatchList: []*providers.MatchRequest{
 		{
 			Provider:    "francetv",
@@ -130,7 +112,7 @@ func (a *app) ReadConfig(configFile string) error {
 // }
 
 // Check the configuration or die
-func (c *Config) Check() {
+func (c *config) Check() {
 
 	// Expand paths
 	for d, p := range c.Destinations {
@@ -148,7 +130,7 @@ func (c *Config) Check() {
 
 }
 
-func (c *Config) IsProviderActive(p string) bool {
+func (c *config) IsProviderActive(p string) bool {
 	if pc, ok := c.Providers[p]; ok {
 		return pc.Enabled
 	}
