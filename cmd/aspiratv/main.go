@@ -1,6 +1,7 @@
 package main
 
 import (
+
 	"context"
 	"errors"
 	"flag"
@@ -17,18 +18,17 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	_ "github.com/simulot/aspiratv/providers/artetv"
-	_ "github.com/simulot/aspiratv/providers/francetv"
-	_ "github.com/simulot/aspiratv/providers/gulli"
-
-	"github.com/simulot/aspiratv/net/http"
+	
+	"github.com/simulot/aspiratv/net/myhttp"
 	"github.com/simulot/aspiratv/playlists/m3u8"
 	"github.com/simulot/aspiratv/providers"
-
 	"github.com/simulot/aspiratv/workers"
 	"github.com/vbauerster/mpb/v4"
 	"github.com/vbauerster/mpb/v4/decor"
+	
+	// _ "github.com/simulot/aspiratv/providers/artetv"
+	// _ "github.com/simulot/aspiratv/providers/gulli"
+	_ "github.com/simulot/aspiratv/providers/francetv"
 )
 
 var (
@@ -37,8 +37,24 @@ var (
 	date    = "unknown"
 )
 
+// Config holds settings from configuration file
+type config struct {
+	Debug           bool                      // Verbose Log output
+	Force           bool                      // True to force reload medias
+	Destinations    map[string]string         // Mapping of destination path
+	ConfigFile      string                    // Name of configuration file
+	WatchList       []*providers.MatchRequest // Slice of show matchers
+	Headless        bool                      // When true, no progression bar
+	ConcurrentTasks int                       // Number of concurrent downloads
+	Providers       map[string]ProviderConfig
+	Provider        string // Provider for dowload command
+	Destination     string // Destination folder for dowload command
+	LogFile         string // Log file
+
+}
+
 type app struct {
-	Config Config
+	Config config
 	Stop   chan bool
 	ffmpeg string
 	pb     *mpb.Progress // Progress bars
@@ -174,7 +190,7 @@ func (a *app) Download(ctx context.Context) {
 		},
 	}
 	a.worker = workers.New(ctx, a.Config.ConcurrentTasks, a.Config.Debug)
-	a.getter = http.DefaultClient
+	a.getter = myhttp.DefaultClient
 
 	if a.Config.Provider == "" {
 		log.Println("Missing -provider PROVIDERNAME flag")
@@ -215,7 +231,7 @@ func (a *app) getProgres(ctx context.Context) *mpb.Progress {
 func (a *app) Run(ctx context.Context) {
 	a.CheckPaths()
 	a.worker = workers.New(ctx, a.Config.ConcurrentTasks, a.Config.Debug)
-	a.getter = http.DefaultClient
+	a.getter = myhttp.DefaultClient
 
 	pc := a.getProgres(ctx)
 

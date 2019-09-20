@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/simulot/aspiratv/net/http"
+	"github.com/simulot/aspiratv/net/myhttp"
 )
 
 type Playlist struct {
@@ -27,7 +27,7 @@ type chunk struct {
 
 func NewPlayList(ctx context.Context, url string, getter Getter) (*Playlist, error) {
 	if getter == nil {
-		getter = http.DefaultClient
+		getter = myhttp.DefaultClient
 	}
 	p := &Playlist{
 		URL:    url,
@@ -88,8 +88,8 @@ func (p *Playlist) Download(ctx context.Context) (io.Reader, error) {
 	go func() {
 		for _, c := range p.chunks {
 			url := c.url
-			if !http.IsAbs(c.url) {
-				url = http.Base(p.URL) + c.url
+			if !myhttp.IsAbs(c.url) {
+				url = myhttp.Base(p.URL) + c.url
 			}
 			r, err := p.getter.Get(ctx, url)
 			if err != nil {

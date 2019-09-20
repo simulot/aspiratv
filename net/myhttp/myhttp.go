@@ -1,16 +1,22 @@
 // The http package provides an HTTP client for the aplication.
 // It handles a common cookie jar and same user agent string
 
-package http
+package myhttp
 
 import (
+	"compress/gzip"
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/cookiejar"
 )
+
+type Header struct {
+	http.Header
+}
 
 // DefaultClient is the client
 var DefaultClient = NewClient()
@@ -77,5 +83,39 @@ func (c *Client) Get(ctx context.Context, u string) (io.ReadCloser, error) {
 		return nil, err
 	}
 
+	return resp.Body, nil
+}
+
+func (c *Client) DoWithContext(ctx context.Context, method string, theURL string, headers http.Header, body io.Reader) (io.ReadCloser, error) {
+
+	req, err := http.NewRequestWithContext(ctx, method, theURL, body)
+	if err != nil {
+		err = fmt.Errorf("Can't create request %q: %v", method, err)
+		log.Println(err)
+		return nil, err
+	}
+	req.Header = headers
+	resp, err := c.Do(req)
+	if err != nil {
+		err := fmt.Errorf("Can't : %v", err)
+		log.Println(err)
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		if resp.Body != nil {
+			defer resp.Body.Close()
+		}
+		err = fmt.Errorf("Can't get response to %q :%q", method, resp.Status)
+		log.Println(err)
+		b, err := ioutil.ReadAll(resp.Body)
+		log.Println(string(b))
+		return nil, err
+	}
+
+	switch resp.Header.Get("Content-Encoding") {
+	case "gzip":
+		return gzip.NewReader(resp.Body)
+	}
 	return resp.Body, nil
 }

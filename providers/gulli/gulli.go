@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	tvhttp "github.com/simulot/aspiratv/net/http"
+	"github.com/simulot/aspiratv/net/myhttp"
 	"github.com/simulot/aspiratv/parsers/htmlparser"
 	"github.com/simulot/aspiratv/providers"
 )
@@ -41,7 +41,7 @@ func init() {
 func New(conf ...func(p *Gulli)) (*Gulli, error) {
 
 	p := &Gulli{
-		getter:            tvhttp.DefaultClient,
+		getter:            myhttp.DefaultClient,
 		htmlParserFactory: nil,
 		seenShows:         map[string]bool{},
 	}

@@ -14,11 +14,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/simulot/aspiratv/net/http/httptest"
+	"github.com/simulot/aspiratv/net/myhttp/httptest"
 
 	"github.com/gocolly/colly"
 
-	"github.com/simulot/aspiratv/net/http"
+	"github.com/simulot/aspiratv/net/myhttp"
 	"github.com/simulot/aspiratv/parsers/htmlparser"
 	"github.com/simulot/aspiratv/providers"
 )
@@ -120,7 +120,7 @@ func (t *throttler) Get(ctx context.Context, uri string) (io.ReadCloser, error) 
 
 // New setup a Show provider for Arte
 func New(conf ...func(p *ArteTV)) (*ArteTV, error) {
-	throttler := newThrottler(http.DefaultClient, 4, 25)
+	throttler := newThrottler(myhttp.DefaultClient, 4, 25)
 	p := &ArteTV{
 		getter: throttler,
 		//TODO: get preferences from config file
