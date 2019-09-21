@@ -1,7 +1,6 @@
 package main
 
 import (
-
 	"context"
 	"errors"
 	"flag"
@@ -18,14 +17,13 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	
+
 	"github.com/simulot/aspiratv/net/myhttp"
-	"github.com/simulot/aspiratv/playlists/m3u8"
 	"github.com/simulot/aspiratv/providers"
 	"github.com/simulot/aspiratv/workers"
 	"github.com/vbauerster/mpb/v4"
 	"github.com/vbauerster/mpb/v4/decor"
-	
+
 	// _ "github.com/simulot/aspiratv/providers/artetv"
 	// _ "github.com/simulot/aspiratv/providers/gulli"
 	_ "github.com/simulot/aspiratv/providers/francetv"
@@ -479,6 +477,9 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 	}
 
 	fn := filepath.Join(d, p.GetShowFileName(ctx, s))
+	if a.Config.Debug {
+		log.Printf("[%s] Downloading into file: %q", p.Name(), fn)
+	}
 	defer func() {
 		close(done)
 		if shouldDeleteFile {
@@ -517,14 +518,14 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 		log.Printf("[%s] Can't get url from %s.", p.Name(), p.GetShowFileName(ctx, s))
 		return
 	}
-	if strings.ToLower(filepath.Ext(url)) == ".m38u" {
-		master, err := m3u8.NewMaster(ctx, url, a.getter)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		url = master.BestQuality()
-	}
+	// if strings.ToLower(filepath.Ext(url)) == ".m38u" {
+	// 	master, err := m3u8.NewMaster(ctx, url, a.getter)
+	// 	if err != nil {
+	// 		log.Println(err)
+	// 		return
+	// 	}
+	// 	url = master.BestQuality()
+	// }
 
 	if a.Config.Debug {
 		log.Println("Download url: ", url)
