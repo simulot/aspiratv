@@ -17,6 +17,7 @@ import (
 
 	"github.com/simulot/aspiratv/net/myhttp/httptest"
 	"github.com/simulot/aspiratv/providers"
+	"github.com/simulot/aspiratv/providers/francetv/query"
 )
 
 // AlgoliaConfig to be extracted from home page
@@ -44,8 +45,9 @@ type AlgoliaConfig struct {
 
 var algoliaRegexp = regexp.MustCompile(`getAppConfig\(\)\s*\{\s*return\s+(\{[^;]+\})\s*;`)
 
+const homeFranceTV = "https://www.france.tv/"
+
 func (p *FranceTV) getAlgoliaConfig(ctx context.Context) error {
-	const homeFranceTV = "https://www.france.tv/"
 
 	r, err := p.getter.Get(ctx, homeFranceTV)
 	if err != nil {
@@ -88,6 +90,7 @@ func (p *FranceTV) queryAlgolia(ctx context.Context, m *providers.MatchRequest) 
 	shows := make(chan *providers.Show)
 
 	go func() {
+		defer close(shows)
 		// ctx, done := context.WithTimeout(ctx, p.deadline)
 		// defer done()
 
@@ -126,14 +129,7 @@ func (p *FranceTV) queryAlgolia(ctx context.Context, m *providers.MatchRequest) 
 			}
 			_ = w
 			b := bytes.NewBuffer([]byte{})
-			encodeRequest(b, &w)
-			// encodeRequest(&b, b.WriteByte('='))
-			// err := json.NewEncoder(b).Encode(&w)
-			// if err != nil {
-			// 	log.Printf("[%s] Can't encode algolia request: %s", p.Name(), err)
-			// 	return
-			// }
-			// b := strings.NewReader(`{"requests":[{"indexName":"yatta_prod_contents","params":"query=Science%20grand%20format&hitsPerPage=20&page=0&filters=class%3Avideo%20AND%20ranges.replay.web.begin_date%20%3C%201568907933%20AND%20ranges.replay.web.end_date%20%3E%201568907933&facetFilters=%5B%5B%22class%3Avideo%22%5D%5D&facets=%5B%5D&tagFilters="}]}`)
+			encodeRequest(b, &w) // Special encoding... WTF
 
 			h := make(http.Header)
 			h.Add("Accept", "application/json")
@@ -160,9 +156,57 @@ func (p *FranceTV) queryAlgolia(ctx context.Context, m *providers.MatchRequest) 
 				r = httptest.DumpReaderToFile(r, "francetv-algolia-")
 			}
 
-			_, _ = ioutil.ReadAll(r)
+			resp, err := ioutil.ReadAll(r)
+			if err != nil {
+				log.Printf("[%s] Can't get API result: %s", p.Name(), err)
+				return
+			}
+			results := query.QueryResults{}
+			err = json.Unmarshal(resp, &results)
+			if err != nil {
+				log.Printf("[%s] Can't decode API result: %s", p.Name(), err)
+				return
+			}
 			r.Close()
-			break
+			for resNum := range results.Results {
+				for _, h := range results.Results[resNum].Hits {
+					if h.Type != "integrale" {
+						continue
+					}
+					if len(h.Program.Label) > 0 && !strings.Contains(strings.ToLower(h.Program.Label), m.Show) {
+						continue
+					} else if !strings.Contains(strings.ToLower(h.Title), m.Show) {
+						continue
+					}
+
+					// ID:           strconv.Itoa(h.ID),
+					s := providers.Show{
+						Show:         h.Program.Label,
+						Title:        h.Title,
+						ID:           h.SiID,
+						Pitch:        h.Description,
+						AirDate:      h.Dates["broadcast_begin_date"].Time(),
+						Provider:     p.Name(),
+						ThumbnailURL: homeFranceTV + h.Image.Formats["carre"].Urls["w:400"],
+						Destination:  m.Destination,
+					}
+					if h.EpisodeNumber > 0 {
+						s.Episode = strconv.Itoa(h.EpisodeNumber)
+					}
+					if h.SeasonNumber > 0 {
+						s.Season = strconv.Itoa(h.SeasonNumber)
+					}
+					if len(h.Channels) > 0 {
+						s.Channel = h.Channels[0].Label
+					}
+					s.ShowURL = homeFranceTV + h.Path + "/" + s.ID + "-" + h.URLPage + ".html"
+					shows <- &s
+				}
+			}
+			page++
+			if page >= results.Results[0].NbPages {
+				break
+			}
 		}
 	}()
 	return shows

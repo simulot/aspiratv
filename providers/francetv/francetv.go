@@ -7,10 +7,12 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"time"
 
 	"github.com/simulot/aspiratv/net/myhttp/httptest"
+
 	"github.com/simulot/aspiratv/net/myhttp"
 	"github.com/simulot/aspiratv/providers"
 )
@@ -27,7 +29,6 @@ func init() {
 // Provider constants
 const (
 	ProviderName = "francetv"
-	WSInfoOeuvre = "http://webservices.francetelevisions.fr/tools/getInfosOeuvre/v2/?catalogue=Pluzz&idDiffusion=" // Show's video link and details
 )
 
 type getter interface {
@@ -99,55 +100,85 @@ func (p *FranceTV) Shows(ctx context.Context, mm []*providers.MatchRequest) chan
 	return shows
 }
 
+type Player struct {
+	Video struct {
+		URL   string `json:"url"`
+		Token string `json:"token"`
+	} `json:video`
+}
+
 // GetShowStreamURL return the show's URL, a m3u8 playlist
 func (p *FranceTV) GetShowStreamURL(ctx context.Context, s *providers.Show) (string, error) {
 	if s.StreamURL == "" {
-		err := p.GetShowInfo(ctx, s)
-		if err != nil {
-			return "", fmt.Errorf("Can't get detailed information for the show: %v", err)
+		v := url.Values{}
+		v.Set("country_code", "FR")
+		v.Set("w", "1920")
+		v.Set("h", "1080")
+		v.Set("version", "5.18.3")
+		v.Set("domain", "www.france.tv")
+		v.Set("device_type", "desktop")
+		v.Set("browser", "firefox")
+		v.Set("browser_version", "69")
+		v.Set("os", "windows")
+		v.Set("gmt", "+1")
+
+		u := "https://player.webservices.francetelevisions.fr/v1/videos/" + s.ID + "?" + v.Encode()
+
+		if p.debug {
+			log.Printf("[%s] Player url %q", p.Name(), u)
 		}
+
+		r, err := p.getter.Get(ctx, u)
+		if err != nil {
+			return "", fmt.Errorf("Can't get player: %w", err)
+		}
+		if p.debug {
+			r = httptest.DumpReaderToFile(r, "francetv-player-"+s.ID+"-")
+		}
+		defer r.Close()
+
+		pl := Player{}
+		err = json.NewDecoder(r).Decode(&pl)
+		if err != nil {
+			return "", fmt.Errorf("Can't decode player: %w", err)
+		}
+
+		s.StreamURL = pl.Video.URL
+
+		// Get Token
+		if len(pl.Video.Token) > 0 {
+			if p.debug {
+				log.Printf("[%s] Player token %q", p.Name(), pl.Video.Token)
+			}
+
+			r2, err := p.getter.Get(ctx, pl.Video.Token)
+			if err != nil {
+				return "", fmt.Errorf("Can't get token %s: %w", pl.Video.Token, err)
+			}
+			if p.debug {
+				r2 = httptest.DumpReaderToFile(r2, "francetv-token-"+s.ID+"-")
+			}
+			defer r2.Close()
+			pl := struct {
+				URL string `json:"url"`
+			}{}
+			err = json.NewDecoder(r2).Decode(&pl)
+			if err != nil {
+				return "", fmt.Errorf("Can't decode token: %w", err)
+			}
+			s.StreamURL = pl.URL
+		}
+
+		if p.debug {
+			log.Printf("[%s] Stream url %q", p.Name(), s.StreamURL)
+		}
+
 	}
 	return s.StreamURL, nil
 }
 
 // GetShowInfo query the URL from InfoOeuvre web service
 func (p *FranceTV) GetShowInfo(ctx context.Context, s *providers.Show) error {
-	if s.Detailed {
-		return nil
-	}
-	i := infoOeuvre{}
-
-	url := WSInfoOeuvre + s.ID
-	if p.debug {
-		log.Printf("[%s] Get details url: %q", p.Name(), url)
-	}
-	r, err := p.getter.Get(ctx, url)
-	if err != nil {
-		return fmt.Errorf("Can't get show's detailed information: %v", err)
-	}
-	if p.debug {
-		r = httptest.DumpReaderToFile(r, "francetv-info-"+s.ID+"-")
-	}
-
-	err = json.NewDecoder(r).Decode(&i)
-	if err != nil {
-		return fmt.Errorf("Can't decode show's detailed information: %v", err)
-	}
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
-
-	s.ThumbnailURL = i.ImageSecure
-	for _, v := range i.Videos {
-		if v.Format == "hls_v5_os" {
-			s.StreamURL = v.URL
-			break
-		}
-	}
-	if s.StreamURL == "" {
-		return fmt.Errorf("Can't find hls_v5_os stream for the show")
-	}
-	s.Detailed = true
 	return nil
 }
 
@@ -155,7 +186,9 @@ func (p *FranceTV) GetShowInfo(ctx context.Context, s *providers.Show) error {
 //   ShowName/Season NN/ShowName - sNNeMM - Episode title
 //   Show and Episode names are sanitized to avoid problem when saving on the file system
 func (FranceTV) GetShowFileName(ctx context.Context, s *providers.Show) string {
-
+	if s.Season == "" && s.Episode == "" && s.Show == "" {
+		return providers.FileNameCleaner(s.Title) + ".mp4"
+	}
 	var showPath, seasonPath, episodePath string
 	showPath = providers.PathNameCleaner(s.Show)
 
