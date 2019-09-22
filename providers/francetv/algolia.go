@@ -173,9 +173,13 @@ func (p *FranceTV) queryAlgolia(ctx context.Context, m *providers.MatchRequest) 
 					if h.Type != "integrale" {
 						continue
 					}
+					st := strings.ToLower(h.Program.Label)
+					_ = st
 					if len(h.Program.Label) > 0 && !strings.Contains(strings.ToLower(h.Program.Label), m.Show) {
 						continue
-					} else if !strings.Contains(strings.ToLower(h.Title), m.Show) {
+					}
+
+					if len(h.Program.Label) == 0 && !strings.Contains(strings.ToLower(h.Title), m.Show) {
 						continue
 					}
 
