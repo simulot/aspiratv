@@ -182,44 +182,57 @@ func (p *FranceTV) GetShowInfo(ctx context.Context, s *providers.Show) error {
 	return nil
 }
 
-// GetShowFileName return a file name with a path that is compatible with PLEX server:
-//   ShowName/Season NN/ShowName - sNNeMM - Episode title
-//   Show and Episode names are sanitized to avoid problem when saving on the file system
-func (FranceTV) GetShowFileName(ctx context.Context, s *providers.Show) string {
+func showFileNames(s *providers.Show) (showName, showMatcher string) {
+	var showPath, seasonPath, episodePath, showPathMatcher, seasonPathMatcher, episodePathMatcher string
+
 	if s.Season == "" && s.Episode == "" && s.Show == "" {
-		return providers.FileNameCleaner(s.Title) + ".mp4"
+		return providers.FileNameCleaner(s.Title) + ".mp4", providers.FileNameCleaner(s.Title) + ".mp4"
 	}
-	var showPath, seasonPath, episodePath string
 	showPath = providers.PathNameCleaner(s.Show)
+	showPathMatcher = showPath
 
 	if s.Season == "" {
 		seasonPath = "Season " + s.AirDate.Format("2006")
 	} else {
 		seasonPath = "Season " + providers.Format2Digits(s.Season)
 	}
+	seasonPathMatcher = "Season *"
 
 	if s.Episode == "" {
 		episodePath = providers.FileNameCleaner(s.Show) + " - " + s.AirDate.Format("2006-01-02")
 	} else {
 		episodePath = providers.FileNameCleaner(s.Show) + " - s" + providers.Format2Digits(s.Season) + "e" + providers.Format2Digits(s.Episode)
 	}
+	episodePathMatcher = providers.FileNameCleaner(s.Show) + " - *"
 
 	if s.Episode == "" && (s.Title == "" || s.Title == s.Show) {
 		episodePath += " - " + s.ID + ".mp4"
+		episodePathMatcher += " - " + s.ID + ".mp4"
 	} else {
 		if s.Title != "" && s.Title != s.Show {
 			episodePath += " - " + providers.FileNameCleaner(s.Title) + ".mp4"
+			episodePathMatcher += " - " + providers.FileNameCleaner(s.Title) + ".mp4"
 		} else {
 			episodePath += ".mp4"
+			episodePathMatcher += ".mp4"
 		}
 	}
 
-	return filepath.Join(showPath, seasonPath, episodePath)
+	return filepath.Join(showPath, seasonPath, episodePath), filepath.Join(showPathMatcher, seasonPathMatcher, episodePathMatcher)
+}
+
+// GetShowFileName return a file name with a path that is compatible with PLEX server:
+//   ShowName/Season NN/ShowName - sNNeMM - Episode title
+//   Show and Episode names are sanitized to avoid problem when saving on the file system
+func (FranceTV) GetShowFileName(ctx context.Context, s *providers.Show) string {
+	r, _ := showFileNames(s)
+	return r
 
 }
 
 // GetShowFileNameMatcher return a file pattern of this show
 // used for detecting already got episode even when episode or season is different
 func (p *FranceTV) GetShowFileNameMatcher(ctx context.Context, s *providers.Show) string {
-	return p.GetShowFileName(ctx, s)
+	_, r := showFileNames(s)
+	return r
 }
