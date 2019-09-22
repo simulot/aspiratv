@@ -208,12 +208,12 @@ func (p *ArteTV) getShowList(ctx context.Context, m *providers.MatchRequest) cha
 		}
 
 		var result APIResult
-		ctxLocal, done := context.WithTimeout(ctx, p.deadline)
+		ctxLocal, doneLocal := context.WithTimeout(ctx, p.deadline)
 
 		r, err := p.getter.Get(ctxLocal, u.String())
 		if err != nil {
 			log.Printf("[%s] Can't call search API: %q", p.Name(), err)
-			done()
+			doneLocal()
 			return
 		}
 
@@ -226,15 +226,15 @@ func (p *ArteTV) getShowList(ctx context.Context, m *providers.MatchRequest) cha
 		err = json.NewDecoder(r).Decode(&result)
 		if err != nil {
 			log.Printf("[%s] Can't decode search API result: %q", p.Name(), err)
-			done()
+			doneLocal()
 			return
 		}
 		if ctxLocal.Err() != nil {
-			done()
+			doneLocal()
 			return
 		}
 
-		done()
+		doneLocal()
 
 		matchedSeries := []Data{}
 		matchedShows := []Data{}
@@ -253,14 +253,18 @@ func (p *ArteTV) getShowList(ctx context.Context, m *providers.MatchRequest) cha
 
 		if len(matchedSeries) > 0 {
 			for _, d := range matchedSeries {
-				p.getSerie(ctx, d, shows)
+				for s := range p.getSerie(ctx, d) {
+					shows <- s
+				}
+
 			}
 			return
 		}
 		if len(matchedShows) > 0 {
-			p.emitShows(ctx, shows, matchedShows, "", "")
+			for s := range p.emitShows(ctx, matchedShows, "", "") {
+				shows <- (s)
+			}
 		}
-
 	}()
 	return shows
 }
@@ -275,8 +279,9 @@ var (
 
 // getSerie
 // Arte presents a serie either as collection of episodes for a single season or as a collection of collection of episodes for multiple seasons.
-func (p *ArteTV) getSerie(ctx context.Context, d Data, shows chan *providers.Show) {
+func (p *ArteTV) getSerie(ctx context.Context, d Data) chan *providers.Show {
 	ctx, done := context.WithTimeout(ctx, p.deadline)
+	shows := make(chan *providers.Show)
 
 	go func() {
 		defer func() {
@@ -373,48 +378,60 @@ func (p *ArteTV) getSerie(ctx context.Context, d Data, shows chan *providers.Sho
 					}
 					continue collectionLoop
 				}
-				p.emitShows(ctx, shows, result.Data, seasons[0], d.Title)
+				ss := p.emitShows(ctx, result.Data, seasons[0], d.Title)
+				for s := range ss {
+					shows <- s
+				}
 				u = result.NextPage
 
 			}
 			delete(collectionIDs, seasons[0]) // Season on top of the stack is done.
 		}
 	}()
+
+	return shows
 }
 
 // emitShows collected
-func (p *ArteTV) emitShows(ctx context.Context, shows chan *providers.Show, eps []Data, season, title string) {
-	for _, ep := range eps {
-		if ctx.Err() != nil {
-			return
-		}
-		show := &providers.Show{
-			ID:      ep.ProgramID,
-			Show:    title, //Takes collection's title
-			Title:   ep.Subtitle,
-			Pitch:   ep.ShortDescription,
-			ShowURL: ep.URL,
-			Season:  season,
-		}
+func (p *ArteTV) emitShows(ctx context.Context, eps []Data, season, title string) chan *providers.Show {
+	shows := make(chan *providers.Show)
 
-		img := getBestImage(ep.Images, "square")
-		if len(img) == 0 {
-			img = getBestImage(ep.Images, "landscape")
-		}
-		show.ThumbnailURL = img
-		player, err := p.getPlayer(ctx, show)
-		if err != nil {
-			log.Printf("[%s] Can't get player info  for show %q: %q", p.Name(), ep.ProgramID, err)
-			continue
-		}
-		if player.VideoJSONPlayer.Kind == "TRAILER" {
-			log.Printf("[%s] Show %q is a trailer. Discarded.", p.Name(), ep.ProgramID)
-			continue
-		}
+	go func() {
+		defer close(shows)
 
-		setEpisodeFormTitle(show, ep.Title)
-		shows <- show
-	}
+		for _, ep := range eps {
+			if ctx.Err() != nil {
+				return
+			}
+			show := &providers.Show{
+				ID:      ep.ProgramID,
+				Show:    title, //Takes collection's title
+				Title:   ep.Subtitle,
+				Pitch:   ep.ShortDescription,
+				ShowURL: ep.URL,
+				Season:  season,
+			}
+
+			img := getBestImage(ep.Images, "square")
+			if len(img) == 0 {
+				img = getBestImage(ep.Images, "landscape")
+			}
+			show.ThumbnailURL = img
+			player, err := p.getPlayer(ctx, show)
+			if err != nil {
+				log.Printf("[%s] Can't get player info  for show %q: %q", p.Name(), ep.ProgramID, err)
+				continue
+			}
+			if player.VideoJSONPlayer.Kind == "TRAILER" {
+				log.Printf("[%s] Show %q is a trailer. Discarded.", p.Name(), ep.ProgramID)
+				continue
+			}
+
+			setEpisodeFormTitle(show, ep.Title)
+			shows <- show
+		}
+	}()
+	return shows
 }
 
 var (
