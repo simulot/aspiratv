@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/simulot/aspiratv/net/myhttp"
@@ -119,25 +118,4 @@ func (p *Gulli) GetShowStreamURL(ctx context.Context, s *providers.Show) (string
 // It load the html page of the show to extract availability date used as airdate and production year as season
 func (p *Gulli) GetShowInfo(ctx context.Context, s *providers.Show) error {
 	return nil
-}
-
-// GetShowFileName return a file name with a path that is compatible with PLEX server:
-//   ShowName/Season NN/ShowName - sNNeMM - Episode title
-//   Show and Episode names are sanitized to avoid problem when saving on the file system
-func (p *Gulli) GetShowFileName(ctx context.Context, s *providers.Show) string {
-	return filepath.Join(
-		providers.PathNameCleaner(s.Show),
-		"Season "+providers.Format2Digits(s.Season),
-		providers.FileNameCleaner(s.Show)+" - s"+providers.Format2Digits(s.Season)+"e"+providers.Format2Digits(s.Episode)+" - "+providers.FileNameCleaner(s.Title)+".mp4",
-	)
-}
-
-// GetShowFileNameMatcher return a file pattern of this show
-// used for detecting already got episode even when episode or season is different
-func (Gulli) GetShowFileNameMatcher(ctx context.Context, s *providers.Show) string {
-	return filepath.Join(
-		providers.PathNameCleaner(s.Show),
-		"*",
-		providers.FileNameCleaner(s.Show)+" - * - "+providers.FileNameCleaner(s.Title)+".mp4",
-	)
 }
