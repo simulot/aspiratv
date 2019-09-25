@@ -18,6 +18,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/simulot/aspiratv/download"
+
 	"github.com/simulot/aspiratv/net/myhttp"
 	"github.com/simulot/aspiratv/providers"
 	"github.com/simulot/aspiratv/workers"
@@ -409,43 +411,46 @@ func (a *app) SubmitDownload(ctx context.Context, wg *sync.WaitGroup, p provider
 	})
 }
 
-func (a *app) progressBar(ctx context.Context, fileBar *mpb.Bar, fn string, done chan bool) {
-	// start := time.Now()
-	if fileBar == nil {
-		log.Fatal("FileBar should not been nil")
-	}
-
-	lastSize := int64(0)
-	t := time.NewTicker(500 * time.Millisecond)
-	f := func() {
-		s, err := os.Stat(fn)
-		if err != nil {
-			return
-		}
-		l := s.Size()
-		fileBar.IncrInt64(l - lastSize)
-		lastSize = l
-	}
-loop:
-	for {
-		select {
-		case <-ctx.Done():
-			break loop
-		case <-t.C:
-			if ctx.Err() != nil {
-				break loop
-			}
-			f()
-		case <-done:
-			t.Stop()
-			f()
-			break loop
-		}
-	}
-	fileBar.SetTotal(100, true)
+type progressBar struct {
+	lastSize int64
+	start    time.Time
+	bar      *mpb.Bar
 }
 
-var dlID = int32(0)
+func (a *app) NewDownloadBar(pc *mpb.Progress, name string, id int32) *progressBar {
+	b := &progressBar{}
+	if !a.Config.Headless {
+		b.bar = pc.AddBar(100*1024*1024*1024,
+			mpb.BarWidth(12),
+			// mpb.PrependDecorators(
+			// 	decor.Spinner([]string{"●∙∙", "∙●∙", "∙∙●", "∙●∙"}, decor.WCSyncSpace),
+			// ),
+			mpb.AppendDecorators(
+				decor.AverageSpeed(decor.UnitKB, " %.1f", decor.WC{W: 15, C: decor.DidentRight}),
+				decor.Name(name),
+			),
+			mpb.BarRemoveOnComplete(),
+		)
+		b.bar.SetPriority(int(id))
+		b.start = time.Now()
+	}
+	return b
+}
+
+func (p *progressBar) Init(totalCount int64) {
+}
+
+func (p *progressBar) Update(count int64, size int64) {
+	if p.bar != nil {
+		p.bar.SetTotal(size, count >= size)
+		p.bar.IncrInt64(count-p.lastSize, time.Since(p.start))
+		p.lastSize = count
+		// p.totalCount = count
+		// fmt.Printf("%.1f%%\n", float64(count)/float64(p.totalCount)*100.0)
+	}
+}
+
+var dlID = int32(1000)
 
 func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *providers.Show, d string, pc *mpb.Progress) {
 	id := atomic.AddInt32(&dlID, 1)
@@ -454,27 +459,23 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 		log.Printf("[%s] Starting  DownloadShow %d", p.Name(), id)
 	}
 
+	url, err := p.GetShowStreamURL(ctx, s)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	if len(url) == 0 {
+		log.Printf("[%s] Can't get url from %s.", p.Name(), providers.GetShowFileName(ctx, s))
+		return
+	}
+
+	pgr := a.NewDownloadBar(pc, providers.GetShowFileName(ctx, s), id)
+
 	// Make a context for DownloadShow
 	files := []string{}
 	shouldDeleteFile := false
 
 	done := make(chan bool)
-
-	var fileBar *mpb.Bar
-	if !a.Config.Headless {
-		fileBar = pc.AddBar(100*1024*1024*1024,
-			mpb.BarWidth(3),
-			mpb.PrependDecorators(
-				decor.Spinner([]string{"●∙∙", "∙●∙", "∙∙●", "∙●∙"}, decor.WCSyncSpace),
-			),
-			mpb.AppendDecorators(
-				decor.AverageSpeed(decor.UnitKB, " %.1f", decor.WC{W: 15, C: decor.DidentRight}),
-				decor.Name(filepath.Base(providers.GetShowFileName(ctx, s))),
-			),
-			mpb.BarRemoveOnComplete(),
-		)
-		fileBar.SetPriority(int(100 + dlID))
-	}
 
 	fn := filepath.Join(d, providers.GetShowFileName(ctx, s))
 	if a.Config.Debug {
@@ -496,43 +497,25 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 			log.Printf("DownloadShow %d terminated", id)
 		}
 		if !a.Config.Headless {
-			fileBar.SetTotal(1, true)
+			pgr.bar.SetTotal(1, true)
 		}
 	}()
 
 	if a.Config.Debug {
 		log.Printf("[%s] Download stream to: %q", p.Name(), fn)
 	}
-	err := os.MkdirAll(filepath.Dir(fn), 0777)
+	err = os.MkdirAll(filepath.Dir(fn), 0777)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-
-	url, err := p.GetShowStreamURL(ctx, s)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	if len(url) == 0 {
-		log.Printf("[%s] Can't get url from %s.", p.Name(), providers.GetShowFileName(ctx, s))
-		return
-	}
-	// if strings.ToLower(filepath.Ext(url)) == ".m38u" {
-	// 	master, err := m3u8.NewMaster(ctx, url, a.getter)
-	// 	if err != nil {
-	// 		log.Println(err)
-	// 		return
-	// 	}
-	// 	url = master.BestQuality()
-	// }
 
 	if a.Config.Debug {
 		log.Println("Download url: ", url)
 	}
 
 	params := []string{
-		"-loglevel", "error", // I wan't errors
+		"-loglevel", "info", // I wan't errors
 		"-hide_banner", // I don't want banner
 		"-i", url,      // Where is the stream
 		"-metadata", "title=" + s.Title, // Force title
@@ -546,18 +529,11 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 		fn, // output file
 	}
 
-	cmd := exec.CommandContext(ctx, "ffmpeg", params...)
-	files = append(files, fn)
-
 	if a.Config.Debug {
 		log.Printf("[%s] Downloading %q", p.Name(), providers.GetShowFileName(ctx, s))
 	}
+	err = download.FFMepg(ctx, url, params, pgr)
 
-	if !a.Config.Headless {
-		go a.progressBar(ctx, fileBar, fn, done)
-	}
-
-	err = cmd.Run()
 	if err != nil {
 		if err, ok := err.(*exec.ExitError); ok {
 			log.Printf("[%s] FFMEPG exits with error:\n%s", p.Name(), err.Stderr)
