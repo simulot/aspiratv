@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"runtime"
@@ -103,6 +102,12 @@ func main() {
 	flag.StringVar(&a.Config.Destination, "destination", "", "Provider to be used with download command. Possible values : artetv,francetv,gulli")
 	flag.StringVar(&a.Config.LogFile, "log", "", "Give the log file name. When empty, no log.")
 	flag.Parse()
+
+	if a.Config.Debug {
+		fmt.Print("PID: ", os.Getpid(), ", press enter to continue")
+		var input string
+		fmt.Scanln(&input)
+	}
 
 	if len(a.Config.LogFile) > 0 {
 		logFile, err := os.Create(a.Config.LogFile)
@@ -346,8 +351,6 @@ showLoop:
 				if !a.Config.Headless {
 					providerBar.SetTotal(showCount, false)
 				}
-
-				wg.Add(1)
 				a.SubmitDownload(ctx, &wg, p, s, d, pc, providerBar)
 			} else {
 				if a.Config.Headless {
@@ -364,17 +367,9 @@ showLoop:
 	if a.Config.Debug {
 		log.Println("Waiting end of PullShows loop")
 	}
-	shutDownChan := make(chan struct{})
-	go func() {
-		wg.Wait()
-		close(shutDownChan)
-	}()
 
-	// gracefull wait the end of show download or cancellation
-	select {
-	case <-ctx.Done():
-	case <-shutDownChan:
-	}
+	// Wait for submitted jobs to be terminated
+	wg.Wait()
 
 	if !a.Config.Headless {
 		providerBar.SetTotal(showCount, true)
@@ -401,7 +396,10 @@ func (a *app) MustDownload(ctx context.Context, p providers.Provider, s *provide
 
 func (a *app) SubmitDownload(ctx context.Context, wg *sync.WaitGroup, p providers.Provider, s *providers.Show, d string, pc *mpb.Progress, bar *mpb.Bar) {
 	go a.worker.Submit(func() {
-		a.DownloadShow(ctx, p, s, d, pc)
+		wg.Add(1)
+		if ctx.Err() == nil {
+			a.DownloadShow(ctx, p, s, d, pc)
+		}
 		if !a.Config.Headless {
 			bar.Increment()
 		}
@@ -427,12 +425,12 @@ func (a *app) NewDownloadBar(pc *mpb.Progress, name string, id int32) *progressB
 			mpb.BarRemoveOnComplete(),
 		)
 		b.bar.SetPriority(int(id))
-		b.start = time.Now()
 	}
 	return b
 }
 
 func (p *progressBar) Init(totalCount int64) {
+	p.start = time.Now()
 }
 
 func (p *progressBar) Update(count int64, size int64) {
@@ -445,11 +443,13 @@ func (p *progressBar) Update(count int64, size int64) {
 	}
 }
 
-var dlID = int32(1000)
+var dlID = int32(0)
 
 func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *providers.Show, d string, pc *mpb.Progress) {
-	id := atomic.AddInt32(&dlID, 1)
-	ctx, cancel := context.WithCancel(ctx)
+	if ctx.Err() != nil {
+		return
+	}
+	id := 1000 + atomic.AddInt32(&dlID, 1)
 	if a.Config.Debug {
 		log.Printf("[%s] Starting  DownloadShow %d", p.Name(), id)
 	}
@@ -479,14 +479,14 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 	defer func() {
 		close(done)
 		if shouldDeleteFile {
+			log.Printf("[%s] %s is cancelled.", p.Name(), providers.GetShowFileName(ctx, s))
 			for _, f := range files {
-				log.Printf("[%s] %s is cancelled.", p.Name(), providers.GetShowFileName(ctx, s))
-				os.Remove(f)
+				log.Printf("[%s] Remove %q.", p.Name(), f)
+				err := os.Remove(f)
+				if err != nil {
+					log.Printf("[%s] Can't remove %q: %w.", p.Name(), f, err)
+				}
 			}
-		}
-		cancel()
-		if shouldDeleteFile && a.Config.Debug {
-			log.Printf("[%s] %s terminated", p.Name(), fn)
 		}
 		if a.Config.Debug {
 			log.Printf("DownloadShow %d terminated", id)
@@ -527,12 +527,14 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 	if a.Config.Debug {
 		log.Printf("[%s] Downloading %q", p.Name(), providers.GetShowFileName(ctx, s))
 	}
+
+	files = append(files, fn)
 	err = download.FFMepg(ctx, url, params, pgr)
 
-	if err != nil {
-		if err, ok := err.(*exec.ExitError); ok {
-			log.Printf("[%s] FFMEPG exits with error:\n%s", p.Name(), err.Stderr)
-		}
+	if err != nil || ctx.Err() != nil {
+		// if err, ok := err.(*exec.ExitError); ok {
+		log.Printf("[%s] FFMEPG exits with error:\n%s", p.Name(), err)
+		// }
 		shouldDeleteFile = true
 		return
 	}
