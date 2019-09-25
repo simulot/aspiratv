@@ -312,12 +312,10 @@ func (a *app) PullShows(ctx context.Context, p providers.Provider, pc *mpb.Progr
 
 	if !a.Config.Headless {
 		providerBar = pc.AddBar(0,
-			mpb.BarWidth(50),
-			mpb.PrependDecorators(
-				decor.Name("Pulling "+p.Name(), decor.WC{W: 20, C: decor.DidentRight}),
-			),
+			mpb.BarWidth(12),
 			mpb.AppendDecorators(
-				decor.OnComplete(decor.Counters(0, "  %d/%d"), "completed"),
+				decor.OnComplete(decor.Counters(0, "  %3d/%3d"), "completed"),
+				decor.Name("      Pulling "+p.Name()),
 			),
 		)
 		providerBar.SetPriority(int(atomic.AddInt32(&nbPuller, 1)))
@@ -346,7 +344,7 @@ showLoop:
 				}
 				showCount++
 				if !a.Config.Headless {
-					providerBar.SetTotal(showCount+1, false)
+					providerBar.SetTotal(showCount, false)
 				}
 
 				wg.Add(1)
@@ -362,7 +360,7 @@ showLoop:
 
 		}
 	}
-	providerBar.SetTotal(showCount, false)
+	providerBar.SetTotal(showCount, showCount == 0)
 	if a.Config.Debug {
 		log.Println("Waiting end of PullShows loop")
 	}
@@ -422,9 +420,6 @@ func (a *app) NewDownloadBar(pc *mpb.Progress, name string, id int32) *progressB
 	if !a.Config.Headless {
 		b.bar = pc.AddBar(100*1024*1024*1024,
 			mpb.BarWidth(12),
-			// mpb.PrependDecorators(
-			// 	decor.Spinner([]string{"●∙∙", "∙●∙", "∙∙●", "∙●∙"}, decor.WCSyncSpace),
-			// ),
 			mpb.AppendDecorators(
 				decor.AverageSpeed(decor.UnitKB, " %.1f", decor.WC{W: 15, C: decor.DidentRight}),
 				decor.Name(name),
