@@ -360,10 +360,11 @@ showLoop:
 			if ctx.Err() != nil {
 				break showLoop
 			}
-
 		}
 	}
-	providerBar.SetTotal(showCount, showCount == 0)
+	if !a.Config.Headless {
+		providerBar.SetTotal(showCount, showCount == 0)
+	}
 	if a.Config.Debug {
 		log.Println("Waiting end of PullShows loop")
 	}
@@ -395,15 +396,15 @@ func (a *app) MustDownload(ctx context.Context, p providers.Provider, s *provide
 }
 
 func (a *app) SubmitDownload(ctx context.Context, wg *sync.WaitGroup, p providers.Provider, s *providers.Show, d string, pc *mpb.Progress, bar *mpb.Bar) {
+	wg.Add(1)
 	go a.worker.Submit(func() {
-		wg.Add(1)
 		if ctx.Err() == nil {
 			a.DownloadShow(ctx, p, s, d, pc)
 		}
+		wg.Done()
 		if !a.Config.Headless {
 			bar.Increment()
 		}
-		wg.Done()
 	})
 }
 
@@ -414,27 +415,30 @@ type progressBar struct {
 }
 
 func (a *app) NewDownloadBar(pc *mpb.Progress, name string, id int32) *progressBar {
-	b := &progressBar{}
-	if !a.Config.Headless {
-		b.bar = pc.AddBar(100*1024*1024*1024,
-			mpb.BarWidth(12),
-			mpb.AppendDecorators(
-				decor.AverageSpeed(decor.UnitKB, " %.1f", decor.WC{W: 15, C: decor.DidentRight}),
-				decor.Name(name),
-			),
-			mpb.BarRemoveOnComplete(),
-		)
-		b.bar.SetPriority(int(id))
+	if a.Config.Headless {
+		return nil
 	}
+	b := &progressBar{}
+	b.bar = pc.AddBar(100*1024*1024*1024,
+		mpb.BarWidth(12),
+		mpb.AppendDecorators(
+			decor.AverageSpeed(decor.UnitKB, " %.1f", decor.WC{W: 15, C: decor.DidentRight}),
+			decor.Name(name),
+		),
+		mpb.BarRemoveOnComplete(),
+	)
+	b.bar.SetPriority(int(id))
 	return b
 }
 
 func (p *progressBar) Init(totalCount int64) {
-	p.start = time.Now()
+	if p != nil {
+		p.start = time.Now()
+	}
 }
 
 func (p *progressBar) Update(count int64, size int64) {
-	if p.bar != nil {
+	if p != nil && p.bar != nil {
 		p.bar.SetTotal(size, count >= size)
 		p.bar.IncrInt64(count-p.lastSize, time.Since(p.start))
 		p.lastSize = count
@@ -464,8 +468,10 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 		return
 	}
 
-	pgr := a.NewDownloadBar(pc, filepath.Base(providers.GetShowFileName(ctx, s)), id)
-
+	var pgr *progressBar
+	if !a.Config.Headless {
+		pgr = a.NewDownloadBar(pc, filepath.Base(providers.GetShowFileName(ctx, s)), id)
+	}
 	// Make a context for DownloadShow
 	files := []string{}
 	shouldDeleteFile := false
@@ -529,7 +535,7 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 	}
 
 	files = append(files, fn)
-	err = download.FFMepg(ctx, url, params, pgr)
+	err = download.FFMepg(ctx, url, params, download.FFMepgWithProgress(pgr), download.FFMepgWithDebug(a.Config.Debug))
 
 	if err != nil || ctx.Err() != nil {
 		// if err, ok := err.(*exec.ExitError); ok {
