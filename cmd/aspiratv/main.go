@@ -464,7 +464,7 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 		return
 	}
 
-	pgr := a.NewDownloadBar(pc, providers.GetShowFileName(ctx, s), id)
+	pgr := a.NewDownloadBar(pc, filepath.Base(providers.GetShowFileName(ctx, s)), id)
 
 	// Make a context for DownloadShow
 	files := []string{}
