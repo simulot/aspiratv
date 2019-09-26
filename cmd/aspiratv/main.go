@@ -398,14 +398,11 @@ func (a *app) MustDownload(ctx context.Context, p providers.Provider, s *provide
 func (a *app) SubmitDownload(ctx context.Context, wg *sync.WaitGroup, p providers.Provider, s *providers.Show, d string, pc *mpb.Progress, bar *mpb.Bar) {
 	wg.Add(1)
 	go a.worker.Submit(func() {
-		if ctx.Err() == nil {
-			a.DownloadShow(ctx, p, s, d, pc)
-		}
-		wg.Done()
-		if !a.Config.Headless {
+		a.DownloadShow(ctx, p, s, d, pc)
+		if bar != nil {
 			bar.Increment()
 		}
-	})
+	}, wg)
 }
 
 type progressBar struct {
@@ -442,8 +439,6 @@ func (p *progressBar) Update(count int64, size int64) {
 		p.bar.SetTotal(size, count >= size)
 		p.bar.IncrInt64(count-p.lastSize, time.Since(p.start))
 		p.lastSize = count
-		// p.totalCount = count
-		// fmt.Printf("%.1f%%\n", float64(count)/float64(p.totalCount)*100.0)
 	}
 }
 
@@ -476,14 +471,11 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 	files := []string{}
 	shouldDeleteFile := false
 
-	done := make(chan bool)
-
 	fn := filepath.Join(d, providers.GetShowFileName(ctx, s))
 	if a.Config.Debug {
 		log.Printf("[%s] Downloading into file: %q", p.Name(), fn)
 	}
 	defer func() {
-		close(done)
 		if shouldDeleteFile {
 			log.Printf("[%s] %s is cancelled.", p.Name(), providers.GetShowFileName(ctx, s))
 			for _, f := range files {
@@ -538,9 +530,7 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, s *provide
 	err = download.FFMepg(ctx, url, params, download.FFMepgWithProgress(pgr), download.FFMepgWithDebug(a.Config.Debug))
 
 	if err != nil || ctx.Err() != nil {
-		// if err, ok := err.(*exec.ExitError); ok {
 		log.Printf("[%s] FFMEPG exits with error:\n%s", p.Name(), err)
-		// }
 		shouldDeleteFile = true
 		return
 	}

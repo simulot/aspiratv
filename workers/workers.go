@@ -82,10 +82,12 @@ func (w *WorkerPool) Stop() {
 var jobID = int64(0)
 
 // Submit a work item to the worker pool
-func (w *WorkerPool) Submit(wi WorkItem) {
+func (w *WorkerPool) Submit(wi WorkItem, wg *sync.WaitGroup) {
+
 	id := atomic.AddInt64(&jobID, 1)
 	select {
 	case w.submit <- func() {
+		defer wg.Done()
 		if w.ctx.Err() != nil {
 			log.Printf("Job %d is discarded", id)
 			return
@@ -108,6 +110,7 @@ func (w *WorkerPool) Submit(wi WorkItem) {
 		if w.debug {
 			log.Printf("Job %d cancelled", id)
 		}
+		wg.Done()
 		return
 	}
 }
