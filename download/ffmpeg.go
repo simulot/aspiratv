@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os/exec"
 	"time"
 )
@@ -87,7 +88,9 @@ func watchProgress(r io.ReadCloser, prg Progresser) {
 						estimatedSize = size + 1024
 					}
 				}
-				prg.Update(size, estimatedSize)
+				if prg != nil {
+					prg.Update(size, estimatedSize)
+				}
 				continue
 			}
 
@@ -109,7 +112,9 @@ func watchProgress(r io.ReadCloser, prg Progresser) {
 						continue
 					}
 					total = float64(h*int64(time.Hour) + m*int64(time.Minute) + s*int64(time.Second) + c*int64(time.Millisecond)/10)
-					prg.Init(int64(1 * 1024 * 1024))
+					if prg != nil {
+						prg.Init(int64(1 * 1024 * 1024))
+					}
 				}
 			}
 
@@ -117,11 +122,29 @@ func watchProgress(r io.ReadCloser, prg Progresser) {
 	}()
 }
 
-func FFMepg(ctx context.Context, u string, params []string, prg Progresser) error {
+type ffmpegConfig struct {
+	debug bool
+	pgr   Progresser
+}
+
+type ffmpegConfigurator func(c *ffmpegConfig)
+
+func FFMepg(ctx context.Context, u string, params []string, configurators ...ffmpegConfigurator) error {
+	cfg := ffmpegConfig{}
+
+	for _, c := range configurators {
+		c(&cfg)
+	}
+
+	if cfg.debug {
+		log.Printf("[FFMPEG] runing ffmpeg %v", params)
+	}
 
 	cmd := exec.CommandContext(ctx, "ffmpeg", params...)
 	out, err := cmd.StderrPipe()
-	watchProgress(out, prg)
+	if cfg.pgr != nil {
+		watchProgress(out, cfg.pgr)
+	}
 	err = cmd.Start()
 	if err != nil {
 		return err
@@ -129,4 +152,16 @@ func FFMepg(ctx context.Context, u string, params []string, prg Progresser) erro
 	err = cmd.Wait()
 
 	return err
+}
+
+func FFMepgWithProgress(pgr Progresser) ffmpegConfigurator {
+	return func(c *ffmpegConfig) {
+		c.pgr = pgr
+	}
+}
+
+func FFMepgWithDebug(debug bool) ffmpegConfigurator {
+	return func(c *ffmpegConfig) {
+		c.debug = debug
+	}
 }
