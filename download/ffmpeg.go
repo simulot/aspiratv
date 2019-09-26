@@ -40,6 +40,7 @@ func scanLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
 
 func watchProgress(r io.ReadCloser, prg Progresser) {
 	sc := bufio.NewScanner(r)
+	sc.Split(scanLines)
 	go func() {
 		const (
 			start int = iota
@@ -53,7 +54,6 @@ func watchProgress(r io.ReadCloser, prg Progresser) {
 		state := start
 		for sc.Scan() {
 			l := sc.Bytes()
-
 			if state == inRunning {
 				if !bytes.HasPrefix(l, []byte("frame=")) {
 					continue
