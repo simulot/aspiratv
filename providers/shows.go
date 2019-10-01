@@ -9,6 +9,7 @@ import (
 type Show struct {
 	ID            string        // Show ID
 	Title         string        // Episode title
+	HasEpisodes   bool          // This show is a part of a serie of shows
 	Show          string        // Show name
 	Pitch         string        // Pitch on the episode
 	SeasonPitch   string        // Pitch for the season
