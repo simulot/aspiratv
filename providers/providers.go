@@ -3,7 +3,8 @@ package providers
 import (
 	"context"
 	"encoding/gob"
-	"path/filepath"
+	"os"
+	"strings"
 )
 
 // Provider is the interface for a provider
@@ -35,58 +36,94 @@ func init() {
 	gob.Register([]*Show{})
 }
 
-// showFileNames determines show's file name and a matcher for mis numred epidodes
-func showFileNames(s *Show) (showName, showMatcher string) {
-	var showPath, seasonPath, episodePath, showPathMatcher, seasonPathMatcher, episodePathMatcher string
-
+func GetShowPath(s *Show) string {
 	if s.Season == "" && s.Episode == "" && s.Show == "" {
-		return FileNameCleaner(s.Title) + ".mp4", FileNameCleaner(s.Title) + ".mp4"
+		return ""
 	}
-	showPath = PathNameCleaner(s.Show)
-	showPathMatcher = showPath
+	return PathNameCleaner(s.Show)
+}
 
+func GetSeasonPath(s *Show) string {
+	var seasonPath string
+	if s.Season == "" && s.Episode == "" && s.Show == "" {
+		return ""
+	}
 	if s.Season == "" {
 		seasonPath = "Season " + s.AirDate.Format("2006")
 	} else {
 		seasonPath = "Season " + Format2Digits(s.Season)
 	}
-	seasonPathMatcher = "Season *"
+	return seasonPath
+}
+
+func GetSeasonMatcher(s *Show) string {
+	if s.Season == "" && s.Episode == "" && s.Show == "" {
+		return ""
+	}
+	return "Season *"
+}
+
+func GetEpisodeName(s *Show) string {
+	episodeName := ""
 
 	if s.Episode == "" {
-		episodePath = FileNameCleaner(s.Show) + " - " + s.AirDate.Format("2006-01-02")
+		episodeName = FileNameCleaner(s.Show) + " - " + s.AirDate.Format("2006-01-02")
 	} else {
-		episodePath = FileNameCleaner(s.Show) + " - s" + Format2Digits(s.Season) + "e" + Format2Digits(s.Episode)
+		episodeName = FileNameCleaner(s.Show) + " - s" + Format2Digits(s.Season) + "e" + Format2Digits(s.Episode)
 	}
-	episodePathMatcher = FileNameCleaner(s.Show) + " - *"
 
 	if s.Episode == "" && (s.Title == "" || s.Title == s.Show) {
-		episodePath += " - " + s.ID + ".mp4"
-		episodePathMatcher += " - " + s.ID + ".mp4"
+		episodeName += " - " + s.ID + ".mp4"
 	} else {
 		if s.Title != "" && s.Title != s.Show {
-			episodePath += " - " + FileNameCleaner(s.Title) + ".mp4"
-			episodePathMatcher += " - " + FileNameCleaner(s.Title) + ".mp4"
+			episodeName += " - " + FileNameCleaner(s.Title) + ".mp4"
 		} else {
-			episodePath += ".mp4"
-			episodePathMatcher += ".mp4"
+			episodeName += ".mp4"
 		}
 	}
+	return episodeName
+}
 
-	return filepath.Join(showPath, seasonPath, episodePath), filepath.Join(showPathMatcher, seasonPathMatcher, episodePathMatcher)
+func GetEpisodeMatcher(s *Show) string {
+	episodeName := ""
+
+	episodeName = FileNameCleaner(s.Show) + " - *"
+
+	if s.Episode == "" && (s.Title == "" || s.Title == s.Show) {
+		episodeName += " - " + s.ID + ".mp4"
+	} else {
+		if s.Title != "" && s.Title != s.Show {
+			episodeName += " - " + FileNameCleaner(s.Title) + ".mp4"
+		} else {
+			episodeName += ".mp4"
+		}
+	}
+	return episodeName
+
+}
+
+func makePath(parts []string) string {
+	path := strings.Builder{}
+	for _, part := range parts {
+		if len(part) > 0 {
+			if path.Len() > 0 {
+				path.WriteRune(os.PathSeparator)
+			}
+			path.WriteString(part)
+		}
+	}
+	return path.String()
 }
 
 // GetShowFileName return a file name with a path that is compatible with PLEX server:
 //   ShowName/Season NN/ShowName - sNNeMM - Episode title
 //   Show and Episode names are sanitized to avoid problem when saving on the file system
 func GetShowFileName(ctx context.Context, s *Show) string {
-	r, _ := showFileNames(s)
-	return r
-
+	return makePath([]string{GetShowPath(s), GetSeasonPath(s), GetEpisodeName(s)})
 }
 
 // GetShowFileNameMatcher return a file pattern of this show
 // used for detecting already got episode even when episode or season is different
 func GetShowFileNameMatcher(ctx context.Context, s *Show) string {
-	_, r := showFileNames(s)
-	return r
+	return makePath([]string{GetShowPath(s), GetSeasonMatcher(s), GetEpisodeMatcher(s)})
 }
