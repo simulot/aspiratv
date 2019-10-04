@@ -3,17 +3,18 @@
   "Destinations": {
     "Documentaires": "${HOME}/Videos/Documentaires",
     "Jeunesse": "${HOME}/Videos/Jeunesse",
-    "Courts": "${HOME}/Videos/Courts"
+    "Courts": "${HOME}/Videos/Courts",
+    "News": "${HOME}/Videos/News"
   },
   "Providers": {
     "francetv": {
       "enabled": true
     },
     "gulli": {
-      "enabled": true
+      "enabled": false
     },
     "artetv": {
-      "enabled": true
+      "enabled": false
     }
   },
   "WatchList": [
@@ -58,6 +59,15 @@
       "Pitch": "",
       "Provider": "artetv",
       "Destination": "Jeunesse"
-    }
+    },
+    {
+      "Show": "Journal 20h00",
+      "Title": "",
+      "Pitch": "",
+      "Provider": "francetv",
+      "Destination": "News",
+      "MaxAgedDays": 5,
+      "RetentionDays": 10
+    }     
   ]
 }

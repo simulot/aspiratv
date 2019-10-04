@@ -7,16 +7,18 @@ import (
 // MatchRequest holds criterions for selecting show
 type MatchRequest struct {
 	// Fields for matching
-	Show     string
-	ShowID   string // Future use
-	Title    string
-	TitleID  string // Future use
-	Pitch    string
-	Provider string
-	Playlist string // Playlist search is implemented in providers.
+	Show        string
+	ShowID      string // Future use
+	Title       string
+	TitleID     string // Future use
+	Pitch       string
+	Provider    string
+	Playlist    string // Playlist search is implemented in providers.
+	MaxAgedDays int    // Retrive media younger than MaxAgedDays when not zero
 
 	// Destination name when found
-	Destination string
+	Destination   string
+	RetentionDays int // Media retention time, when not zero the system will delete old files
 }
 
 // IsShowMatch is the generic implementation of show matcher.

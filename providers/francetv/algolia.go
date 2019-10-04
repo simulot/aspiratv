@@ -116,6 +116,10 @@ func (p *FranceTV) queryAlgolia(ctx context.Context, m *providers.MatchRequest) 
 			"facets":       "[]",
 			"tagFilters":   "",
 		}
+		if m.MaxAgedDays > 0 {
+			fromTS := time.Now().AddDate(0, 0, -m.MaxAgedDays-1).Unix()
+			req["filters"] += fmt.Sprintf(" AND dates.broadcast_begin_date > %d", fromTS)
+		}
 
 		for {
 			req["page"] = strconv.Itoa(page)

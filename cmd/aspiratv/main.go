@@ -48,6 +48,8 @@ type config struct {
 	Providers       map[string]ProviderConfig
 	Provider        string // Provider for dowload command
 	Destination     string // Destination folder for dowload command
+	MaxAgedDays     int    // Retrieve media younger than MaxAgedDays when non zero
+	RetentionDays   int    // Delete media from  series older than retention days.
 	LogFile         string // Log file
 
 }
@@ -101,6 +103,9 @@ func main() {
 	flag.StringVar(&a.Config.Provider, "provider", "", "Provider to be used with download command. Possible values : artetv,francetv,gulli")
 	flag.StringVar(&a.Config.Destination, "destination", "", "Provider to be used with download command. Possible values : artetv,francetv,gulli")
 	flag.StringVar(&a.Config.LogFile, "log", "", "Give the log file name. When empty, no log.")
+	flag.IntVar(&a.Config.MaxAgedDays, "max-aged", 0, "Retrieve media younger than MaxAgedDays.")
+	flag.IntVar(&a.Config.RetentionDays, "retention", 0, "Delete media older than retention days for the downloaded serie.")
+
 	flag.Parse()
 
 	if a.Config.Debug {
@@ -189,9 +194,11 @@ func (a *app) Download(ctx context.Context) {
 	a.CheckPaths()
 	a.Config.WatchList = []*providers.MatchRequest{
 		&providers.MatchRequest{
-			Destination: "DL",
-			Show:        strings.ToLower(flag.Arg(1)),
-			Provider:    a.Config.Provider,
+			Destination:   "DL",
+			Show:          strings.ToLower(flag.Arg(1)),
+			Provider:      a.Config.Provider,
+			MaxAgedDays:   a.Config.MaxAgedDays,
+			RetentionDays: a.Config.RetentionDays,
 		},
 	}
 	a.worker = workers.New(ctx, a.Config.ConcurrentTasks, a.Config.Debug)
@@ -313,6 +320,8 @@ func (a *app) PullShows(ctx context.Context, p providers.Provider, pc *mpb.Progr
 		cancel()
 	}()
 
+	removeOldMediaOnces := map[string]bool{}
+
 	var providerBar *mpb.Bar
 
 	if !a.Config.Headless {
@@ -333,6 +342,11 @@ func (a *app) PullShows(ctx context.Context, p providers.Provider, pc *mpb.Progr
 	showCount := int64(0)
 showLoop:
 	for s := range p.Shows(ctx, a.Config.WatchList) {
+		if !removeOldMediaOnces[s.Show] {
+			// log.Println("Remove", s.Show)
+			removeOldMediaOnces[s.Show] = true
+		}
+
 		if _, ok := seen[s.ID]; ok {
 			continue
 		}
