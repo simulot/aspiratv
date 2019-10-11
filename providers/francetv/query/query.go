@@ -7,6 +7,13 @@ import (
 	"time"
 )
 
+type seasonWrapper struct {
+	Season
+	Partial bool `json:"-"`
+}
+
+type intOrString string
+
 type QueryResults struct {
 	Results []Results `json:"results"`
 }
@@ -34,7 +41,16 @@ type Season struct {
 	EpisodeCount int    `json:"episode_count"`
 	Logo         Logo   `json:"logo"`
 }
-
+type Categories struct {
+	ID           int         `json:"id"`
+	Class        string      `json:"class"`
+	Type         string      `json:"type"`
+	Label        string      `json:"label"`
+	URL          string      `json:"url"`
+	URLComplete  string      `json:"url_complete"`
+	Season       interface{} `json:"season"`
+	EpisodeCount interface{} `json:"episode_count"`
+}
 type Channels struct {
 	ID           int    `json:"id"`
 	Class        string `json:"class"`
@@ -67,6 +83,7 @@ type Hits struct {
 	ID                      int                      `json:"id"`
 	Class                   string                   `json:"class"`
 	Type                    string                   `json:"type"`
+	Label                   string                   `json:"label"`
 	Title                   string                   `json:"title"`
 	HeadlineTitle           string                   `json:"headline_title"`
 	Description             string                   `json:"description"`
@@ -90,17 +107,18 @@ type Hits struct {
 	ProductionYear          int                      `json:"production_year"`
 	Dates                   map[string]UnixTimeStamp `json:"dates"`
 	// Ranges                  Ranges          `json:"ranges"`
-	Image Image `json:"image,omitempty"`
-	// Categories              []Categories    `json:"categories"`
-	Channels      []Channels `json:"channels"`
-	Program       Program    `json:"program"`
-	Season        Season     `json:"season"`
-	RatingCsaCode string     `json:"rating_csa_code"`
-	SiID          string     `json:"si_id"`
+	Image         Image         `json:"image,omitempty"`
+	Categories    []Categories  `json:"categories"`
+	Channels      []Channels    `json:"channels"`
+	Program       Program       `json:"program"`
+	Season        seasonWrapper `json:"season"`
+	RatingCsaCode string        `json:"rating_csa_code"`
+	SiID          intOrString   `json:"si_id"`
 	// FreeID        int        `json:"free_id"`
 	// OrangeID      string     `json:"orange_id"`
 	ObjectID string `json:"objectID"`
 	// HighlightResult         HighlightResult `json:"_highlightResult"`
+	// Parent *Hits `json:"parent"`
 }
 type Results struct {
 	Hits             []Hits `json:"hits"`
@@ -148,3 +166,28 @@ func (v *Duration) UnmarshalJSON(b []byte) error {
 }
 
 func (v Duration) Duration() time.Duration { return time.Duration(v) }
+
+func (v *seasonWrapper) UnmarshalJSON(b []byte) error {
+	if s, err := strconv.Atoi(string(b)); err == nil {
+		v.Partial = true
+		v.Season.Season = s
+		return nil
+	}
+	return json.Unmarshal(b, &v.Season)
+}
+
+func (v *intOrString) UnmarshalJSON(b []byte) error {
+	if _, err := strconv.Atoi(string(b)); err == nil {
+		*v = intOrString(string(b))
+		return nil
+	}
+	if len(b) > 2 {
+		*v = intOrString(string(b[1 : len(b)-1]))
+	}
+	return nil
+
+}
+
+func (v intOrString) String() string {
+	return string(v)
+}
