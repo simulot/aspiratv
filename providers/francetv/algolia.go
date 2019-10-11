@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/simulot/aspiratv/metadata/nfo"
 	"github.com/simulot/aspiratv/net/myhttp/httptest"
 	"github.com/simulot/aspiratv/providers"
 	"github.com/simulot/aspiratv/providers/francetv/query"
@@ -45,7 +46,7 @@ type AlgoliaConfig struct {
 
 var algoliaRegexp = regexp.MustCompile(`getAppConfig\(\)\s*\{\s*return\s+(\{[^;]+\})\s*;`)
 
-const homeFranceTV = "https://www.france.tv/"
+const homeFranceTV = "https://www.france.tv"
 
 func (p *FranceTV) getAlgoliaConfig(ctx context.Context) error {
 
@@ -86,15 +87,15 @@ type Requests struct {
 	Params    AlgoliaParam `json:"params"`
 }
 
-func (p *FranceTV) queryAlgolia(ctx context.Context, m *providers.MatchRequest) chan *providers.Show {
-	shows := make(chan *providers.Show)
+const algoliaURL = "https://vwdlashufe-dsn.algolia.net/1/indexes/*/queries"
+
+func (p *FranceTV) queryAlgolia(ctx context.Context, mr *providers.MatchRequest) chan *providers.Media {
+	mm := make(chan *providers.Media)
 
 	go func() {
-		defer close(shows)
+		defer close(mm)
 		// ctx, done := context.WithTimeout(ctx, p.deadline)
 		// defer done()
-
-		const algoliaURL = "https://vwdlashufe-dsn.algolia.net/1/indexes/*/queries"
 
 		v := url.Values{}
 		v.Set("x-algolia-agent", "Algolia for vanilla JavaScript (lite) 3.27.0;instantsearch.js 2.10.2;JS Helper 2.26.0")
@@ -109,15 +110,15 @@ func (p *FranceTV) queryAlgolia(ctx context.Context, m *providers.MatchRequest) 
 		page := 0
 		ts := time.Now().Unix()
 		req := AlgoliaParam{
-			"query":        m.Show,
+			"query":        mr.Show,
 			"hitsPerPage":  "20",
 			"filters":      fmt.Sprintf("class:video AND ranges.replay.web.begin_date < %d AND ranges.replay.web.end_date > %d", ts, ts),
 			"facetFilters": `[["class:video"]]`,
 			"facets":       "[]",
 			"tagFilters":   "",
 		}
-		if m.MaxAgedDays > 0 {
-			fromTS := time.Now().AddDate(0, 0, -m.MaxAgedDays-1).Unix()
+		if mr.MaxAgedDays > 0 {
+			fromTS := time.Now().AddDate(0, 0, -mr.MaxAgedDays-1).Unix()
 			req["filters"] += fmt.Sprintf(" AND dates.broadcast_begin_date > %d", fromTS)
 		}
 
@@ -177,38 +178,127 @@ func (p *FranceTV) queryAlgolia(ctx context.Context, m *providers.MatchRequest) 
 					if h.Type != "integrale" {
 						continue
 					}
-					st := strings.ToLower(h.Program.Label)
-					_ = st
-					if len(h.Program.Label) > 0 && !strings.Contains(strings.ToLower(h.Program.Label), m.Show) {
+
+					if len(h.Program.Label) > 0 && !strings.Contains(strings.ToLower(h.Program.Label), mr.Show) {
 						continue
 					}
 
-					if len(h.Program.Label) == 0 && !strings.Contains(strings.ToLower(h.Title), m.Show) {
+					if len(h.Program.Label) == 0 && !strings.Contains(strings.ToLower(h.Title), mr.Show) {
 						continue
 					}
 
-					// ID:           strconv.Itoa(h.ID),
-					s := providers.Show{
-						Show:         h.Program.Label,
-						Title:        h.Title,
-						ID:           h.SiID,
-						Pitch:        h.Description,
-						AirDate:      h.Dates["broadcast_begin_date"].Time(),
-						Provider:     p.Name(),
-						ThumbnailURL: homeFranceTV + h.Image.Formats["carre"].Urls["w:400"],
-						Destination:  m.Destination,
+					media := &providers.Media{
+						ID:    h.SiID.String(),
+						Match: mr,
 					}
-					if h.EpisodeNumber > 0 {
-						s.Episode = strconv.Itoa(h.EpisodeNumber)
+
+					if len(h.Program.Label) > 0 {
+						media.Metadata = &nfo.EpisodeDetails{}
+						media.ShowType = providers.Series
+					} else {
+						media.Metadata = &nfo.Movie{}
+						media.ShowType = providers.Movie
 					}
-					if h.SeasonNumber > 0 {
-						s.Season = strconv.Itoa(h.SeasonNumber)
+
+					info := media.Metadata.GetMediaInfo()
+					*info = nfo.MediaInfo{
+						Title: h.Title,
+						Plot:  h.Description,
+						Aired: nfo.Aired(h.Dates["broadcast_begin_date"].Time()),
+						UniqueID: []nfo.ID{
+							{
+								ID:   strconv.Itoa(h.ID),
+								Type: "FRANCETV:ID",
+							},
+							{
+								ID:   h.SiID.String(),
+								Type: "FRANCETV:SI_ID",
+							},
+						},
 					}
+					info.Actor = []nfo.Actor{}
+					info.Tag = []string{}
+
+					if len(h.Program.Label) > 0 {
+						info.Showtitle = h.Program.Label
+					}
+					if len(h.Casting) > 0 && len(h.Characters) > 0 {
+						actors := strings.Split(h.Casting, ",")
+						characters := strings.Split(h.Characters, ",")
+
+						for i := 0; i < len(actors); i++ {
+							if i < len(characters) {
+								info.Actor = append(info.Actor, nfo.Actor{Name: strings.TrimSpace(actors[i]), Role: strings.TrimSpace(characters[i]), Type: "Actor"})
+							}
+						}
+					}
+
+					if len(h.Presenter) > 0 {
+						info.Actor = append(info.Actor, nfo.Actor{Name: h.Presenter, Type: "Presenter"})
+					}
+
+					if len(h.Director) > 0 {
+						directors := strings.Split(h.Director, ",")
+						for i := 0; i < len(directors); i++ {
+							info.Actor = append(info.Actor, nfo.Actor{Name: strings.TrimSpace(directors[i]), Type: "Director"})
+						}
+					}
+
+					if len(h.Producer) > 0 {
+						producers := strings.Split(h.Producer, ",")
+						for i := 0; i < len(producers); i++ {
+							info.Actor = append(info.Actor, nfo.Actor{Name: strings.TrimSpace(producers[i]), Type: "Producer"})
+						}
+					}
+
+					if len(h.Categories) > 0 {
+						info.Genre = make([]string, len(h.Categories))
+						for i := 0; i < len(h.Categories); i++ {
+							info.Genre = append(info.Genre, h.Categories[i].Label)
+						}
+					}
+
 					if len(h.Channels) > 0 {
-						s.Channel = h.Channels[0].Label
+						info.Tag = append(info.Tag, h.Channels[0].Label)
 					}
-					s.ShowURL = homeFranceTV + h.Path + "/" + s.ID + "-" + h.URLPage + ".html"
-					shows <- &s
+
+					if h.EpisodeNumber > 0 && h.SeasonNumber > 0 {
+						info.Season = h.SeasonNumber
+						info.Episode = h.EpisodeNumber
+					}
+
+					info.Thumb = make([]nfo.Thumb, 0)
+					for k, format := range h.Image.Formats {
+						url := ""
+						maxW := 0
+						for w, u := range format.Urls {
+							width := 0
+							_, err := fmt.Sscanf(w, "w:%d", &width)
+							if err != nil {
+								continue
+							}
+							if width > maxW {
+								maxW = width
+								url = u
+							}
+						}
+						switch k {
+						case "vignette_16x9":
+							info.Thumb = append(info.Thumb, nfo.Thumb{Aspect: "thumb", URL: homeFranceTV + url})
+						case "carre":
+							info.Thumb = append(info.Thumb, nfo.Thumb{Aspect: "poster", URL: homeFranceTV + url})
+						}
+					}
+
+					if media.ShowType == providers.Series {
+						info.SeasonInfo, info.TVShow = p.getProgram(ctx, info.Showtitle, h.Season.ID, h.Program.ID)
+						if !info.IsSpecial {
+							if info.Season == 0 {
+								info.Season = info.Aired.Time().Year()
+							}
+						}
+					}
+					mm <- media
 				}
 			}
 			page++
@@ -217,13 +307,179 @@ func (p *FranceTV) queryAlgolia(ctx context.Context, m *providers.MatchRequest) 
 			}
 		}
 	}()
-	return shows
+	return mm
+}
+
+func (p *FranceTV) getProgram(ctx context.Context, program string, seasonID, programID int) (*nfo.Season, *nfo.TVShow) {
+
+	season, ok1 := p.seasons.Load(seasonID)
+	show, ok2 := p.shows.Load(programID)
+
+	if ok1 && ok2 {
+		return season.(*nfo.Season), show.(*nfo.TVShow)
+	}
+
+	// program = strings.ToLower(program)
+	v := url.Values{}
+	v.Set("x-algolia-agent", "Algolia for vanilla JavaScript (lite) 3.27.0;instantsearch.js 2.10.2;JS Helper 2.26.0")
+	v.Set("x-algolia-application-id", p.algolia.AlgoliaAppID)
+	v.Set("x-algolia-api-key", p.algolia.AlgoliaAPIKey)
+
+	u := algoliaURL + "?" + v.Encode()
+
+	if p.debug {
+		log.Printf("[%s] Search url %q", p.Name(), u)
+	}
+	page := 0
+	req := AlgoliaParam{
+		"query":       program,
+		"hitsPerPage": "20",
+		// "filters":      fmt.Sprintf("class:program AND (counters.web.integral_counter > 0 OR counters.web.extract_counter > 0)"),
+		"filters":      fmt.Sprintf("class:program"),
+		"facetFilters": `[["class:program"]]`,
+		"facets":       "[]",
+		"tagFilters":   "",
+	}
+	for {
+		req["page"] = strconv.Itoa(page)
+		w := algoliaRequestWrapper{
+			Requests: []Requests{
+				{
+					IndexName: "yatta_prod_taxonomies",
+					Params:    req,
+				},
+			},
+		}
+		_ = w
+		b := bytes.NewBuffer([]byte{})
+		encodeRequest(b, &w) // Special encoding... WTF
+
+		h := make(http.Header)
+		h.Add("Accept", "application/json")
+		h.Add("Accept-Language", "fr-FR,fr;q=0.5")
+		h.Add("Accept-Encoding", "gzip")
+		h.Add("Referer", "https://www.france.tv")
+		h.Add("content-type", "https://www.france.tv")
+		h.Add("Origin", "https://www.france.tv")
+		h.Add("TE", "Trailers")
+		if p.debug {
+			log.Printf("[%s] Request body", p.Name())
+			for k, s := range h {
+				log.Printf("%q %s", k, strings.Join(s, ","))
+			}
+			log.Println(b.String())
+		}
+
+		r, err := p.getter.DoWithContext(ctx, "POST", u, h, b)
+		if err != nil {
+			log.Printf("[%s] Can't call algolia API: %s", p.Name(), err)
+			return nil, nil
+		}
+		if p.debug {
+			r = httptest.DumpReaderToFile(r, "francetv-algolia-pgm-")
+		}
+
+		resp, err := ioutil.ReadAll(r)
+		if err != nil {
+			log.Printf("[%s] Can't get API result: %s", p.Name(), err)
+			return nil, nil
+		}
+		results := query.QueryResults{}
+		err = json.Unmarshal(resp, &results)
+		if err != nil {
+			log.Printf("[%s] Can't decode API result: %s", p.Name(), err)
+			return nil, nil
+		}
+		r.Close()
+
+		for resNum := range results.Results {
+			for _, h := range results.Results[resNum].Hits {
+				if h.Class != "program" {
+					continue
+				}
+
+				thumbs := []nfo.Thumb{}
+				for k, format := range h.Image.Formats {
+					url := ""
+					maxW := 0
+					for w, u := range format.Urls {
+						width := 0
+						_, err := fmt.Sscanf(w, "w:%d", &width)
+						if err != nil {
+							continue
+						}
+						if width > maxW {
+							maxW = width
+							url = u
+						}
+					}
+					switch k {
+					case "logo":
+						thumbs = append(thumbs, nfo.Thumb{Aspect: "clearlogo", URL: homeFranceTV + url})
+					case "vignette_16x9":
+						thumbs = append(thumbs, nfo.Thumb{Aspect: "fanart", URL: homeFranceTV + url})
+					case "carre":
+						thumbs = append(thumbs, nfo.Thumb{Aspect: "poster", URL: homeFranceTV + url})
+					case "background_16x9":
+						thumbs = append(thumbs, nfo.Thumb{Aspect: "backdrop", URL: homeFranceTV + url})
+					}
+				}
+
+				switch h.Type {
+				case "program":
+					p.shows.Store(h.ID, &nfo.TVShow{
+						Title: h.Label,
+						Plot:  h.Description,
+						UniqueID: []nfo.ID{
+							{
+								ID:   strconv.Itoa(h.ID),
+								Type: "FRANCETV:ID",
+							},
+							{
+								ID:   h.SiID.String(),
+								Type: "FRANCETV:SI_ID",
+							},
+						},
+						Thumb: thumbs,
+					})
+				case "saison":
+					p.seasons.Store(h.ID, &nfo.Season{
+						Title: h.Label,
+						Plot:  h.Description,
+						Thumb: thumbs,
+					})
+
+				}
+			}
+		}
+		page++
+		if page >= results.Results[0].NbPages {
+			break
+		}
+	}
+
+	var (
+		theSeason *nfo.Season
+		theShow   *nfo.TVShow
+	)
+
+	if season, ok1 = p.seasons.Load(seasonID); ok1 {
+		theSeason = season.(*nfo.Season)
+	}
+
+	if show, ok2 = p.shows.Load(programID); ok2 {
+		theShow = show.(*nfo.TVShow)
+	}
+
+	return theSeason, theShow
 }
 
 func encodeRequest(b *bytes.Buffer, w *algoliaRequestWrapper) {
 	b.WriteByte('{')
 	b.WriteString(`"requests":[{`)
-	b.WriteString(`"indexName":"yatta_prod_contents","params":`)
+	b.WriteString(`"indexName":"`)
+	b.WriteString(w.Requests[0].IndexName)
+	b.WriteString(`","params":`)
 	b.WriteByte('"')
 	shouldWriteAmp := false
 	for k, v := range w.Requests[0].Params {

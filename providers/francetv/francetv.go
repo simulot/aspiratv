@@ -3,13 +3,18 @@ package francetv
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
+	"strconv"
+	"sync"
 	"time"
 
+	"github.com/simulot/aspiratv/metadata/nfo"
 	"github.com/simulot/aspiratv/net/myhttp/httptest"
 
 	"github.com/simulot/aspiratv/net/myhttp"
@@ -41,6 +46,8 @@ type FranceTV struct {
 	debug    bool
 	deadline time.Duration
 	algolia  *AlgoliaConfig
+	seasons  sync.Map
+	shows    sync.Map
 }
 
 // WithGetter inject a getter in FranceTV object instead of normal one
@@ -76,14 +83,14 @@ func (p *FranceTV) DebugMode(mode bool) {
 	}
 }
 
-// Shows return shows that match with matching list.
-func (p *FranceTV) Shows(ctx context.Context, mm []*providers.MatchRequest) chan *providers.Show {
+// MediaList return media that match with matching list.
+func (p *FranceTV) MediaList(ctx context.Context, mm []*providers.MatchRequest) chan *providers.Media {
 	err := p.getAlgoliaConfig(ctx)
 
 	if err != nil {
 		return nil
 	}
-	shows := make(chan *providers.Show)
+	shows := make(chan *providers.Media)
 
 	go func() {
 		defer close(shows)
@@ -99,84 +106,98 @@ func (p *FranceTV) Shows(ctx context.Context, mm []*providers.MatchRequest) chan
 	return shows
 }
 
-type Player struct {
+type player struct {
 	Video struct {
 		URL   string `json:"url"`
 		Token string `json:"token"`
 	} `json:video`
+	Meta struct {
+		ID              string    `json:"id"`
+		PlurimediaID    string    `json:"plurimedia_id"`
+		Title           string    `json:"title"`
+		AdditionalTitle string    `json:"additional_title"`
+		PreTitle        string    `json:"pre_title"`
+		BroadcastedAt   time.Time `json:"broadcasted_at"`
+		ImageURL        string    `json:"image_url"`
+	} `json:"meta"`
 }
 
-// GetShowStreamURL return the show's URL, a m3u8 playlist
-func (p *FranceTV) GetShowStreamURL(ctx context.Context, s *providers.Show) (string, error) {
-	if s.StreamURL == "" {
-		v := url.Values{}
-		v.Set("country_code", "FR")
-		v.Set("w", "1920")
-		v.Set("h", "1080")
-		v.Set("version", "5.18.3")
-		v.Set("domain", "www.france.tv")
-		v.Set("device_type", "desktop")
-		v.Set("browser", "firefox")
-		v.Set("browser_version", "69")
-		v.Set("os", "windows")
-		v.Set("gmt", "+1")
+// GetMediaDetails download more details when available
+func (p *FranceTV) GetMediaDetails(ctx context.Context, m *providers.Media) error {
+	info := m.Metadata.GetMediaInfo()
+	v := url.Values{}
+	v.Set("country_code", "FR")
+	v.Set("w", "1920")
+	v.Set("h", "1080")
+	v.Set("version", "5.18.3")
+	v.Set("domain", "www.france.tv")
+	v.Set("device_type", "desktop")
+	v.Set("browser", "firefox")
+	v.Set("browser_version", "69")
+	v.Set("os", "windows")
+	v.Set("gmt", "+1")
 
-		u := "https://player.webservices.francetelevisions.fr/v1/videos/" + s.ID + "?" + v.Encode()
+	u := "https://player.webservices.francetelevisions.fr/v1/videos/" + m.ID + "?" + v.Encode()
 
-		if p.debug {
-			log.Printf("[%s] Player url %q", p.Name(), u)
-		}
-
-		r, err := p.getter.Get(ctx, u)
-		if err != nil {
-			return "", fmt.Errorf("Can't get player: %w", err)
-		}
-		if p.debug {
-			r = httptest.DumpReaderToFile(r, "francetv-player-"+s.ID+"-")
-		}
-		defer r.Close()
-
-		pl := Player{}
-		err = json.NewDecoder(r).Decode(&pl)
-		if err != nil {
-			return "", fmt.Errorf("Can't decode player: %w", err)
-		}
-
-		s.StreamURL = pl.Video.URL
-
-		// Get Token
-		if len(pl.Video.Token) > 0 {
-			if p.debug {
-				log.Printf("[%s] Player token %q", p.Name(), pl.Video.Token)
-			}
-
-			r2, err := p.getter.Get(ctx, pl.Video.Token)
-			if err != nil {
-				return "", fmt.Errorf("Can't get token %s: %w", pl.Video.Token, err)
-			}
-			if p.debug {
-				r2 = httptest.DumpReaderToFile(r2, "francetv-token-"+s.ID+"-")
-			}
-			defer r2.Close()
-			pl := struct {
-				URL string `json:"url"`
-			}{}
-			err = json.NewDecoder(r2).Decode(&pl)
-			if err != nil {
-				return "", fmt.Errorf("Can't decode token: %w", err)
-			}
-			s.StreamURL = pl.URL
-		}
-
-		if p.debug {
-			log.Printf("[%s] Stream url %q", p.Name(), s.StreamURL)
-		}
-
+	if p.debug {
+		log.Printf("[%s] Player url %q", p.Name(), u)
 	}
-	return s.StreamURL, nil
+
+	r, err := p.getter.Get(ctx, u)
+	if err != nil {
+		return fmt.Errorf("Can't get player: %w", err)
+	}
+	if p.debug {
+		r = httptest.DumpReaderToFile(r, "francetv-player-"+m.ID+"-")
+	}
+	defer r.Close()
+
+	pl := player{}
+	err = json.NewDecoder(r).Decode(&pl)
+	if err != nil {
+		return fmt.Errorf("Can't decode player: %w", err)
+	}
+
+	info.URL = pl.Video.URL
+
+	episodeRegexp := regexp.MustCompile(`S(\d+)\sE(\d+)`)
+	expr := episodeRegexp.FindAllStringSubmatch(pl.Meta.PreTitle, -1)
+	if len(expr) > 0 {
+		info.Season, _ = strconv.Atoi(expr[0][1])
+		info.Episode, _ = strconv.Atoi(expr[0][2])
+	}
+
+	// Get Token
+	if len(pl.Video.Token) > 0 {
+		if p.debug {
+			log.Printf("[%s] Player token %q", p.Name(), pl.Video.Token)
+		}
+
+		r2, err := p.getter.Get(ctx, pl.Video.Token)
+		if err != nil {
+			return fmt.Errorf("Can't get token %s: %w", pl.Video.Token, err)
+		}
+		if p.debug {
+			r2 = httptest.DumpReaderToFile(r2, "francetv-token-"+m.ID+"-")
+		}
+		defer r2.Close()
+		pl := struct {
+			URL string `json:"url"`
+		}{}
+		err = json.NewDecoder(r2).Decode(&pl)
+		if err != nil {
+			return fmt.Errorf("Can't decode token: %w", err)
+		}
+		info.URL = pl.URL
+	}
+
+	if p.debug {
+		log.Printf("[%s] Stream url %q", p.Name(), info.URL)
+	}
+
+	return nil
 }
 
-// GetShowInfo query the URL from InfoOeuvre web service
-func (p *FranceTV) GetShowInfo(ctx context.Context, s *providers.Show) error {
-	return nil
+func (p *FranceTV) GetShowInfo(ctx context.Context, m *nfo.MediaInfo) (nfo.TVShow, error) {
+	return nfo.TVShow{}, errors.New("GetShowInfo Not implemented")
 }

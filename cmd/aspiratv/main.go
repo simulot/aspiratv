@@ -22,9 +22,9 @@ import (
 	"github.com/vbauerster/mpb/v4"
 	"github.com/vbauerster/mpb/v4/decor"
 
-	_ "github.com/simulot/aspiratv/providers/artetv"
+	// _ "github.com/simulot/aspiratv/providers/artetv"
 	_ "github.com/simulot/aspiratv/providers/francetv"
-	_ "github.com/simulot/aspiratv/providers/gulli"
+	// _ "github.com/simulot/aspiratv/providers/gulli"
 )
 
 var (
@@ -102,7 +102,7 @@ func main() {
 	flag.StringVar(&a.Config.LogFile, "log", "", "Give the log file name. When empty, no log.")
 	flag.IntVar(&a.Config.MaxAgedDays, "max-aged", 0, "Retrieve media younger than MaxAgedDays.")
 	flag.IntVar(&a.Config.RetentionDays, "retention", 0, "Delete media older than retention days for the downloaded show.")
-	flag.BoolVar(&a.Config.WriteNFO, "nfo", true, "Write NFO file for KODI,Emby,Plex...")
+	flag.BoolVar(&a.Config.WriteNFO, "write-nfo", true, "Write NFO file for KODI,Emby,Plex...")
 	flag.Parse()
 
 	if a.Config.Debug {
@@ -317,8 +317,6 @@ func (a *app) PullShows(ctx context.Context, p providers.Provider, pc *mpb.Progr
 		cancel()
 	}()
 
-	removeOldMediaOnces := map[string]bool{}
-
 	var providerBar *mpb.Bar
 
 	if !a.Config.Headless {
@@ -338,38 +336,30 @@ func (a *app) PullShows(ctx context.Context, p providers.Provider, pc *mpb.Progr
 
 	showCount := int64(0)
 showLoop:
-	for s := range p.Shows(ctx, a.Config.WatchList) {
-		if !removeOldMediaOnces[s.Show] {
-			// log.Println("Remove", s.Show)
-			removeOldMediaOnces[s.Show] = true
-		}
 
-		if _, ok := seen[s.ID]; ok {
+	for m := range p.MediaList(ctx, a.Config.WatchList) {
+		if _, ok := seen[m.ID]; ok {
 			continue
 		}
-		seen[s.ID] = true
+		seen[m.ID] = true
 
 		select {
 		case <-ctx.Done():
 			break showLoop
 		default:
-			d := a.Config.Destinations[s.Destination]
 
-			if a.Config.WriteNFO {
-				a.CheckNFO(ctx, p, s, d)
-			}
-			if a.Config.Force || a.MustDownload(ctx, p, s, d) {
-				if a.Config.Debug {
-					log.Printf("[%s] submitting %d", p.Name(), showCount)
+			if a.Config.Force || a.MustDownload(ctx, p, m) {
+				if a.Config.Headless {
+					log.Printf("[%s] Download of %q submitted", p.Name(), filepath.Base(m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])))
 				}
 				showCount++
 				if !a.Config.Headless {
 					providerBar.SetTotal(showCount, false)
 				}
-				a.SubmitDownload(ctx, &wg, p, s, d, pc, providerBar)
+				a.SubmitDownload(ctx, &wg, p, m, pc, providerBar)
 			} else {
 				if a.Config.Headless {
-					log.Printf("[%s] %s already downloaded.", p.Name(), providers.GetShowFileName(ctx, s))
+					log.Printf("[%s] %s already downloaded.", p.Name(), filepath.Base(m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])))
 				}
 			}
 			if ctx.Err() != nil {
@@ -396,16 +386,28 @@ showLoop:
 }
 
 // MustDownload check if the show isn't yet downloaded.
-func (a *app) MustDownload(ctx context.Context, p providers.Provider, s *providers.Show, d string) bool {
-
-	fn := filepath.Join(d, providers.GetShowFileName(ctx, s))
-	if _, err := os.Stat(fn); err == nil {
+func (a *app) MustDownload(ctx context.Context, p providers.Provider, m *providers.Media) bool {
+	mediaPath := m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])
+	mediaExists, err := fileExists(mediaPath)
+	if mediaExists {
 		return false
 	}
-	showPath := filepath.Join(d, providers.GetShowFileNameMatcher(ctx, s))
-	files, err := filepath.Glob(showPath)
+
+	mediaPath = m.Metadata.GetMediaPathMatcher(a.Config.Destinations[m.Match.Destination])
+	files, err := filepath.Glob(mediaPath)
 	if err != nil {
-		log.Fatalf("Can't glob %s: %v", showPath, err)
+		log.Fatalf("Can't glob %s: %v", mediaPath, err)
 	}
 	return len(files) == 0
+}
+
+func fileExists(p string) (bool, error) {
+	_, err := os.Stat(p)
+	if os.IsExist(err) {
+		return false, err
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return true, nil
 }

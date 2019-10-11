@@ -1,9 +1,5 @@
 package providers
 
-import (
-	"strings"
-)
-
 // MatchRequest holds criterions for selecting show
 type MatchRequest struct {
 	// Fields for matching
@@ -34,39 +30,40 @@ type MatchRequest struct {
 // Note: Playlist match isn't handled generically, it must be implemented in the provider's implementation
 // Note: side effect show's destination is changed
 //
-func IsShowMatch(mm []*MatchRequest, s *Show) bool {
-	if mm == nil || len(mm) == 0 {
-		return true
-	}
 
-	for _, m := range mm {
-		if len(m.Playlist) > 0 {
-			// Skip Playlist that must have a special treatment
-			continue
-		}
+// func IsShowMatch(mm []*MatchRequest, s *Show) bool {
+// 	if mm == nil || len(mm) == 0 {
+// 		return true
+// 	}
 
-		if len(m.Provider) > 0 {
-			if m.Provider != strings.ToLower(s.Provider) {
-				continue
-			}
-		}
-		if len(m.Show) > 0 {
-			if f := strings.Contains(strings.ToLower(s.Show), m.Show); !f {
-				continue
-			}
-		}
-		if len(m.Title) > 0 {
-			if f := strings.Contains(strings.ToLower(s.Title), m.Title); !f {
-				continue
-			}
-		}
-		if len(m.Pitch) > 0 {
-			if f := strings.Contains(strings.ToLower(s.Pitch), m.Pitch); !f {
-				continue
-			}
-		}
-		s.Destination = m.Destination
-		return true
-	}
-	return false
-}
+// 	for _, m := range mm {
+// 		if len(m.Playlist) > 0 {
+// 			// Skip Playlist that must have a special treatment
+// 			continue
+// 		}
+
+// 		if len(m.Provider) > 0 {
+// 			if m.Provider != strings.ToLower(s.Provider) {
+// 				continue
+// 			}
+// 		}
+// 		if len(m.Show) > 0 {
+// 			if f := strings.Contains(strings.ToLower(s.Show), m.Show); !f {
+// 				continue
+// 			}
+// 		}
+// 		if len(m.Title) > 0 {
+// 			if f := strings.Contains(strings.ToLower(s.Title), m.Title); !f {
+// 				continue
+// 			}
+// 		}
+// 		if len(m.Pitch) > 0 {
+// 			if f := strings.Contains(strings.ToLower(s.Pitch), m.Pitch); !f {
+// 				continue
+// 			}
+// 		}
+// 		s.Destination = m.Destination
+// 		return true
+// 	}
+// 	return false
+// }
