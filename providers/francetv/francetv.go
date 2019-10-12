@@ -3,7 +3,6 @@ package francetv
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -14,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/simulot/aspiratv/metadata/nfo"
 	"github.com/simulot/aspiratv/net/myhttp/httptest"
 
 	"github.com/simulot/aspiratv/net/myhttp"
@@ -196,8 +194,4 @@ func (p *FranceTV) GetMediaDetails(ctx context.Context, m *providers.Media) erro
 	}
 
 	return nil
-}
-
-func (p *FranceTV) GetShowInfo(ctx context.Context, m *nfo.MediaInfo) (nfo.TVShow, error) {
-	return nfo.TVShow{}, errors.New("GetShowInfo Not implemented")
 }

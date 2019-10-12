@@ -9,9 +9,13 @@ import (
 	"net/url"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/simulot/aspiratv/metadata/nfo"
+	"github.com/simulot/aspiratv/providers"
 
 	"github.com/simulot/aspiratv/net/myhttp/httptest"
 
@@ -19,7 +23,6 @@ import (
 
 	"github.com/simulot/aspiratv/net/myhttp"
 	"github.com/simulot/aspiratv/parsers/htmlparser"
-	"github.com/simulot/aspiratv/providers"
 )
 
 // init registers ArteTV provider
@@ -155,8 +158,8 @@ func withGetter(g getter) func(p *ArteTV) {
 func (p ArteTV) Name() string { return "artetv" }
 
 // Shows download the shows catalog from the web site.
-func (p *ArteTV) Shows(ctx context.Context, mm []*providers.MatchRequest) chan *providers.Show {
-	shows := make(chan *providers.Show)
+func (p *ArteTV) MediaList(ctx context.Context, mm []*providers.MatchRequest) chan *providers.Media {
+	shows := make(chan *providers.Media)
 
 	go func() {
 		defer close(shows)
@@ -166,7 +169,6 @@ func (p *ArteTV) Shows(ctx context.Context, mm []*providers.MatchRequest) chan *
 			}
 			if m.Provider == p.Name() {
 				for s := range p.getShowList(ctx, m) {
-					s.Destination = m.Destination
 					shows <- s
 				}
 			}
@@ -176,8 +178,8 @@ func (p *ArteTV) Shows(ctx context.Context, mm []*providers.MatchRequest) chan *
 	return shows
 }
 
-func (p *ArteTV) getShowList(ctx context.Context, m *providers.MatchRequest) chan *providers.Show {
-	shows := make(chan *providers.Show)
+func (p *ArteTV) getShowList(ctx context.Context, mr *providers.MatchRequest) chan *providers.Media {
+	shows := make(chan *providers.Media)
 
 	go func() {
 		defer func() {
@@ -194,8 +196,9 @@ func (p *ArteTV) getShowList(ctx context.Context, m *providers.MatchRequest) cha
 			return
 		}
 		v := u.Query()
-		v.Set("imageFormats", "square,banner,landscape")
-		v.Set("query", m.Show)
+		// v.Set("imageFormats", "square,banner,landscape,poster")
+		v.Set("imageFormats", "*")
+		v.Set("query", mr.Show)
 		v.Set("mainZonePage", "1")
 		v.Set("page", "1")
 		v.Set("limit", "100")
@@ -239,11 +242,11 @@ func (p *ArteTV) getShowList(ctx context.Context, m *providers.MatchRequest) cha
 		matchedShows := []Data{}
 
 		for _, d := range result.Data {
-			if strings.Contains(strings.ToLower(d.Title), m.Show) {
+			if strings.Contains(strings.ToLower(d.Title), mr.Show) {
 				if d.Kind.IsCollection {
 					matchedSeries = append(matchedSeries, d)
 				} else {
-					if strings.ToLower(d.Title) == m.Show {
+					if strings.ToLower(d.Title) == mr.Show {
 						matchedShows = append(matchedShows, d)
 					}
 				}
@@ -252,18 +255,19 @@ func (p *ArteTV) getShowList(ctx context.Context, m *providers.MatchRequest) cha
 
 		if len(matchedSeries) > 0 {
 			for _, d := range matchedSeries {
-				for s := range p.getSerie(ctx, d) {
-					shows <- s
+				for info := range p.getSerie(ctx, mr, d) {
+					shows <- info
 				}
 
 			}
 			return
 		}
-		if len(matchedShows) > 0 {
-			for s := range p.emitShows(ctx, matchedShows, "", "") {
-				shows <- (s)
-			}
-		}
+		// if len(matchedShows) > 0 {
+		// 	for s := range p.emitShows(ctx, mr, matchedShows, "", "") {
+		// 		s.Match = mr
+		// 		shows <- s
+		// 	}
+		// }
 	}()
 	return shows
 }
@@ -278,9 +282,9 @@ var (
 
 // getSerie
 // Arte presents a serie either as collection of episodes for a single season or as a collection of collection of episodes for multiple seasons.
-func (p *ArteTV) getSerie(ctx context.Context, d Data) chan *providers.Show {
+func (p *ArteTV) getSerie(ctx context.Context, mr *providers.MatchRequest, d Data) chan *providers.Media {
 	ctx, done := context.WithTimeout(ctx, p.deadline)
-	shows := make(chan *providers.Show)
+	shows := make(chan *providers.Media)
 
 	go func() {
 		defer func() {
@@ -293,6 +297,12 @@ func (p *ArteTV) getSerie(ctx context.Context, d Data) chan *providers.Show {
 
 		collectionIDs := map[string]string{"": d.ProgramID} // Collection per season
 		seasonSearched := false
+
+		tvshow := nfo.TVShow{
+			Title: d.Title,
+			Plot:  d.ShortDescription,
+			Thumb: getThumbs(d.Images),
+		}
 
 	collectionLoop:
 		for len(collectionIDs) > 0 {
@@ -344,7 +354,7 @@ func (p *ArteTV) getSerie(ctx context.Context, d Data) chan *providers.Show {
 				}
 
 				if len(result.Data) == 0 {
-					// A collection of collection (a serie, indeed) enrty hasn't any Data. We have to fetch collections for each season
+					// A collection of collection (a series, indeed) entry hasn't any Data. We have to fetch collections for each season
 					if seasonSearched {
 						log.Printf("[%s] Can't found collection with ID(%s): %q", p.Name(), d.ProgramID, err)
 						return
@@ -377,12 +387,48 @@ func (p *ArteTV) getSerie(ctx context.Context, d Data) chan *providers.Show {
 					}
 					continue collectionLoop
 				}
-				ss := p.emitShows(ctx, result.Data, seasons[0], d.Title)
-				for s := range ss {
-					shows <- s
+
+				// Emit media found in the current collection/season
+				for _, ep := range result.Data {
+					media := &providers.Media{
+						ID:       ep.ProgramID,
+						ShowType: providers.Series,
+						Match:    mr,
+					}
+
+					info := nfo.EpisodeDetails{
+						MediaInfo: nfo.MediaInfo{
+							UniqueID: []nfo.ID{
+								{
+									ID:   ep.ProgramID,
+									Type: "ARTETV",
+								},
+							},
+							Title:     ep.Subtitle,
+							Showtitle: d.Title,
+							Plot:      ep.ShortDescription,
+							Thumb:     getThumbs(ep.Images),
+							TVShow:    &tvshow,
+						},
+					}
+					setEpisodeFormTitle(&info, ep.Title)
+					if info.Episode != 0 && info.Season != 0 {
+						tvshow.HasEpisodes = true
+					}
+
+					if ep.Kind.Code == "BONUS" {
+						info.Season = 0 // Specials
+					}
+					if tvshow.HasEpisodes && info.Episode == 0 {
+						info.Season = 0 // Specials
+					}
+
+					// TODO Actors
+
+					media.SetMetaData(&info)
+					shows <- media
 				}
 				u = result.NextPage
-
 			}
 			delete(collectionIDs, seasons[0]) // Season on top of the stack is done.
 		}
@@ -391,9 +437,10 @@ func (p *ArteTV) getSerie(ctx context.Context, d Data) chan *providers.Show {
 	return shows
 }
 
+/*
 // emitShows collected
-func (p *ArteTV) emitShows(ctx context.Context, eps []Data, season, title string) chan *providers.Show {
-	shows := make(chan *providers.Show)
+func (p *ArteTV) emitShows(ctx context.Context, mr *providers.MatchRequest, eps []Data, season, title string) chan *providers.MetaDataHandler {
+	shows := make(chan *providers.Media)
 
 	go func() {
 		defer close(shows)
@@ -402,13 +449,23 @@ func (p *ArteTV) emitShows(ctx context.Context, eps []Data, season, title string
 			if ctx.Err() != nil {
 				return
 			}
-			show := &providers.Show{
-				ID:      ep.ProgramID,
-				Show:    title, //Takes collection's title
-				Title:   ep.Subtitle,
-				Pitch:   ep.ShortDescription,
-				ShowURL: ep.URL,
-				Season:  season,
+			media := &providers.Media{
+				ID:    ep.ID,
+				Match: mr,
+			}
+			info := media.Metadata.GetMediaInfo()
+
+			*info = nfo.MediaInfo{
+				Title:     ep.Subtitle,
+				Showtitle: title, //Takes collection's title
+				Plot:      ep.ShortDescription,
+				UniqueID: []nfo.ID{
+					{
+						ID:   ep.ID,
+						Type: "ARTETV",
+					},
+				},
+				URL: ep.URL,
 			}
 
 			img := getBestImage(ep.Images, "square")
@@ -432,26 +489,26 @@ func (p *ArteTV) emitShows(ctx context.Context, eps []Data, season, title string
 	}()
 	return shows
 }
-
+*/
 var (
 	parseTitleSeasonEpisode = regexp.MustCompile(`^(.+) - Saison (\d+) \((\d+)\/\d+\)$`)
 	parseTitleEpisode       = regexp.MustCompile(`^(.+) \((\d+)\/\d+\)$`)
 )
 
-func setEpisodeFormTitle(show *providers.Show, t string) {
+func setEpisodeFormTitle(show *nfo.EpisodeDetails, t string) {
 
 	m := parseTitleSeasonEpisode.FindAllStringSubmatch(t, -1)
 	if len(m) > 0 {
-		show.Show = m[0][1]
-		show.Season = m[0][2]
-		show.Episode = m[0][3]
+		show.Showtitle = m[0][1]
+		show.Season, _ = strconv.Atoi(m[0][2])
+		show.Episode, _ = strconv.Atoi(m[0][3])
 		return
 	}
 	m = parseTitleEpisode.FindAllStringSubmatch(t, -1)
 	if len(m) > 0 {
-		show.Show = m[0][1]
-		show.Season = "1"
-		show.Episode = m[0][2]
+		show.Showtitle = m[0][1]
+		show.Season = 1
+		show.Episode, _ = strconv.Atoi(m[0][2])
 		return
 	}
 
@@ -461,13 +518,37 @@ func setEpisodeFormTitle(show *providers.Show, t string) {
 	}
 }
 
-// getBestImage retreive the url for the image of type "protrait/banner/landscape..." with the highest resolution
-func getBestImage(images Images, t string) string {
-	image, ok := images[t]
-	if !ok {
-		return ""
-	}
+func getThumbs(images map[string]Image) []nfo.Thumb {
+	thumbs := []nfo.Thumb{}
+	for k, i := range images {
+		if len(i.BlurURL) == 0 {
+			continue
+		}
+		aspect := "thumb"
 
+		switch k {
+		case "landscape":
+			aspect = "thumb"
+		case "banner":
+			aspect = "fanart"
+		case "portrait":
+			aspect = "poster"
+		case "square":
+			aspect = "poster"
+		}
+
+		thumbs = append(thumbs, nfo.Thumb{
+			Aspect:  aspect,
+			Preview: i.BlurURL,
+			URL:     getBestImage(i),
+		})
+
+	}
+	return thumbs
+}
+
+// getBestImage retreive the url for the image of type "protrait/banner/landscape..." with the highest resolution
+func getBestImage(image Image) string {
 	bestResolution := 0
 	bestURL := ""
 	for _, r := range image.Resolutions {
@@ -488,57 +569,36 @@ func getBestImage(images Images, t string) string {
 
 const arteDetails = "https://api.arte.tv/api/player/v1/config/fr/%s?autostart=1&lifeCycle=1" // Player to get Video streams ProgID
 
-// GetShowStreamURL return the show's URL, a mp4 file
-func (p *ArteTV) GetShowStreamURL(ctx context.Context, s *providers.Show) (string, error) {
-	if s.StreamURL != "" {
-		return s.StreamURL, nil
+// GetMediaDetails return the show's URL, a mp4 file
+func (p *ArteTV) GetMediaDetails(ctx context.Context, m *providers.Media) error {
+	info := m.Metadata.GetMediaInfo()
+
+	if info.URL != "" {
+		return nil
 	}
 
-	err := p.GetShowInfo(ctx, s)
-	if err != nil {
-		return "", err
-	}
-
-	return s.StreamURL, nil
-}
-
-func (p *ArteTV) getPlayer(ctx context.Context, s *providers.Show) (*playerAPI, error) {
-	if s.Detailed {
-		return nil, nil
-	}
-
-	url := fmt.Sprintf(arteDetails, s.ID)
+	url := fmt.Sprintf(arteDetails, m.ID)
 	if p.debug {
 		log.Println(url)
 	}
 	r, err := p.getter.Get(ctx, url)
 	if err != nil {
-		return nil, fmt.Errorf("Can't get show's detailled information: %v", err)
+		return fmt.Errorf("Can't get show's detailled information: %w", err)
 	}
 	if p.debug {
-		r = httptest.DumpReaderToFile(r, "artetv-info-"+s.ID+"-")
+		r = httptest.DumpReaderToFile(r, "artetv-info-"+m.ID+"-")
 	}
 	defer r.Close()
 	player := playerAPI{}
 	err = json.NewDecoder(r).Decode(&player)
 	if err != nil {
-		return nil, fmt.Errorf("Can't decode show's detailled information: %v", err)
+		return fmt.Errorf("Can't decode show's detailled information: %w", err)
 	}
 
-	s.StreamURL = p.getBestVideo(player.VideoJSONPlayer.VSR)
-	s.AirDate = time.Time(player.VideoJSONPlayer.VRA)
-	s.Detailed = true
-	return &player, nil
-}
+	info.URL = p.getBestVideo(player.VideoJSONPlayer.VSR)
+	info.Aired = nfo.Aired(player.VideoJSONPlayer.VRA.Time())
 
-// GetShowInfo gather show information from dedicated web page.
-// It load the html page of the show to extract availability date used as airdate and production year as season
-func (p *ArteTV) GetShowInfo(ctx context.Context, s *providers.Show) error {
-	if s.Detailed {
-		return nil
-	}
-	_, err := p.getPlayer(ctx, s)
-	return err
+	return nil
 }
 
 type mapStrInt map[string]uint64
@@ -559,7 +619,7 @@ func (p *ArteTV) getBestVideo(ss map[string]StreamInfo) string {
 		}
 	}
 	if p.debug {
-		log.Printf("[%s] Couln'd find a suitable stream", p.Name())
+		log.Printf("[%s] Couldn't find a suitable stream", p.Name())
 	}
 	return ""
 }

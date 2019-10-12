@@ -2,17 +2,14 @@ package providers
 
 import (
 	"context"
-
-	"github.com/simulot/aspiratv/metadata/nfo"
 )
 
 // Provider is the interface for a provider
 type Provider interface {
-	Name() string                                                    // Provider's name
-	MediaList(context.Context, []*MatchRequest) chan *Media          // List of available shows that match one of MatchRequest
-	GetMediaDetails(context.Context, *Media) error                   // Download more details when available
-	GetShowInfo(context.Context, *nfo.MediaInfo) (nfo.TVShow, error) // Provide info for the whole show
-	DebugMode(bool)                                                  // Set debug mode
+	Name() string                                           // Provider's name
+	MediaList(context.Context, []*MatchRequest) chan *Media // List of available shows that match one of MatchRequest
+	GetMediaDetails(context.Context, *Media) error          // Download more details when available
+	DebugMode(bool)                                         // Set debug mode
 }
 
 var providers = map[string]Provider{}

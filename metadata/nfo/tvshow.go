@@ -20,6 +20,7 @@ type TVShow struct {
 	Studio        string   `xml:"studio,omitempty"`
 	Actor         []Actor  `xml:"actor,omitempty"`
 	Thumb         []Thumb  `xml:"-"`
+	HasEpisodes   bool     `xml:"-"` // True when the show has defined episodes
 }
 
 // GetNFOPath returns the path for TVShow.nfo

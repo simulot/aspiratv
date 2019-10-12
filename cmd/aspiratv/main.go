@@ -22,7 +22,7 @@ import (
 	"github.com/vbauerster/mpb/v4"
 	"github.com/vbauerster/mpb/v4/decor"
 
-	// _ "github.com/simulot/aspiratv/providers/artetv"
+	_ "github.com/simulot/aspiratv/providers/artetv"
 	_ "github.com/simulot/aspiratv/providers/francetv"
 	// _ "github.com/simulot/aspiratv/providers/gulli"
 )

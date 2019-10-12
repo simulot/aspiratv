@@ -32,3 +32,7 @@ type Media struct {
 	Metadata MetaDataHandler // Carry metadata scrapped online
 	Match    *MatchRequest   // Matched request
 }
+
+func (m *Media) SetMetaData(info MetaDataHandler) {
+	m.Metadata = info
+}

@@ -46,6 +46,10 @@ func (n EpisodeDetails) GetMediaPath(destination string) string {
 	} else {
 		episode = n.Aired.Time().Format("2006-01-02")
 	}
+	if cleanTitle == "" {
+		return filepath.Join(n.GetSeasonPath(destination), cleanShow+" - "+episode+".mp4")
+
+	}
 
 	return filepath.Join(n.GetSeasonPath(destination), cleanShow+" - "+episode+" - "+cleanTitle+".mp4")
 }

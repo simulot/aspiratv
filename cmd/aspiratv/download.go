@@ -33,12 +33,13 @@ type progressBar struct {
 	bar      *mpb.Bar
 }
 
-func (a *app) NewDownloadBar(pc *mpb.Progress, name string, id int32) *progressBar {
+func (a *app) NewDownloadBar(pc *mpb.Progress, name string, id int32, replaceBar *mpb.Bar) *progressBar {
 	if a.Config.Headless {
 		return nil
 	}
 	b := &progressBar{}
 	b.bar = pc.AddBar(100*1024*1024*1024,
+		mpb.BarParkTo(replaceBar),
 		mpb.BarWidth(12),
 		mpb.AppendDecorators(
 			decor.AverageSpeed(decor.UnitKB, " %.1f", decor.WC{W: 15, C: decor.DidentRight}),
@@ -73,6 +74,17 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, m *provide
 	}
 
 	id := 1000 + atomic.AddInt32(&dlID, 1)
+	fn := m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])
+
+	metaBar := pc.AddBar(100*1024*1024*1024,
+		mpb.BarWidth(12),
+		mpb.AppendDecorators(
+			decor.Name("Get images", decor.WC{W: 15, C: decor.DidentRight}),
+			decor.Name(filepath.Base(fn)),
+		),
+		mpb.BarRemoveOnComplete(),
+	)
+	metaBar.SetPriority(int(id))
 
 	err := p.GetMediaDetails(ctx, m) // Side effect: Episode number can be determined at this point.
 	url := m.Metadata.GetMediaInfo().URL
@@ -129,20 +141,20 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, m *provide
 			}
 		}
 	}
+	metaBar.SetTotal(1, true)
 
-	fn := m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])
+	fn = m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])
 	if a.Config.Headless || a.Config.Debug {
 		log.Printf("[%s] Start downloading media %q", p.Name(), fn)
 	}
-
+	var pgr *progressBar
+	if !a.Config.Headless {
+		pgr = a.NewDownloadBar(pc, filepath.Base(fn), id, metaBar)
+	}
 	if a.Config.Debug {
 		log.Printf("[%s] Stream url: %q", p.Name(), url)
 	}
 
-	var pgr *progressBar
-	if !a.Config.Headless {
-		pgr = a.NewDownloadBar(pc, filepath.Base(fn), id)
-	}
 	// Make a context for DownloadShow
 	files := []string{}
 	shouldDeleteFile := false
