@@ -423,6 +423,9 @@ func (p *ArteTV) getSerie(ctx context.Context, mr *providers.MatchRequest, d Dat
 					if tvshow.HasEpisodes && info.Episode == 0 {
 						info.Season = 0 // Specials
 					}
+					if !tvshow.HasEpisodes && info.Episode == 0 {
+						info.Season = info.Aired.Time().Year()
+					}
 
 					// TODO Actors
 
@@ -546,6 +549,9 @@ func (p *ArteTV) GetMediaDetails(ctx context.Context, m *providers.Media) error 
 	info.URL = p.getBestVideo(player.VideoJSONPlayer.VSR)
 	info.Aired = nfo.Aired(player.VideoJSONPlayer.VRA.Time())
 
+	if !info.TVShow.HasEpisodes && info.Episode == 0 {
+		info.Season = info.Aired.Time().Year()
+	}
 	return nil
 }
 
