@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -17,29 +16,18 @@ import (
 	"github.com/vbauerster/mpb/v4/decor"
 )
 
-func (a *app) SubmitDownload(ctx context.Context, wg *sync.WaitGroup, p providers.Provider, m *providers.Media, pc *mpb.Progress, bar *mpb.Bar) {
-	wg.Add(1)
-	go a.worker.Submit(func() {
-		a.DownloadShow(ctx, p, m, pc)
-		if bar != nil {
-			bar.Increment()
-		}
-	}, wg)
-}
-
 type progressBar struct {
 	lastSize int64
 	start    time.Time
 	bar      *mpb.Bar
 }
 
-func (a *app) NewDownloadBar(pc *mpb.Progress, name string, id int32, replaceBar *mpb.Bar) *progressBar {
+func (a *app) NewDownloadBar(pc *mpb.Progress, name string, id int32) *progressBar {
 	if a.Config.Headless {
 		return nil
 	}
 	b := &progressBar{}
 	b.bar = pc.AddBar(100*1024*1024*1024,
-		mpb.BarParkTo(replaceBar),
 		mpb.BarWidth(12),
 		mpb.AppendDecorators(
 			decor.AverageSpeed(decor.UnitKB, " %.1f", decor.WC{W: 15, C: decor.DidentRight}),
@@ -68,23 +56,33 @@ func (p *progressBar) Update(count int64, size int64) {
 var dlID = int32(0)
 
 func (a *app) DownloadShow(ctx context.Context, p providers.Provider, m *providers.Media, pc *mpb.Progress) {
-	wg := sync.WaitGroup{}
 	if ctx.Err() != nil {
 		return
 	}
+	var itemName string
+	// Collect files beeing downloaded and to be deleted in case of cancellation
+	files := []string{}
 
+	defer func() {
+		if ctx.Err() != nil {
+			log.Printf("[%s] Cancelling download of %q.", p.Name(), itemName)
+			for _, f := range files {
+				log.Printf("[%s] Removing %q.", p.Name(), f)
+				err := os.Remove(f)
+				if err != nil {
+					log.Printf("[%s] Can't remove %q: %s.", p.Name(), f, err)
+				}
+			}
+		} else {
+			if a.Config.Headless || a.Config.Debug {
+				log.Printf("[%s] Media %q downloaded", p.Name(), filepath.Base(itemName))
+			}
+
+		}
+
+	}()
 	id := 1000 + atomic.AddInt32(&dlID, 1)
-	fn := m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])
-
-	metaBar := pc.AddBar(100*1024*1024*1024,
-		mpb.BarWidth(12),
-		mpb.AppendDecorators(
-			decor.Name("Get images", decor.WC{W: 15, C: decor.DidentRight}),
-			decor.Name(filepath.Base(fn)),
-		),
-		mpb.BarRemoveOnComplete(),
-	)
-	metaBar.SetPriority(int(id))
+	itemName = filepath.Base(m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination]))
 
 	err := p.GetMediaDetails(ctx, m) // Side effect: Episode number can be determined at this point.
 	url := m.Metadata.GetMediaInfo().URL
@@ -94,92 +92,30 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, m *provide
 	}
 
 	if a.Config.WriteNFO {
-		info := m.Metadata.GetMediaInfo()
-		nfoPath := m.Metadata.GetNFOPath(a.Config.Destinations[m.Match.Destination])
-		nfoExists, err := fileExists(nfoPath)
-		if !nfoExists && err == nil {
-			err = m.Metadata.WriteNFO(nfoPath)
-			if err != nil {
-				log.Println(err)
-			}
-			wg.Add(1)
-			// go func() {
-			a.DowloadImages(ctx, p, nfoPath, info.Thumb)
-			wg.Done()
-			// }()
-		}
-		if m.ShowType == providers.Series {
-			if info.SeasonInfo != nil {
-				nfoPath = m.Metadata.GetSeasonNFOPath(a.Config.Destinations[m.Match.Destination])
-				nfoExists, err = fileExists(nfoPath)
-				if !nfoExists && err == nil {
-					info.SeasonInfo.WriteNFO(nfoPath)
-					if err != nil {
-						log.Println(err)
-					}
-					wg.Add(1)
-					// go func() {
-					a.DowloadImages(ctx, p, nfoPath, info.SeasonInfo.Thumb)
-					wg.Done()
-					// }()
-				}
-			}
-			if info.TVShow != nil {
-				nfoPath = m.Metadata.GetShowNFOPath(a.Config.Destinations[m.Match.Destination])
-				nfoExists, err = fileExists(nfoPath)
-				if !nfoExists && err == nil {
-					info.TVShow.WriteNFO(nfoPath)
-					if err != nil {
-						log.Println(err)
-					}
-					wg.Add(1)
-					// go func() {
-					a.DowloadImages(ctx, p, nfoPath, info.TVShow.Thumb)
-					wg.Done()
-					// }()
-				}
-			}
+		a.DownloadInfo(ctx, p, a.Config.Destinations[m.Match.Destination], m, pc, id, &files)
+		if ctx.Err() != nil {
+			return
 		}
 	}
-	metaBar.SetTotal(1, true)
 
-	fn = m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])
+	var pgr *progressBar
+	fn := m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])
+	itemName = filepath.Base(fn)
+
 	if a.Config.Headless || a.Config.Debug {
 		log.Printf("[%s] Start downloading media %q", p.Name(), fn)
 	}
-	var pgr *progressBar
 	if !a.Config.Headless {
-		pgr = a.NewDownloadBar(pc, filepath.Base(fn), id, metaBar)
+		pgr = a.NewDownloadBar(pc, filepath.Base(fn), id)
+		defer pgr.bar.SetTotal(1, true)
 	}
 	if a.Config.Debug {
 		log.Printf("[%s] Stream url: %q", p.Name(), url)
 	}
 
-	// Make a context for DownloadShow
-	files := []string{}
-	shouldDeleteFile := false
-
 	if a.Config.Debug {
 		log.Printf("[%s] Downloading into file: %q", p.Name(), fn)
 	}
-	defer func() {
-		if shouldDeleteFile {
-			log.Printf("[%s] Cancelling download of %q.", p.Name(), filepath.Base(fn))
-			for _, f := range files {
-				log.Printf("[%s] Removing %q.", p.Name(), f)
-				err := os.Remove(f)
-				if err != nil {
-					log.Printf("[%s] Can't remove %q: %s.", p.Name(), f, err)
-				}
-			}
-		}
-		if !shouldDeleteFile && (a.Config.Headless || a.Config.Debug) {
-			log.Printf("[%s] Media %q downloaded", p.Name(), filepath.Base(fn))
-		}
-		if !a.Config.Headless {
-			pgr.bar.SetTotal(1, true)
-		}
-	}()
 
 	err = os.MkdirAll(filepath.Dir(fn), 0777)
 	if err != nil {
@@ -213,23 +149,85 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, m *provide
 
 	if err != nil || ctx.Err() != nil {
 		log.Printf("[%s] FFMEPG exits with error:\n%s", p.Name(), err)
-		shouldDeleteFile = true
 		return
 	}
 
 	if ctx.Err() != nil {
-		shouldDeleteFile = true
 		return
 	}
-	wg.Wait()
+
 	if a.Config.Headless || a.Config.Debug {
 		log.Printf("[%s] %q downloaded.", p.Name(), filepath.Base(fn))
 	}
 	return
 }
 
-func (a *app) DowloadImages(ctx context.Context, p providers.Provider, destination string, thumbs []nfo.Thumb) {
+func (a *app) DownloadInfo(ctx context.Context, p providers.Provider, destination string, m *providers.Media, pc *mpb.Progress, id int32, downloadedFiles *[]string) {
 
+	var metaBar *mpb.Bar
+	itemName := filepath.Base(m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination]))
+
+	defer func() {
+		if metaBar != nil {
+			metaBar.SetTotal(1, true)
+			metaBar = nil
+		}
+	}()
+
+	if !a.Config.Headless {
+		metaBar = pc.AddBar(100*1024*1024*1024,
+			mpb.BarWidth(12),
+			mpb.AppendDecorators(
+				decor.Name("Get images", decor.WC{W: 15, C: decor.DidentRight}),
+				decor.Name(filepath.Base(itemName)),
+			),
+			mpb.BarRemoveOnComplete(),
+		)
+		metaBar.SetPriority(int(id))
+	}
+
+	info := m.Metadata.GetMediaInfo()
+	nfoPath := m.Metadata.GetNFOPath(a.Config.Destinations[m.Match.Destination])
+	nfoExists, err := fileExists(nfoPath)
+	if !nfoExists && err == nil {
+		err = m.Metadata.WriteNFO(nfoPath)
+		if err != nil {
+			log.Println(err)
+		}
+		*downloadedFiles = append(*downloadedFiles, nfoPath)
+		a.DowloadImages(ctx, p, nfoPath, info.Thumb, downloadedFiles)
+	}
+	if m.ShowType == providers.Series {
+		if info.SeasonInfo != nil {
+			nfoPath = m.Metadata.GetSeasonNFOPath(a.Config.Destinations[m.Match.Destination])
+			nfoExists, err = fileExists(nfoPath)
+			if !nfoExists && err == nil {
+				info.SeasonInfo.WriteNFO(nfoPath)
+				if err != nil {
+					log.Println(err)
+				}
+				*downloadedFiles = append(*downloadedFiles, nfoPath)
+
+				a.DowloadImages(ctx, p, nfoPath, info.SeasonInfo.Thumb, downloadedFiles)
+			}
+		}
+		if info.TVShow != nil {
+			nfoPath = m.Metadata.GetShowNFOPath(a.Config.Destinations[m.Match.Destination])
+			nfoExists, err = fileExists(nfoPath)
+			if !nfoExists && err == nil {
+				info.TVShow.WriteNFO(nfoPath)
+				if err != nil {
+					log.Println(err)
+				}
+				*downloadedFiles = append(*downloadedFiles, nfoPath)
+
+				a.DowloadImages(ctx, p, nfoPath, info.TVShow.Thumb, downloadedFiles)
+			}
+		}
+	}
+}
+
+func (a *app) DowloadImages(ctx context.Context, p providers.Provider, destination string, thumbs []nfo.Thumb, downloadedFiles *[]string) {
 	nfoFile := filepath.Base(destination)
 	if filepath.Ext(destination) != "" {
 		destination = filepath.Dir(destination)
@@ -243,6 +241,10 @@ func (a *app) DowloadImages(ctx context.Context, p providers.Provider, destinati
 
 	for _, thumb := range thumbs {
 		var base string
+		if ctx.Err() != nil {
+			log.Printf("[%s] Cancelling %s", p.Name(), ctx.Err())
+			return
+		}
 
 		switch nfoFile {
 		case "tvshow.nfo", "season.nfo":
@@ -258,7 +260,7 @@ func (a *app) DowloadImages(ctx context.Context, p providers.Provider, destinati
 		if thumbExists, _ := fileExists(thumbName); thumbExists {
 			continue
 		}
-		err := a.DownloadToPNG(ctx, thumb.URL, thumbName)
+		err := a.DownloadImage(ctx, thumb.URL, thumbName, downloadedFiles)
 
 		if err != nil {
 			log.Printf("[%s] Can't get thumbnail from %q: %s", p.Name(), thumb.URL, err)

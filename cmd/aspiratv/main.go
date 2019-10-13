@@ -345,6 +345,9 @@ showLoop:
 
 		select {
 		case <-ctx.Done():
+			if a.Config.Debug {
+				log.Println("[%s] Context done, received %s", ctx.Err())
+			}
 			break showLoop
 		default:
 
@@ -363,6 +366,9 @@ showLoop:
 				}
 			}
 			if ctx.Err() != nil {
+				if a.Config.Debug {
+					log.Println("[%s] PullShows received %s", ctx.Err())
+				}
 				break showLoop
 			}
 		}
@@ -410,4 +416,14 @@ func fileExists(p string) (bool, error) {
 		return false, nil
 	}
 	return true, nil
+}
+
+func (a *app) SubmitDownload(ctx context.Context, wg *sync.WaitGroup, p providers.Provider, m *providers.Media, pc *mpb.Progress, bar *mpb.Bar) {
+	wg.Add(1)
+	go a.worker.Submit(func() {
+		a.DownloadShow(ctx, p, m, pc)
+		if bar != nil {
+			bar.Increment()
+		}
+	}, wg)
 }

@@ -122,7 +122,7 @@ func (t *throttler) Get(ctx context.Context, uri string) (io.ReadCloser, error) 
 
 // New setup a Show provider for Arte
 func New(conf ...func(p *ArteTV)) (*ArteTV, error) {
-	throttler := newThrottler(myhttp.DefaultClient, 4, 25)
+	throttler := newThrottler(myhttp.DefaultClient, 20, 25)
 	p := &ArteTV{
 		getter: throttler,
 		//TODO: get preferences from config file
@@ -409,6 +409,7 @@ func (p *ArteTV) getSerie(ctx context.Context, mr *providers.MatchRequest, d Dat
 							Plot:      ep.ShortDescription,
 							Thumb:     getThumbs(ep.Images),
 							TVShow:    &tvshow,
+							Tag:       []string{"Arte"},
 						},
 					}
 					setEpisodeFormTitle(&info, ep.Title)
@@ -437,59 +438,6 @@ func (p *ArteTV) getSerie(ctx context.Context, mr *providers.MatchRequest, d Dat
 	return shows
 }
 
-/*
-// emitShows collected
-func (p *ArteTV) emitShows(ctx context.Context, mr *providers.MatchRequest, eps []Data, season, title string) chan *providers.MetaDataHandler {
-	shows := make(chan *providers.Media)
-
-	go func() {
-		defer close(shows)
-
-		for _, ep := range eps {
-			if ctx.Err() != nil {
-				return
-			}
-			media := &providers.Media{
-				ID:    ep.ID,
-				Match: mr,
-			}
-			info := media.Metadata.GetMediaInfo()
-
-			*info = nfo.MediaInfo{
-				Title:     ep.Subtitle,
-				Showtitle: title, //Takes collection's title
-				Plot:      ep.ShortDescription,
-				UniqueID: []nfo.ID{
-					{
-						ID:   ep.ID,
-						Type: "ARTETV",
-					},
-				},
-				URL: ep.URL,
-			}
-
-			img := getBestImage(ep.Images, "square")
-			if len(img) == 0 {
-				img = getBestImage(ep.Images, "landscape")
-			}
-			show.ThumbnailURL = img
-			player, err := p.getPlayer(ctx, show)
-			if err != nil {
-				log.Printf("[%s] Can't get player info  for show %q: %q", p.Name(), ep.ProgramID, err)
-				continue
-			}
-			if player.VideoJSONPlayer.Kind == "TRAILER" {
-				log.Printf("[%s] Show %q is a trailer. Discarded.", p.Name(), ep.ProgramID)
-				continue
-			}
-
-			setEpisodeFormTitle(show, ep.Title)
-			shows <- show
-		}
-	}()
-	return shows
-}
-*/
 var (
 	parseTitleSeasonEpisode = regexp.MustCompile(`^(.+) - Saison (\d+) \((\d+)\/\d+\)$`)
 	parseTitleEpisode       = regexp.MustCompile(`^(.+) \((\d+)\/\d+\)$`)

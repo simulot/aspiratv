@@ -19,6 +19,7 @@ require (
 	github.com/vbauerster/mpb/v4 v4.9.2
 
 	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472 // indirect
+	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8
 	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297 // indirect
 	golang.org/x/sys v0.0.0-20190904005037-43c01164e931 // indirect
 	google.golang.org/appengine v1.6.2 // indirect
