@@ -191,16 +191,20 @@ func (p *FranceTV) queryAlgolia(ctx context.Context, mr *providers.MatchRequest)
 						ID:    h.SiID.String(),
 						Match: mr,
 					}
+					var info *nfo.MediaInfo
 
 					if len(h.Program.Label) > 0 {
-						media.Metadata = &nfo.EpisodeDetails{}
+						meta := nfo.EpisodeDetails{}
+						info = &meta.MediaInfo
+						media.SetMetaData(&meta)
 						media.ShowType = providers.Series
 					} else {
-						media.Metadata = &nfo.Movie{}
+						meta := nfo.Movie{}
+						info = &meta.MediaInfo
+						media.SetMetaData(&meta)
 						media.ShowType = providers.Movie
 					}
 
-					info := media.Metadata.GetMediaInfo()
 					*info = nfo.MediaInfo{
 						Title: h.Title,
 						Plot:  h.Description,
@@ -262,11 +266,8 @@ func (p *FranceTV) queryAlgolia(ctx context.Context, mr *providers.MatchRequest)
 						info.Tag = append(info.Tag, h.Channels[0].Label)
 					}
 
-					if h.EpisodeNumber > 0 && h.SeasonNumber > 0 {
-						info.Season = h.SeasonNumber
-						info.Episode = h.EpisodeNumber
-					}
-
+					info.Season = h.SeasonNumber
+					info.Episode = h.EpisodeNumber
 					info.Thumb = make([]nfo.Thumb, 0)
 					for k, format := range h.Image.Formats {
 						url := ""
