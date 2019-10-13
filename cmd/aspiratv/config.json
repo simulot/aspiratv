@@ -1,10 +1,10 @@
 {
-  "PullInterval": "7h",
   "Destinations": {
-    "Documentaires": "${HOME}/Videos/Documentaires",
-    "Jeunesse": "${HOME}/Videos/Jeunesse",
+    "Séries": "${HOME}/Videos/DL/Séries",
+    "Documentaires": "${HOME}/Videos/DL/Documentaires",
+    "Jeunesse": "${HOME}/Videos/DL/Jeunesse",
     "Courts": "${HOME}/Videos/Courts",
-    "News": "${HOME}/Videos/News"
+    "News": "${HOME}/Videos/DL/News"
   },
   "Providers": {
     "francetv": {
@@ -30,7 +30,7 @@
       "Title": "",
       "Pitch": "",
       "Provider": "francetv",
-      "Destination": "Jeunesse"
+      "Destination": "Documentaires"
     },
     {
       "Show": "Lapins crétins",
@@ -40,7 +40,7 @@
       "Destination": "Jeunesse"
     },
     {
-      "Show": "Les Daltons",
+      "Show": "Les Dalton",
       "Title": "",
       "Pitch": "",
       "Provider": "francetv",
@@ -51,14 +51,28 @@
       "Title": "",
       "Pitch": "",
       "Provider": "artetv",
-      "Destination": "Jeunesse"
+      "Destination": "Séries"
     },  
     {
       "Show": "TAPE",
       "Title": "",
       "Pitch": "",
       "Provider": "artetv",
-      "Destination": "Jeunesse"
+      "Destination": "Documentaires"
+    },
+    {
+      "Show": "Le doc du dimanche",
+      "Title": "",
+      "Pitch": "",
+      "Provider": "francetv",
+      "Destination": "Documentaires"
+    },
+    {
+      "Show": "Science grand format",
+      "Title": "",
+      "Pitch": "",
+      "Provider": "francetv",
+      "Destination": "Documentaires"
     },
     {
       "Show": "Journal 20h00",

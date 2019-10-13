@@ -262,13 +262,49 @@ func (p *ArteTV) getShowList(ctx context.Context, mr *providers.MatchRequest) ch
 			}
 			return
 		}
-		// if len(matchedShows) > 0 {
-		// 	for s := range p.emitShows(ctx, mr, matchedShows, "", "") {
-		// 		s.Match = mr
-		// 		shows <- s
-		// 	}
-		// }
+		if len(matchedShows) > 0 {
+			for s := range p.getShows(ctx, mr, matchedShows) {
+				s.Match = mr
+				shows <- s
+			}
+		}
 	}()
+	return shows
+}
+
+func (p *ArteTV) getShows(ctx context.Context, mr *providers.MatchRequest, data []Data) chan *providers.Media {
+	shows := make(chan *providers.Media)
+	go func() {
+		defer close(shows)
+		// Emit media found in the current collection/season
+		for _, ep := range data {
+			media := &providers.Media{
+				ID:       ep.ProgramID,
+				ShowType: providers.Movie,
+				Match:    mr,
+			}
+
+			info := nfo.Movie{
+				MediaInfo: nfo.MediaInfo{
+					UniqueID: []nfo.ID{
+						{
+							ID:   ep.ProgramID,
+							Type: "ARTETV",
+						},
+					},
+					Title: ep.Title,
+					Plot:  ep.ShortDescription,
+					Thumb: getThumbs(ep.Images),
+					// TVShow:    &tvshow,
+					Tag: []string{"Arte"},
+				},
+			}
+			// TODO Actors
+			media.SetMetaData(&info)
+			shows <- media
+		}
+	}()
+
 	return shows
 }
 
@@ -549,7 +585,7 @@ func (p *ArteTV) GetMediaDetails(ctx context.Context, m *providers.Media) error 
 	info.URL = p.getBestVideo(player.VideoJSONPlayer.VSR)
 	info.Aired = nfo.Aired(player.VideoJSONPlayer.VRA.Time())
 
-	if !info.TVShow.HasEpisodes && info.Episode == 0 {
+	if info.TVShow != nil && !info.TVShow.HasEpisodes && info.Episode == 0 {
 		info.Season = info.Aired.Time().Year()
 	}
 	return nil
