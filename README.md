@@ -1,6 +1,7 @@
 # aspiratv
 
-Ce programme interroge les serveurs de télévision de rattrapage et télécharge les émissions souhaitées selon une organisation reconnue par des programmes comme [PLEX](https://www.plex.tv/) ou [EMBY](https://emby.media/).
+Ce programme interroge les serveurs de télévision de rattrapage et télécharge les émissions souhaitées et les enregistre sur un disque selon une organisation reconnue par des programmes comme [PLEX](https://www.plex.tv/) ou [EMBY](https://emby.media/). Les métadonnées (titre des émissions, desciption, vignettes) sont placées de façon à être directement reconnues par Emby (à tester dans Plex).
+
 
 ## Télécharger un programme, une série
 <p align="center">
@@ -29,6 +30,11 @@ Aspiratv ne fait que garder une copie de l’œuvre sur votre disque dur, comme 
 
 Le fonctionnement de ce programme n'est pas garanti. Notamment, les fournisseurs de contenus sont susceptibles de changer leurs APIs ou interdire leur utilisation sans pré-avis. 
 
+## Rendu dans Emby
+
+<p align="center">
+<img src="_images/Screenshot_2019-10-14 Emby-Saison.png" width="800" alt="Saison Emby" />
+</p>
 
 
 # Installation
@@ -53,22 +59,25 @@ tar -czvf aspiratv_0.4.0_Linux_x86_64.tar.gz
 ```
 Usage of ./aspiratv:
   -config string
-    	Configuration file name. (default "./config.json")
+        Configuration file name. (default "config.json")
   -debug
-    	Debug mode.
+        Debug mode.
   -destination string
-    	Provider to be used with download command. Possible values : artetv,francetv,gulli
+        Provider to be used with download command. Possible values : artetv,francetv,gulli
   -force
-    	Force media download.
+        Force media download.
   -headless
-    	Headless mode. Progression bars are not displayed.
+        Headless mode. Progression bars are not displayed.
   -log string
-    	Give the log file name. When empty, no log.
+        Give the log file name. When empty, no log.
+  -max-aged int
+        Retrieve media younger than MaxAgedDays.
   -max-tasks int
-    	Maximum concurrent downloads at a time. (default 8)
+        Maximum concurrent downloads at a time. (default 8)
   -provider string
-    	Provider to be used with download command. Possible values : artetv,francetv,gulli
-
+        Provider to be used with download command. Possible values : artetv,francetv,gulli
+  -write-nfo
+        Write NFO file for KODI,Emby,Plex... (default true)
 ```
 Le programme fonctionne selon deux modilités :
 ## Pour surveiller la mise à disposition de nouveaux épisodes d'une émission
@@ -116,7 +125,8 @@ Le fichier config.json contient les paramètres et la liste des émissions que l
   "Destinations": {
     "Documentaires": "${HOME}/Videos/Documentaires",
     "Jeunesse": "${HOME}/Videos/Jeunesse",
-    "Séries": "${HOME}/Videos/Series"
+    "Séries": "${HOME}/Videos/Series",
+    "News": "${HOME}/Videos/News"
   },
   "Providers": {
     "artetv": {
@@ -142,7 +152,8 @@ Le fichier config.json contient les paramètres et la liste des émissions que l
       "Pitch": "",
       "Provider": "gulli",
       "Destination": "Jeunesse"
-    }
+    },
+
   ]
 }
 ```
@@ -173,6 +184,11 @@ Les connecteurs disponibles sont :
   Les playlists Arte peuvent être surveillées pour que les nouveaux épisodes soit téléchargés dès leur disponibilité. 
 ## Gulli (`gulli`)
   Ce connecteur permet de surveiller les programmes de la chaîne Gulli. Attention Gulli tronque le nom des shows. Il convient de paramétrer les recherches avec les noms tronqués. 
+
+# Configuration de Emby
+
+Créez une médiathèque de type "TV". Les réglages par défaut conviennent bien. Les données pourront être complétés si la série est connue des sites tesl de ImDB,Fanart...
+
 
 # Configuration de PLEX
 
