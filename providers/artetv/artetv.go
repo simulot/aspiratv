@@ -59,6 +59,7 @@ type ArteTV struct {
 	htmlParserFactory *htmlparser.Factory
 	seenPrograms      map[string]bool
 	deadline          time.Duration
+	keepBonuses       bool
 }
 
 // WithGetter inject a getter in FranceTV object instead of normal one
@@ -121,7 +122,7 @@ func (t *throttler) Get(ctx context.Context, uri string) (io.ReadCloser, error) 
 }
 
 // New setup a Show provider for Arte
-func New(conf ...func(p *ArteTV)) (*ArteTV, error) {
+func New() (*ArteTV, error) {
 	throttler := newThrottler(myhttp.DefaultClient, 20, 25)
 	p := &ArteTV{
 		getter: throttler,
@@ -132,19 +133,20 @@ func New(conf ...func(p *ArteTV)) (*ArteTV, error) {
 		htmlParserFactory: htmlparser.NewFactory(),
 		seenPrograms:      map[string]bool{},
 		deadline:          30 * time.Second,
-	}
-	for _, fn := range conf {
-		fn(p)
+		keepBonuses:       true,
 	}
 	return p, nil
 }
 
-// DebugMode set debug mode
-func (p *ArteTV) DebugMode(b bool) {
-	p.debug = b
-	if b {
-		p.deadline = 1 * time.Hour
+func (p *ArteTV) Configure(c providers.Config) {
+	p.keepBonuses = c.KeepBonus
+	p.debug = c.Debug
+	if p.debug {
+		p.deadline = time.Hour
+	} else {
+		p.deadline = 30 * time.Second
 	}
+
 }
 
 // withGetter set a getter for ArteTV
@@ -243,6 +245,9 @@ func (p *ArteTV) getShowList(ctx context.Context, mr *providers.MatchRequest) ch
 
 		for _, d := range result.Data {
 			if strings.Contains(strings.ToLower(d.Title), mr.Show) {
+				if !p.keepBonuses && d.Kind.Code != "SHOW" {
+					continue
+				}
 				if d.Kind.IsCollection {
 					matchedSeries = append(matchedSeries, d)
 				} else {

@@ -40,12 +40,13 @@ type getter interface {
 
 // FranceTV structure handles france-tv catalog of shows
 type FranceTV struct {
-	getter   getter
-	debug    bool
-	deadline time.Duration
-	algolia  *AlgoliaConfig
-	seasons  sync.Map
-	shows    sync.Map
+	getter      getter
+	debug       bool
+	deadline    time.Duration
+	algolia     *AlgoliaConfig
+	seasons     sync.Map
+	shows       sync.Map
+	keepBonuses bool
 }
 
 // WithGetter inject a getter in FranceTV object instead of normal one
@@ -56,29 +57,28 @@ func WithGetter(g getter) func(ftv *FranceTV) {
 }
 
 // New setup a Show provider for France Télévisions
-func New(conf ...func(ftv *FranceTV)) (*FranceTV, error) {
+func New() (*FranceTV, error) {
 	p := &FranceTV{
-		getter: myhttp.DefaultClient,
+		getter:      myhttp.DefaultClient,
+		deadline:    30 * time.Second,
+		keepBonuses: true,
 	}
-	p.deadline = 30 * time.Second
 
-	for _, fn := range conf {
-		fn(p)
-	}
 	return p, nil
 }
 
 // Name return the name of the provider
 func (FranceTV) Name() string { return "francetv" }
 
-// DebugMode switch debug mode
-func (p *FranceTV) DebugMode(mode bool) {
-	p.debug = mode
-	if mode {
+func (p *FranceTV) Configure(c providers.Config) {
+	p.keepBonuses = c.KeepBonus
+	p.debug = c.Debug
+	if p.debug {
 		p.deadline = time.Hour
 	} else {
 		p.deadline = 30 * time.Second
 	}
+
 }
 
 // MediaList return media that match with matching list.

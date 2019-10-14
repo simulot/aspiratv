@@ -35,20 +35,21 @@ var (
 
 // Config holds settings from configuration file
 type config struct {
-	Debug           bool                      // Verbose Log output
+	Providers       map[string]ProviderConfig // Registered providers
 	Force           bool                      // True to force reload medias
 	Destinations    map[string]string         // Mapping of destination path
 	ConfigFile      string                    // Name of configuration file
 	WatchList       []*providers.MatchRequest // Slice of show matchers
 	Headless        bool                      // When true, no progression bar
 	ConcurrentTasks int                       // Number of concurrent downloads
-	Providers       map[string]ProviderConfig
-	Provider        string // Provider for dowload command
-	Destination     string // Destination folder for dowload command
-	MaxAgedDays     int    // Retrieve media younger than MaxAgedDays when non zero
-	RetentionDays   int    // Delete media from  series older than retention days.
-	LogFile         string // Log file
-	WriteNFO        bool   // True when NFO files to be written
+	Provider        string                    // Provider for dowload command
+	Destination     string                    // Destination folder for dowload command
+	LogFile         string                    // Log file
+	WriteNFO        bool                      // True when NFO files to be written
+	MaxAgedDays     int                       // Retrieve media younger than MaxAgedDays when non zero
+	RetentionDays   int                       // Delete media from  series older than retention days.
+	KeepBonus       bool                      // True to keep bonus
+	Debug           bool                      // Verbose Log output
 }
 
 type app struct {
@@ -100,9 +101,10 @@ func main() {
 	flag.StringVar(&a.Config.Provider, "provider", "", "Provider to be used with download command. Possible values : artetv,francetv,gulli")
 	flag.StringVar(&a.Config.Destination, "destination", "", "Provider to be used with download command. Possible values : artetv,francetv,gulli")
 	flag.StringVar(&a.Config.LogFile, "log", "", "Give the log file name. When empty, no log.")
-	flag.IntVar(&a.Config.MaxAgedDays, "max-aged", 0, "Retrieve media younger than MaxAgedDays.")
 	// flag.IntVar(&a.Config.RetentionDays, "retention", 0, "Delete media older than retention days for the downloaded show.")
 	flag.BoolVar(&a.Config.WriteNFO, "write-nfo", true, "Write NFO file for KODI,Emby,Plex...")
+	flag.BoolVar(&a.Config.KeepBonus, "keep-bonuses", true, "Download bonuses when true")
+	flag.IntVar(&a.Config.MaxAgedDays, "max-aged", 0, "Retrieve media younger than MaxAgedDays.")
 	flag.Parse()
 
 	if a.Config.Debug {
@@ -211,6 +213,10 @@ func (a *app) Download(ctx context.Context) {
 		log.Printf("Unknown provider %q", a.Config.Provider)
 		os.Exit(1)
 	}
+	p.Configure(providers.Config{
+		Debug:     a.Config.Debug,
+		KeepBonus: a.Config.KeepBonus,
+	})
 
 	pc := a.getProgres(ctx)
 
@@ -248,6 +254,10 @@ func (a *app) Run(ctx context.Context) {
 	for _, p := range providers.List() {
 		if a.Config.IsProviderActive(p.Name()) {
 			activeProviders++
+			p.Configure(providers.Config{
+				Debug:     a.Config.Debug,
+				KeepBonus: a.Config.KeepBonus,
+			})
 		}
 	}
 
@@ -310,7 +320,6 @@ var nbPuller = int32(0)
 func (a *app) PullShows(ctx context.Context, p providers.Provider, pc *mpb.Progress) {
 	if a.Config.Debug {
 		log.Printf("[%s] Starting PullShows", p.Name())
-		p.DebugMode(true)
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	defer func() {

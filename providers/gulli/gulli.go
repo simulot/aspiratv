@@ -30,6 +30,7 @@ type Gulli struct {
 	deadline          time.Duration
 	cartoonList       []ShowEntry
 	tvshows           map[string]*nfo.TVShow
+	keepBonuses       bool
 }
 
 // init registers Gulli provider
@@ -42,7 +43,7 @@ func init() {
 }
 
 // New creates a Gulli provider with given configuration
-func New(conf ...func(p *Gulli)) (*Gulli, error) {
+func New() (*Gulli, error) {
 
 	p := &Gulli{
 		getter:            myhttp.DefaultClient,
@@ -50,9 +51,6 @@ func New(conf ...func(p *Gulli)) (*Gulli, error) {
 		seenShows:         map[string]bool{},
 		deadline:          30 * time.Second,
 		tvshows:           map[string]*nfo.TVShow{},
-	}
-	for _, f := range conf {
-		f(p)
 	}
 	if rt, ok := p.getter.(http.RoundTripper); ok {
 		p.htmlParserFactory = htmlparser.NewFactory(htmlparser.SetTransport(rt))
@@ -69,12 +67,15 @@ func New(conf ...func(p *Gulli)) (*Gulli, error) {
 	return p, nil
 }
 
-// DebugMode set debug mode
-func (p *Gulli) DebugMode(b bool) {
-	if b {
+func (p *Gulli) Configure(c providers.Config) {
+	p.keepBonuses = c.KeepBonus
+	p.debug = c.Debug
+	if p.debug {
 		p.deadline = time.Hour
+	} else {
+		p.deadline = 30 * time.Second
 	}
-	p.debug = b
+
 }
 
 // withGetter set a getter for Gulli
