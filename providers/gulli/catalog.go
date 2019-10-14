@@ -4,20 +4,20 @@ import (
 	"context"
 	"log"
 	"strings"
-	"time"
 
 	"github.com/gocolly/colly"
 )
 
 type ShowEntry struct {
-	Title string
-	URL   string
+	Title    string
+	URL      string
+	ThumbURL string
 }
 
 var catalogURL = "https://replay.gulli.fr/"
 
 func (p *Gulli) downloadCatalog(ctx context.Context) ([]ShowEntry, error) {
-	ctx, done := context.WithTimeout(ctx, 30*time.Second)
+	ctx, done := context.WithTimeout(ctx, p.deadline)
 	cat := []ShowEntry{}
 	defer done()
 

@@ -11,15 +11,22 @@
       "enabled": true
     },
     "gulli": {
-      "enabled": false
+      "enabled": true
     },
     "artetv": {
-      "enabled": false
+      "enabled": true
     }
   },
   "WatchList": [
     {
       "Show": "Arthur et les Minimoys",
+      "Title": "",
+      "Pitch": "",
+      "Provider": "gulli",
+      "Destination": "Jeunesse"
+    },
+    {
+      "Show": "Dragons : Par-delà les rives",
       "Title": "",
       "Pitch": "",
       "Provider": "gulli",

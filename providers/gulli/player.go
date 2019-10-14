@@ -6,9 +6,10 @@ import (
 	"io/ioutil"
 	"log"
 	"regexp"
+	"strconv"
 	"strings"
-	"time"
 
+	"github.com/simulot/aspiratv/metadata/nfo"
 	"github.com/simulot/aspiratv/net/myhttp/httptest"
 
 	"github.com/simulot/aspiratv/providers"
@@ -25,8 +26,8 @@ var reVars = regexp.MustCompile(
 		`|(?:image:\s*(?U:"(?P<image>[^"]*)"))` +
 		`|(?:description:\s*(?U:"(?P<description>[^"]*)"))`)
 
-func (p *Gulli) getPlayer(ctx context.Context, ID string) ([]*providers.Show, error) {
-	ctx, done := context.WithTimeout(ctx, 30*time.Second)
+func (p *Gulli) getPlayer(ctx context.Context, mr *providers.MatchRequest, ID string) ([]*providers.Media, error) {
+	ctx, done := context.WithTimeout(ctx, p.deadline)
 	defer done()
 
 	if p.debug {
@@ -47,29 +48,41 @@ func (p *Gulli) getPlayer(ctx context.Context, ID string) ([]*providers.Show, er
 
 	match := reVars.FindAllStringSubmatch(string(b), -1)
 
-	shows := []*providers.Show{}
+	shows := []*providers.Media{}
 
-	var show *providers.Show
+	var info *nfo.MediaInfo
+
 	parts := reVars.SubexpNames()
-
 	for _, m := range match {
 		for i, s := range m {
 			if i > 0 && len(s) > 0 {
 				switch parts[i] {
 				case "sources":
-					if show != nil {
-						if !p.seenShows[show.ID] {
-							shows = append(shows, show)
+					if info != nil {
+						if !p.seenShows[info.UniqueID[0].ID] {
+							shows = append(shows, &providers.Media{
+								ID:       info.UniqueID[0].ID,
+								ShowType: providers.Series,
+								Match:    mr,
+								Metadata: &nfo.EpisodeDetails{
+									MediaInfo: *info,
+								},
+							})
 						}
-						p.seenShows[show.ID] = true
+						p.seenShows[info.UniqueID[0].ID] = true
 					}
-					show = &providers.Show{}
+					info = &nfo.MediaInfo{}
 				case "file":
 					if strings.HasSuffix(strings.ToLower(s), ".m3u8") {
-						show.StreamURL = s
+						info.URL = s
 					}
 				case "image":
-					show.ThumbnailURL = s
+					info.Thumb = []nfo.Thumb{
+						{
+							Aspect: "thumb",
+							URL:    s,
+						},
+					}
 				case "playlist_title":
 					t := reTitle.FindAllStringSubmatch(s, -1)
 					if len(t) > 0 && len(t[0]) == 5 {
@@ -77,32 +90,43 @@ func (p *Gulli) getPlayer(ctx context.Context, ID string) ([]*providers.Show, er
 						for j, s2 := range t[0] {
 							switch p2[j] {
 							case "show":
-								show.Show = html.UnescapeString(s2)
+								info.Showtitle = html.UnescapeString(s2)
 							case "saison":
-								show.Season = s2
+								info.Season, _ = strconv.Atoi(s2)
 							case "episode":
-								show.Episode = s2
+								info.Episode, _ = strconv.Atoi(s2)
 							case "title":
-								show.Title = html.UnescapeString(s2)
+								info.Title = html.UnescapeString(s2)
 							}
 						}
 					}
 				case "mediaid":
-					show.ID = s
-					show.Provider = p.Name()
-					show.Channel = "Gulli"
+					info.UniqueID = []nfo.ID{
+						{
+							ID:   s,
+							Type: "GULLITV",
+						},
+					}
+					info.Tag = []string{"Gulli"}
+					info.Genre = []string{"dessins animés", "enfants"}
 				case "description":
-					show.Pitch = html.UnescapeString(s)
+					info.Plot = html.UnescapeString(s)
 				}
 			}
 		}
 	}
-	if show != nil {
-		if _, ok := p.seenShows[show.ID]; !ok {
-			shows = append(shows, show)
-			p.seenShows[show.ID] = true
+	if info != nil {
+		if !p.seenShows[info.UniqueID[0].ID] {
+			shows = append(shows, &providers.Media{
+				ID:       info.UniqueID[0].ID,
+				ShowType: providers.Series,
+				Match:    mr,
+				Metadata: &nfo.EpisodeDetails{
+					MediaInfo: *info,
+				},
+			})
 		}
+		p.seenShows[info.UniqueID[0].ID] = true
 	}
-
 	return shows, err
 }

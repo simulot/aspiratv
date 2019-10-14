@@ -4,13 +4,12 @@ import (
 	"context"
 	"log"
 	"path"
-	"time"
 
 	"github.com/gocolly/colly"
 )
 
 func (p *Gulli) getFirstEpisodeID(ctx context.Context, entry ShowEntry) (string, error) {
-	ctx, done := context.WithTimeout(ctx, 30*time.Second)
+	ctx, done := context.WithTimeout(ctx, p.deadline)
 	defer done()
 	parser := p.htmlParserFactory.New()
 	var playerURL string

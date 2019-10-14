@@ -8,7 +8,9 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
+	"github.com/simulot/aspiratv/metadata/nfo"
 	"github.com/simulot/aspiratv/net/myhttp"
 	"github.com/simulot/aspiratv/parsers/htmlparser"
 	"github.com/simulot/aspiratv/providers"
@@ -25,6 +27,9 @@ type Gulli struct {
 	seenShows         map[string]bool
 	debug             bool
 	cacheFile         string
+	deadline          time.Duration
+	cartoonList       []ShowEntry
+	tvshows           map[string]*nfo.TVShow
 }
 
 // init registers Gulli provider
@@ -43,6 +48,8 @@ func New(conf ...func(p *Gulli)) (*Gulli, error) {
 		getter:            myhttp.DefaultClient,
 		htmlParserFactory: nil,
 		seenShows:         map[string]bool{},
+		deadline:          30 * time.Second,
+		tvshows:           map[string]*nfo.TVShow{},
 	}
 	for _, f := range conf {
 		f(p)
@@ -64,6 +71,9 @@ func New(conf ...func(p *Gulli)) (*Gulli, error) {
 
 // DebugMode set debug mode
 func (p *Gulli) DebugMode(b bool) {
+	if b {
+		p.deadline = time.Hour
+	}
 	p.debug = b
 }
 
@@ -77,9 +87,9 @@ func withGetter(g getter) func(p *Gulli) {
 // Name return the name of the provider
 func (p Gulli) Name() string { return "gulli" }
 
-// Shows download the shows catalog from the web site.
-func (p *Gulli) Shows(ctx context.Context, mm []*providers.MatchRequest) chan *providers.Show {
-	shows := make(chan *providers.Show)
+// MediaList download the shows catalog from the web site.
+func (p *Gulli) MediaList(ctx context.Context, mm []*providers.MatchRequest) chan *providers.Media {
+	shows := make(chan *providers.Media)
 
 	go func() {
 		defer close(shows)
@@ -93,14 +103,13 @@ func (p *Gulli) Shows(ctx context.Context, mm []*providers.MatchRequest) chan *p
 			for _, m := range mm {
 				if strings.Contains(strings.ToLower(s.Title), m.Show) {
 					ID, err := p.getFirstEpisodeID(ctx, s)
-					showTitles, err := p.getPlayer(ctx, ID)
+					showTitles, err := p.getPlayer(ctx, m, ID)
 					if err != nil {
 						log.Printf("[%s] Can't decode replay catalog: %q", p.Name(), err)
 						return
 					}
-					for _, t := range showTitles {
-						t.Destination = m.Destination
-						shows <- t
+					for _, s := range showTitles {
+						shows <- s
 					}
 				}
 			}
@@ -109,13 +118,23 @@ func (p *Gulli) Shows(ctx context.Context, mm []*providers.MatchRequest) chan *p
 	return shows
 }
 
-// GetShowStreamURL return the show's URL, a mp4 file
-func (p *Gulli) GetShowStreamURL(ctx context.Context, s *providers.Show) (string, error) {
-	return s.StreamURL, nil
-}
+// GetMediaDetails gather show information from dedicated web page.
+func (p *Gulli) GetMediaDetails(ctx context.Context, m *providers.Media) error {
+	var err error
+	info := m.Metadata.GetMediaInfo()
+	title := strings.ToLower(info.Showtitle)
+	if info.TVShow == nil {
+		tvshow, ok := p.tvshows[title]
+		if !ok {
+			tvshow, err = p.getShowInfo(ctx, title)
+			if err != nil {
+				return err
+			}
+		}
 
-// GetShowInfo gather show information from dedicated web page.
-// It load the html page of the show to extract availability date used as airdate and production year as season
-func (p *Gulli) GetShowInfo(ctx context.Context, s *providers.Show) error {
+		info.TVShow = tvshow
+		return nil
+
+	}
 	return nil
 }
