@@ -191,14 +191,18 @@ func (a *app) Download(ctx context.Context) {
 		"DL": os.ExpandEnv(a.Config.Destination),
 	}
 	a.CheckPaths()
-	a.Config.WatchList = []*providers.MatchRequest{
-		&providers.MatchRequest{
-			Destination:   "DL",
-			Show:          strings.ToLower(flag.Arg(1)),
-			Provider:      a.Config.Provider,
-			MaxAgedDays:   a.Config.MaxAgedDays,
-			RetentionDays: a.Config.RetentionDays,
-		},
+	a.Config.WatchList = []*providers.MatchRequest{}
+
+	for dl := 1; dl <= flag.NArg(); dl++ {
+		a.Config.WatchList = append(a.Config.WatchList,
+			&providers.MatchRequest{
+				Destination:   "DL",
+				Show:          strings.ToLower(flag.Arg(dl)),
+				Provider:      a.Config.Provider,
+				MaxAgedDays:   a.Config.MaxAgedDays,
+				RetentionDays: a.Config.RetentionDays,
+			},
+		)
 	}
 	a.worker = workers.New(ctx, a.Config.ConcurrentTasks, a.Config.Debug)
 	a.getter = myhttp.DefaultClient
