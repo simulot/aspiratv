@@ -99,7 +99,7 @@ func main() {
 	flag.StringVar(&a.Config.ConfigFile, "config", "config.json", "Configuration file name.")
 	flag.IntVar(&a.Config.ConcurrentTasks, "max-tasks", runtime.NumCPU(), "Maximum concurrent downloads at a time.")
 	flag.StringVar(&a.Config.Provider, "provider", "", "Provider to be used with download command. Possible values : artetv,francetv,gulli")
-	flag.StringVar(&a.Config.Destination, "destination", "", "Provider to be used with download command. Possible values : artetv,francetv,gulli")
+	flag.StringVar(&a.Config.Destination, "destination", "", "Destination path.")
 	flag.StringVar(&a.Config.LogFile, "log", "", "Give the log file name. When empty, no log.")
 	// flag.IntVar(&a.Config.RetentionDays, "retention", 0, "Delete media older than retention days for the downloaded show.")
 	flag.BoolVar(&a.Config.WriteNFO, "write-nfo", true, "Write NFO file for KODI,Emby,Plex...")
