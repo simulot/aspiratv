@@ -193,7 +193,7 @@ func (a *app) Download(ctx context.Context) {
 	a.CheckPaths()
 	a.Config.WatchList = []*providers.MatchRequest{}
 
-	for dl := 1; dl <= flag.NArg(); dl++ {
+	for dl := 1; dl < flag.NArg(); dl++ {
 		a.Config.WatchList = append(a.Config.WatchList,
 			&providers.MatchRequest{
 				Destination:   "DL",
