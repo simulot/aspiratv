@@ -19,19 +19,27 @@
   },
   "WatchList": [
     {
-      "Show": "Arthur et les Minimoys",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "gulli",
-      "Destination": "Jeunesse"
-    },
-    {
       "Show": "Dragons : Par-delà les rives",
       "Title": "",
       "Pitch": "",
       "Provider": "gulli",
       "Destination": "Jeunesse"
     },
+    {
+      "Show": "Sonic Boom",
+      "Title": "",
+      "Pitch": "",
+      "Provider": "gulli",
+      "Destination": "Jeunesse"
+    },
+    {
+      "Show": "Transformers Rescue Bots Academy",
+      "Title": "",
+      "Pitch": "",
+      "Provider": "gulli",
+      "Destination": "Jeunesse"
+    },
+
     {
       "Show": "Des racines et des ailes",
       "Title": "",
@@ -46,8 +54,25 @@
       "Provider": "francetv",
       "Destination": "Jeunesse"
     },
+
     {
       "Show": "Les Dalton",
+      "Title": "",
+      "Pitch": "",
+      "Provider": "francetv",
+      "Destination": "Jeunesse"
+    }, 
+
+    {
+      "Show": "Lego ninjago",
+      "Title": "",
+      "Pitch": "",
+      "Provider": "francetv",
+      "Destination": "Jeunesse"
+    }, 
+    
+    {
+      "Show": "Les as de la jungle à la rescousse",
       "Title": "",
       "Pitch": "",
       "Provider": "francetv",
@@ -68,6 +93,15 @@
       "Destination": "Documentaires"
     },
     {
+      "Show": "Tu mourras moins bête",
+      "Title": "",
+      "Pitch": "",
+      "Provider": "artetv",
+      "Destination": "Documentaires"
+    },
+
+    
+    {
       "Show": "Le doc du dimanche",
       "Title": "",
       "Pitch": "",
@@ -82,7 +116,7 @@
       "Destination": "Documentaires"
     },
     {
-      "Show": "Journal 20h00",
+      "Show": "Journal 99999",
       "Title": "",
       "Pitch": "",
       "Provider": "francetv",

@@ -189,6 +189,10 @@ func (p *ArteTV) getShowList(ctx context.Context, mr *providers.MatchRequest) ch
 
 		}()
 
+		matchedSeries := []Data{}
+		matchedShows := []Data{}
+		page := 1
+
 		//TODO: use user's preferred language
 		const apiSEARCH = "https://www.arte.tv/guide/api/emac/v3/fr/web/data/SEARCH_LISTING"
 
@@ -202,62 +206,66 @@ func (p *ArteTV) getShowList(ctx context.Context, mr *providers.MatchRequest) ch
 		v.Set("imageFormats", "*")
 		v.Set("query", mr.Show)
 		v.Set("mainZonePage", "1")
-		v.Set("page", "1")
+		v.Set("page", strconv.Itoa(page))
 		v.Set("limit", "100")
+		for {
+			u.RawQuery = v.Encode()
 
-		u.RawQuery = v.Encode()
+			if p.debug {
+				log.Printf("[%s] Search url: %q", p.Name(), u.String())
+			}
 
-		if p.debug {
-			log.Printf("[%s] Search url: %q", p.Name(), u.String())
-		}
+			var result APIResult
+			ctxLocal, doneLocal := context.WithTimeout(ctx, p.deadline)
 
-		var result APIResult
-		ctxLocal, doneLocal := context.WithTimeout(ctx, p.deadline)
+			r, err := p.getter.Get(ctxLocal, u.String())
+			if err != nil {
+				log.Printf("[%s] Can't call search API: %q", p.Name(), err)
+				doneLocal()
+				return
+			}
 
-		r, err := p.getter.Get(ctxLocal, u.String())
-		if err != nil {
-			log.Printf("[%s] Can't call search API: %q", p.Name(), err)
+			defer r.Close()
+
+			if p.debug {
+				r = httptest.DumpReaderToFile(r, "artetv-search-")
+			}
+
+			err = json.NewDecoder(r).Decode(&result)
+			if err != nil {
+				log.Printf("[%s] Can't decode search API result: %q", p.Name(), err)
+				doneLocal()
+				return
+			}
+			if ctxLocal.Err() != nil {
+				doneLocal()
+				return
+			}
+
 			doneLocal()
-			return
-		}
 
-		defer r.Close()
-
-		if p.debug {
-			r = httptest.DumpReaderToFile(r, "artetv-search-")
-		}
-
-		err = json.NewDecoder(r).Decode(&result)
-		if err != nil {
-			log.Printf("[%s] Can't decode search API result: %q", p.Name(), err)
-			doneLocal()
-			return
-		}
-		if ctxLocal.Err() != nil {
-			doneLocal()
-			return
-		}
-
-		doneLocal()
-
-		matchedSeries := []Data{}
-		matchedShows := []Data{}
-
-		for _, d := range result.Data {
-			if strings.Contains(strings.ToLower(d.Title), mr.Show) {
-				if !p.keepBonuses && d.Kind.Code != "SHOW" {
-					continue
-				}
-				if d.Kind.IsCollection {
-					matchedSeries = append(matchedSeries, d)
-				} else {
-					if strings.ToLower(d.Title) == mr.Show {
-						matchedShows = append(matchedShows, d)
+			for _, d := range result.Data {
+				if strings.Contains(strings.ToLower(d.Title), mr.Show) {
+					if !p.keepBonuses && d.Kind.Code != "SHOW" {
+						continue
+					}
+					if d.Kind.IsCollection {
+						matchedSeries = append(matchedSeries, d)
+					} else {
+						if strings.ToLower(d.Title) == mr.Show {
+							matchedShows = append(matchedShows, d)
+						}
 					}
 				}
 			}
-		}
 
+			if len(result.NextPage) == 0 {
+				break
+			}
+			page++
+			v.Set("page", strconv.Itoa(page))
+
+		}
 		if len(matchedSeries) > 0 {
 			for _, d := range matchedSeries {
 				for info := range p.getSerie(ctx, mr, d) {
