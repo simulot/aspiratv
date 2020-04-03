@@ -115,7 +115,7 @@ func (p *Gulli) getPlayer(ctx context.Context, mr *providers.MatchRequest, ID st
 			}
 		}
 	}
-	if info != nil {
+	if info != nil && len(info.UniqueID) > 0 {
 		if !p.seenShows[info.UniqueID[0].ID] {
 			shows = append(shows, &providers.Media{
 				ID:       info.UniqueID[0].ID,
