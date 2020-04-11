@@ -34,6 +34,13 @@ func (a *app) Initialize() {
 	if a.Config.Debug {
 		log.Printf("FFMPEG path: %q", a.ffmpeg)
 	}
+
+	// Get FFMPEG version
+	cmd = exec.Command(a.ffmpeg, "-version")
+	b, err = cmd.Output()
+	if a.Config.Debug {
+		log.Printf("FFMPEG version: %q", string(b))
+	}
 }
 
 type ProviderConfig struct {

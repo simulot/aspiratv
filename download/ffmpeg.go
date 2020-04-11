@@ -9,7 +9,14 @@ import (
 	"log"
 	"os/exec"
 	"time"
+
+	"github.com/simulot/aspiratv/metadata/nfo"
 )
+
+type Progresser interface {
+	Init(size int64)
+	Update(count int64, size int64)
+}
 
 func dropCR(data []byte) []byte {
 	if len(data) > 0 && data[len(data)-1] == '\r' {
@@ -38,7 +45,7 @@ func scanLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	return 0, nil, nil
 }
 
-func watchProgress(r io.ReadCloser, prg Progresser) {
+func (c *ffmpegConfig) watchProgress(r io.ReadCloser, prg Progresser) {
 	sc := bufio.NewScanner(r)
 	sc.Split(scanLines)
 	go func() {
@@ -50,14 +57,34 @@ func watchProgress(r io.ReadCloser, prg Progresser) {
 		total := 0.0
 		perCent := 0.0
 		estimatedSize := int64(0)
+		var lastLine []byte
 
-		state := start
+		wf := 10 * time.Second
+		if c.debug {
+			wf = 10 * time.Hour
+		}
+
+		// watch if frames are comming
+		activityWatchDog := newWatchDog(wf, func() {
+			lastLine = []byte("time out when receiving frames")
+			c.cmd.Process.Kill()
+		})
+		defer activityWatchDog.Stop()
+
 		for sc.Scan() {
-			l := sc.Bytes()
-			if state == inRunning {
-				if !bytes.HasPrefix(l, []byte("frame=")) {
-					continue
+			if c.debug && len(lastLine) > 0 {
+				if !bytes.HasPrefix(lastLine, []byte("frame=")) {
+					log.Print("[FFMPEG] ", string(lastLine))
 				}
+			}
+
+			l := sc.Bytes()
+			lastLine = l
+
+			if bytes.HasPrefix(l, []byte("frame=")) {
+
+				//  alive!
+				activityWatchDog.Kick()
 
 				i := bytes.Index(l, []byte("size="))
 				if i < 0 {
@@ -94,62 +121,75 @@ func watchProgress(r io.ReadCloser, prg Progresser) {
 				continue
 			}
 
-			if i := bytes.Index(l, []byte("Input #")); i >= 0 {
-				state = inInput
-				continue
-			}
-
-			if i := bytes.Index(l, []byte("Press [q] to stop")); i >= 0 {
-				state = inRunning
-				continue
-			}
-
-			if state == inInput {
-				if i := bytes.Index(l, []byte("Duration:")); i >= 0 {
-					var h, m, s, c int64
-					_, err := fmt.Sscanf(string(l[i+len("Duration:"):i+len("Duration: 01:29:25.00")]), "%2d:%2d:%2d.%2d", &h, &m, &s, &c)
-					if err != nil {
-						continue
-					}
-					total = float64(h*int64(time.Hour) + m*int64(time.Minute) + s*int64(time.Second) + c*int64(time.Millisecond)/10)
-					if prg != nil {
-						prg.Init(int64(1 * 1024 * 1024))
-					}
+			if i := bytes.Index(l, []byte("Duration:")); i >= 0 {
+				var h, m, s, c int64
+				_, err := fmt.Sscanf(string(l[i+len("Duration:"):i+len("Duration: 01:29:25.00")]), "%2d:%2d:%2d.%2d", &h, &m, &s, &c)
+				if err != nil {
+					continue
+				}
+				total = float64(h*int64(time.Hour) + m*int64(time.Minute) + s*int64(time.Second) + c*int64(time.Millisecond)/10)
+				if prg != nil {
+					prg.Init(int64(1 * 1024 * 1024))
 				}
 			}
 
 		}
+		if !bytes.HasPrefix(lastLine, []byte("frame=")) {
+			log.Print("[FFMPEG] ", string(lastLine))
+		}
+		c.lastLine = string(lastLine)
 	}()
 }
 
 type ffmpegConfig struct {
-	debug bool
-	pgr   Progresser
+	debug    bool
+	pgr      Progresser
+	params   []string
+	lastLine string
+	cmd      *exec.Cmd
 }
 
 type ffmpegConfigurator func(c *ffmpegConfig)
 
-func FFMepg(ctx context.Context, u string, params []string, configurators ...ffmpegConfigurator) error {
+func FFMepg(ctx context.Context, in, out string, info *nfo.MediaInfo, configurators ...ffmpegConfigurator) error {
 	cfg := ffmpegConfig{}
-
 	for _, c := range configurators {
 		c(&cfg)
 	}
-
+	if len(cfg.params) == 0 {
+		cfg.params = []string{
+			"-loglevel", "info", // Give me feedback
+			"-hide_banner", // I don't want banner
+			"-nostdin",
+			"-i", in, // Where is the stream
+			"-vcodec", "copy", // copy video
+			"-acodec", "copy", // copy audio
+			"-bsf:a", "aac_adtstoasc", // I don't know
+			"-metadata", "title=" + info.Title, // Force title
+			"-metadata", "comment=" + info.Plot, // Force comment
+			"-metadata", "show=" + info.Showtitle, //Force show
+			"-metadata", "channel=" + info.Studio, // Force channel
+			"-y",        // Override output file
+			"-f", "mp4", // Be sure that output
+			out, // output file
+		}
+	}
 	if cfg.debug {
-		log.Printf("[FFMPEG] runing ffmpeg %v", params)
+		log.Printf("[FFMPEG] runing ffmpeg %v", cfg.params)
 	}
 
-	cmd := exec.CommandContext(ctx, "ffmpeg", params...)
-	out, err := cmd.StderrPipe()
-	if cfg.pgr != nil {
-		watchProgress(out, cfg.pgr)
-	}
-	err = cmd.Start()
+	cfg.cmd = exec.CommandContext(ctx, "ffmpeg", cfg.params...)
+	stdOut, err := cfg.cmd.StderrPipe()
+
+	cfg.watchProgress(stdOut, cfg.pgr)
+	err = cfg.cmd.Start()
 	if err != nil {
 		return err
 	}
-	err = cmd.Wait()
+	err = cfg.cmd.Wait()
+	if err != nil {
+		err = fmt.Errorf("FFMPEG can't process stream %s,\n %w", cfg.lastLine, err)
+	}
 
 	return err
 }
@@ -163,5 +203,11 @@ func FFMepgWithProgress(pgr Progresser) ffmpegConfigurator {
 func FFMepgWithDebug(debug bool) ffmpegConfigurator {
 	return func(c *ffmpegConfig) {
 		c.debug = debug
+	}
+}
+
+func FFMepgWithParams(params []string) ffmpegConfigurator {
+	return func(c *ffmpegConfig) {
+		c.params = params
 	}
 }

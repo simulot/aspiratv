@@ -59,18 +59,19 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, m *provide
 	if ctx.Err() != nil {
 		return
 	}
+	var ffmpegErr error
 	var itemName string
 	// Collect files beeing downloaded and to be deleted in case of cancellation
 	files := []string{}
 
 	defer func() {
-		if ctx.Err() != nil {
+		if ffmpegErr != nil || ctx.Err() != nil {
 			log.Printf("[%s] Cancelling download of %q.", p.Name(), itemName)
 			for _, f := range files {
 				log.Printf("[%s] Removing %q.", p.Name(), f)
 				err := os.Remove(f)
 				if err != nil {
-					log.Printf("[%s] Can't remove %q: %s.", p.Name(), f, err)
+					log.Printf("[%s] Error %s", p.Name(), err)
 				}
 			}
 		} else {
@@ -124,35 +125,20 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, m *provide
 	}
 
 	info := m.Metadata.GetMediaInfo()
-
-	params := []string{
-		"-loglevel", "info", // Give me feedback
-		"-hide_banner", // I don't want banner
-		"-i", url,      // Where is the stream
-		"-metadata", "title=" + info.Title, // Force title
-		"-metadata", "comment=" + info.Plot, // Force comment
-		"-metadata", "show=" + info.Showtitle, //Force show
-		"-metadata", "channel=" + info.Studio, // Force channel
-		"-y",              // Override output file
-		"-vcodec", "copy", // copy video
-		"-acodec", "copy", // copy audio
-		"-bsf:a", "aac_adtstoasc", // I don't know
-		fn, // output file
-	}
-
 	if a.Config.Debug {
 		log.Printf("[%s] FFMPEG started %q", p.Name(), filepath.Base(fn))
 	}
 
 	files = append(files, fn)
-	err = download.FFMepg(ctx, url, params, download.FFMepgWithProgress(pgr), download.FFMepgWithDebug(a.Config.Debug))
+	ffmpegErr = download.FFMepg(ctx, url, fn, info, download.FFMepgWithProgress(pgr), download.FFMepgWithDebug(a.Config.Debug))
 
-	if err != nil || ctx.Err() != nil {
-		log.Printf("[%s] FFMEPG exits with error:\n%s", p.Name(), err)
+	if ffmpegErr != nil {
+		log.Printf("[%s] FFMEPG exits with error:\n%s", p.Name(), ffmpegErr)
 		return
 	}
 
 	if ctx.Err() != nil {
+		log.Printf("[%s] FFMEPG exits with error:\n%s", p.Name(), ctx.Err())
 		return
 	}
 

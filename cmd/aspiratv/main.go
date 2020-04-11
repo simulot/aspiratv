@@ -107,11 +107,11 @@ func main() {
 	flag.IntVar(&a.Config.MaxAgedDays, "max-aged", 0, "Retrieve media younger than MaxAgedDays.")
 	flag.Parse()
 
-	if a.Config.Debug {
-		fmt.Print("PID: ", os.Getpid(), ", press enter to continue")
-		var input string
-		fmt.Scanln(&input)
-	}
+	// if a.Config.Debug {
+	// 	fmt.Print("PID: ", os.Getpid(), ", press enter to continue")
+	// 	var input string
+	// 	fmt.Scanln(&input)
+	// }
 
 	if len(a.Config.LogFile) > 0 {
 		logFile, err := os.Create(a.Config.LogFile)

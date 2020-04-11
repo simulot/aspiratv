@@ -13,11 +13,11 @@ require (
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/kennygrant/sanitize v1.2.4 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
+	github.com/pkg/errors v0.9.1
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca // indirect
 	github.com/stretchr/testify v1.4.0 // indirect
 	github.com/temoto/robotstxt v1.1.1 // indirect
 	github.com/vbauerster/mpb/v4 v4.9.2
-
 	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472 // indirect
 	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8
 	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297 // indirect
