@@ -179,11 +179,10 @@ func (p *FranceTV) queryAlgolia(ctx context.Context, mr *providers.MatchRequest)
 						continue
 					}
 
-					if len(h.Program.Label) > 0 && !strings.Contains(strings.ToLower(h.Program.Label), mr.Show) {
-						continue
-					}
-
-					if len(h.Program.Label) == 0 && !strings.Contains(strings.ToLower(h.Title), mr.Show) {
+					found := false
+					found = found || strings.Contains(strings.ToLower(h.Program.Label), mr.Show)
+					found = found || strings.Contains(strings.ToLower(h.Title), mr.Show)
+					if !found {
 						continue
 					}
 
