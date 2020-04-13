@@ -156,8 +156,6 @@ func (p *FranceTV) GetMediaDetails(ctx context.Context, m *providers.Media) erro
 		return fmt.Errorf("Can't decode player: %w", err)
 	}
 
-	info.URL = pl.Video.URL
-
 	episodeRegexp := regexp.MustCompile(`S(\d+)\sE(\d+)`)
 	expr := episodeRegexp.FindAllStringSubmatch(pl.Meta.PreTitle, -1)
 	if len(expr) > 0 {
@@ -184,9 +182,33 @@ func (p *FranceTV) GetMediaDetails(ctx context.Context, m *providers.Media) erro
 		}{}
 		err = json.NewDecoder(r2).Decode(&pl)
 		if err != nil {
-			return fmt.Errorf("Can't decode token: %w", err)
+			return fmt.Errorf("Can't decode token's url : %w", err)
 		}
-		info.URL = pl.URL
+		if p.debug {
+			log.Printf("[%s] Player token's url %q", p.Name(), pl.URL)
+		}
+
+		// Now, get pl.URL, and watch for Location response header. It contains the dash ressource
+		// Set up the HTTP request
+		req, err := http.NewRequest("GET", pl.URL, nil)
+		if err != nil {
+			return err
+		}
+
+		transport := http.Transport{}
+		resp, err := transport.RoundTrip(req)
+		if err != nil {
+			return err
+		}
+
+		// Check if you received the status codes you expect. There may
+		// status codes other than 200 which are acceptable.
+		if resp.StatusCode != 302 {
+			return fmt.Errorf("Failed with status: %q", resp.Status)
+		}
+
+		info.URL = resp.Header.Get("Location")
+
 	}
 
 	if p.debug {
