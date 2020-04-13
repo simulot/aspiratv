@@ -312,6 +312,11 @@ func (p *ArteTV) getShows(ctx context.Context, mr *providers.MatchRequest, data 
 					Tag: []string{"Arte"},
 				},
 			}
+
+			if len(ep.Subtitle) > 0 {
+				info.MediaInfo.Title += " - " + ep.Subtitle
+			}
+
 			// TODO Actors
 			media.SetMetaData(&info)
 			shows <- media
