@@ -8,12 +8,14 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"path"
 	"regexp"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/simulot/aspiratv/net/myhttp/httptest"
+	"github.com/simulot/aspiratv/parsers/mpdparser"
 
 	"github.com/simulot/aspiratv/net/myhttp"
 	"github.com/simulot/aspiratv/providers"
@@ -120,7 +122,18 @@ type player struct {
 	} `json:"meta"`
 }
 
-// GetMediaDetails download more details when available
+// GetMediaDetails download more details when available  especially the stream URL.
+// The player webservice returns some metadata and an URL named Token.
+// The must been acquired right before the actual download. It has a limited validity
+// In the structure returned by token URL, another URL is provided. The request is then redirected
+// to the actual video stream. This url has also a limited validity.
+//
+// But for some reason FFMPEG doesn't follow the redirection. So, we have to get the final URL before
+// calling FFMPEG // FranceTV provides a subtitle tracks that isn't decoded by FFMPEG.
+// And FFMPEG doesn't get always  the best video resolution
+//
+// The video stream is in fact a MPD manifest files. We can edit this manifest for removing unwanted tracks.
+//
 func (p *FranceTV) GetMediaDetails(ctx context.Context, m *providers.Media) error {
 	info := m.Metadata.GetMediaInfo()
 	v := url.Values{}
@@ -131,7 +144,7 @@ func (p *FranceTV) GetMediaDetails(ctx context.Context, m *providers.Media) erro
 	v.Set("domain", "www.france.tv")
 	v.Set("device_type", "desktop")
 	v.Set("browser", "firefox")
-	v.Set("browser_version", "69")
+	v.Set("browser_version", "75")
 	v.Set("os", "windows")
 	v.Set("gmt", "+1")
 
@@ -187,27 +200,30 @@ func (p *FranceTV) GetMediaDetails(ctx context.Context, m *providers.Media) erro
 		if p.debug {
 			log.Printf("[%s] Player token's url %q", p.Name(), pl.URL)
 		}
-
-		// Now, get pl.URL, and watch for Location response header. It contains the dash ressource
-		// Set up the HTTP request
-		req, err := http.NewRequest("GET", pl.URL, nil)
+		mpd := mpdparser.NewMPDParser()
+		err = mpd.Get(ctx, pl.URL)
 		if err != nil {
-			return err
+			return fmt.Errorf("Can't get manifest : %w", err)
 		}
 
-		transport := http.Transport{}
-		resp, err := transport.RoundTrip(req)
+		// Strip subtitle track
+		err = mpd.StripSTPPStream()
 		if err != nil {
-			return err
+			return fmt.Errorf("Can't edit manifest : %w", err)
 		}
 
-		// Check if you received the status codes you expect. There may
-		// status codes other than 200 which are acceptable.
-		if resp.StatusCode != 302 {
-			return fmt.Errorf("Failed with status: %q", resp.Status)
+		// Select best video stream
+		err = mpd.KeepBestVideoStream()
+		if err != nil {
+			return fmt.Errorf("Can't edit manifest : %w", err)
 		}
 
-		info.URL = resp.Header.Get("Location")
+		// rebase the manifest
+		u := path.Dir(mpd.ActualURL)
+		err = mpd.ChangeBaseUrl(u)
+		if err != nil {
+			return fmt.Errorf("Can't edit manifest : %w", err)
+		}
 
 	}
 
