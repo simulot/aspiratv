@@ -10,6 +10,7 @@ require (
 	github.com/antchfx/htmlquery v1.0.0 // indirect
 	github.com/antchfx/xmlquery v1.0.0 // indirect
 	github.com/antchfx/xpath v1.0.0 // indirect
+	github.com/elazarl/goproxy v0.0.0-20200315184450-1f3cb6622dad
 	github.com/gnewton/chidley v0.0.0-20180421200106-b4c6c155522e // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gocolly/colly v1.2.0
@@ -31,4 +32,5 @@ require (
 	golang.org/x/sys v0.0.0-20190904005037-43c01164e931 // indirect
 	google.golang.org/appengine v1.6.2 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
+	gopkg.in/elazarl/goproxy.v1 v1.0.0-20180725130230-947c36da3153
 )

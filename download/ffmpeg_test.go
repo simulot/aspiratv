@@ -46,7 +46,7 @@ func TestFFMepg(t *testing.T) {
 				out:  os.DevNull,
 				info: &nfo.MediaInfo{},
 				configurators: []ffmpegConfigurator{
-					FFMepgWithDebug(true),
+					FFMpegWithDebug(true),
 				},
 			},
 			false,
@@ -54,7 +54,7 @@ func TestFFMepg(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := FFMepg(tt.args.ctx, tt.args.in, tt.args.out, tt.args.info, tt.args.configurators...); (err != nil) != tt.wantErr {
+			if err := FFMpeg(tt.args.ctx, tt.args.in, tt.args.out, tt.args.info, tt.args.configurators...); (err != nil) != tt.wantErr {
 				t.Errorf("FFMepg() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

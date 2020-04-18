@@ -8,14 +8,12 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"path"
 	"regexp"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/simulot/aspiratv/net/myhttp/httptest"
-	"github.com/simulot/aspiratv/parsers/mpdparser"
 
 	"github.com/simulot/aspiratv/net/myhttp"
 	"github.com/simulot/aspiratv/providers"
@@ -200,30 +198,26 @@ func (p *FranceTV) GetMediaDetails(ctx context.Context, m *providers.Media) erro
 		if p.debug {
 			log.Printf("[%s] Player token's url %q", p.Name(), pl.URL)
 		}
-		mpd := mpdparser.NewMPDParser()
-		err = mpd.Get(ctx, pl.URL)
+
+		// Now, get pl.URL, and watch for Location response header. It contains the dash ressource
+		// Set up the HTTP request
+		req, err := http.NewRequest("GET", pl.URL, nil)
 		if err != nil {
-			return fmt.Errorf("Can't get manifest : %w", err)
+			return err
+		}
+		transport := http.Transport{}
+		resp, err := transport.RoundTrip(req)
+		if err != nil {
+			return err
 		}
 
-		// Strip subtitle track
-		err = mpd.StripSTPPStream()
-		if err != nil {
-			return fmt.Errorf("Can't edit manifest : %w", err)
+		// Check if you received the status codes you expect. There may
+		// status codes other than 200 which are acceptable.
+		if resp.StatusCode != 302 {
+			return fmt.Errorf("Failed with status: %q", resp.Status)
 		}
 
-		// Select best video stream
-		err = mpd.KeepBestVideoStream()
-		if err != nil {
-			return fmt.Errorf("Can't edit manifest : %w", err)
-		}
-
-		// rebase the manifest
-		u := path.Dir(mpd.ActualURL)
-		err = mpd.ChangeBaseUrl(u)
-		if err != nil {
-			return fmt.Errorf("Can't edit manifest : %w", err)
-		}
+		info.URL = resp.Header.Get("Location")
 
 	}
 

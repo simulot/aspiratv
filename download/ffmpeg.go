@@ -151,7 +151,7 @@ type ffmpegConfig struct {
 
 type ffmpegConfigurator func(c *ffmpegConfig)
 
-func FFMepg(ctx context.Context, in, out string, info *nfo.MediaInfo, configurators ...ffmpegConfigurator) error {
+func FFMpeg(ctx context.Context, in, out string, info *nfo.MediaInfo, configurators ...ffmpegConfigurator) error {
 	cfg := ffmpegConfig{}
 	for _, c := range configurators {
 		c(&cfg)
@@ -194,19 +194,19 @@ func FFMepg(ctx context.Context, in, out string, info *nfo.MediaInfo, configurat
 	return err
 }
 
-func FFMepgWithProgress(pgr Progresser) ffmpegConfigurator {
+func FFMpegWithProgress(pgr Progresser) ffmpegConfigurator {
 	return func(c *ffmpegConfig) {
 		c.pgr = pgr
 	}
 }
 
-func FFMepgWithDebug(debug bool) ffmpegConfigurator {
+func FFMpegWithDebug(debug bool) ffmpegConfigurator {
 	return func(c *ffmpegConfig) {
 		c.debug = debug
 	}
 }
 
-func FFMepgWithParams(params []string) ffmpegConfigurator {
+func FFMpegWithParams(params []string) ffmpegConfigurator {
 	return func(c *ffmpegConfig) {
 		c.params = params
 	}

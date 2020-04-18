@@ -18,8 +18,8 @@ type MPD struct {
 }
 
 type Period struct {
-	ID            string           `xml:"id,attr"`
-	Duration      string           `xml:"duration,attr"`
+	ID            string           `xml:"id,attr,omitempty"`
+	Duration      string           `xml:"duration,attr,omitempty"`
 	BaseURL       string           `xml:"BaseURL,omitempty"`
 	AdaptationSet []*AdaptationSet `xml:"AdaptationSet"`
 }
@@ -63,11 +63,12 @@ type SegmentTemplate struct {
 	Media           string `xml:"media,attr"`
 	SegmentTimeline struct {
 		S []struct {
+			N string `xml:"t,attr,omitempty"`
 			T string `xml:"t,attr,omitempty"`
 			D string `xml:"d,attr,omitempty"`
 			R string `xml:"r,attr,omitempty"`
 		} `xml:"S"`
-	}
+	} `xml:" ,omitempty"`
 }
 
 type Representation struct {

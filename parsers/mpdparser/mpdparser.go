@@ -63,14 +63,18 @@ func (p *MPDParser) Get(ctx context.Context, url string) error {
 
 // Read the MPD from the reader and close it
 func (p *MPDParser) Read(rc io.ReadCloser) error {
-	mpd := &MPD{}
 	b, err := ioutil.ReadAll(rc)
 	if err != nil {
 		return err
 	}
 	defer rc.Close()
+	return p.Unmarshal(b)
+}
 
-	err = xml.Unmarshal(b, mpd)
+// Unmarshal bytes as MPD
+func (p *MPDParser) Unmarshal(b []byte) error {
+	mpd := &MPD{}
+	err := xml.Unmarshal(b, mpd)
 	if err != nil {
 		return fmt.Errorf("Can't unmarshal MPD: %w", err)
 	}
@@ -79,14 +83,21 @@ func (p *MPDParser) Read(rc io.ReadCloser) error {
 	return nil
 }
 
+func (p *MPDParser) Marshal() ([]byte, error) {
+	output, err := xml.MarshalIndent(p.MPD, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("Can't marshal MPD: %w", err)
+	}
+	return output, nil
+}
+
 // Write the MPD to the writer and close it
 func (p *MPDParser) Write(wc io.WriteCloser) error {
 	defer wc.Close()
-	output, err := xml.Marshal(p.MPD)
+	output, err := p.Marshal()
 	if err != nil {
 		return fmt.Errorf("Can't marshal MPD: %w", err)
 	}
-
 	_, err = wc.Write([]byte(xml.Header))
 	if err != nil {
 		return fmt.Errorf("Can't marshal MPD: %w", err)

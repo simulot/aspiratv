@@ -130,7 +130,7 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, m *provide
 	}
 
 	files = append(files, fn)
-	ffmpegErr = download.FFMepg(ctx, url, fn, info, download.FFMepgWithProgress(pgr), download.FFMepgWithDebug(a.Config.Debug))
+	ffmpegErr = download.FFMpeg(ctx, url, fn, info, download.FFMpegWithProgress(pgr), download.FFMpegWithDebug(a.Config.Debug))
 
 	if ffmpegErr != nil {
 		log.Printf("[%s] FFMEPG exits with error:\n%s", p.Name(), ffmpegErr)
