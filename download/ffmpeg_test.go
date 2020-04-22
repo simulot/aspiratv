@@ -30,7 +30,7 @@ func TestFFMepg(t *testing.T) {
 		in            string
 		out           string
 		info          *nfo.MediaInfo
-		configurators []ffmpegConfigurator
+		configurators []ConfigurationFunction
 	}
 	tests := []struct {
 		name    string
@@ -45,8 +45,8 @@ func TestFFMepg(t *testing.T) {
 				in:   "https://file-examples.com/wp-content/uploads/2017/04/file_example_MP4_640_3MG.mp4",
 				out:  os.DevNull,
 				info: &nfo.MediaInfo{},
-				configurators: []ffmpegConfigurator{
-					FFMpegWithDebug(true),
+				configurators: []ConfigurationFunction{
+					WithDebug(true),
 				},
 			},
 			false,

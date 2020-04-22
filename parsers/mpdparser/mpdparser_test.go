@@ -10,13 +10,13 @@ import (
 func TestFRANCETVMpd(t *testing.T) {
 	type adaptation struct {
 		mimeType               string
-		bandWith               string
+		bandWith               int
 		templateInitialization string
 		templateMedia          string
 	}
 	tests := []struct {
 		name           string
-		videoBandWidth string
+		videoBandWidth int
 		givenBaseURL   string
 		baseURL        string
 		adaptations    []adaptation
@@ -45,13 +45,13 @@ func TestFRANCETVMpd(t *testing.T) {
 		// },
 		{
 			name:           "testdata/show3.mpd",
-			videoBandWidth: "4800000",
+			videoBandWidth: 4800000,
 			givenBaseURL:   "https://bitmovin-a.akamaihd.net/content/MI201109210084_1/mpds",
 			baseURL:        "",
 			adaptations: []adaptation{
 				{
 					mimeType:               "video/mp4",
-					bandWith:               "4800000",
+					bandWith:               4800000,
 					templateInitialization: "https://bitmovin-a.akamaihd.net/content/MI201109210084_1/video/$RepresentationID$/dash/init.mp4",
 					templateMedia:          "https://bitmovin-a.akamaihd.net/content/MI201109210084_1/video/$RepresentationID$/dash/segment_$Number$.m4s",
 				},
@@ -100,8 +100,8 @@ func TestFRANCETVMpd(t *testing.T) {
 				t.Error(err)
 			}
 			for _, p := range mpd.Period {
-				bandWith := ""
-				maxBandWidth := ""
+				bandWith := 0
+				maxBandWidth := 0
 				nVideoStream := 0
 				for _, a := range p.AdaptationSet {
 					if strings.HasPrefix(a.MimeType, "video/") {
@@ -116,10 +116,10 @@ func TestFRANCETVMpd(t *testing.T) {
 					t.Errorf("Unexpected number of video stream (%d) for Period ID(%s), expected 1", nVideoStream, p.ID)
 				}
 				if bandWith != tt.videoBandWidth {
-					t.Errorf("Unexpected bandwidth (%s) for video stream for Period ID(%s), expected %s", bandWith, p.ID, tt.videoBandWidth)
+					t.Errorf("Unexpected bandwidth (%d) for video stream for Period ID(%s), expected %d", bandWith, p.ID, tt.videoBandWidth)
 				}
 				if bandWith != maxBandWidth {
-					t.Errorf("Unexpected maxBandWidth (%s) for video stream for Period ID(%s), expected %s", maxBandWidth, p.ID, tt.videoBandWidth)
+					t.Errorf("Unexpected maxBandWidth (%d) for video stream for Period ID(%s), expected %d", maxBandWidth, p.ID, tt.videoBandWidth)
 				}
 
 			}

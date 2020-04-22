@@ -13,11 +13,6 @@ import (
 	"github.com/simulot/aspiratv/metadata/nfo"
 )
 
-type Progresser interface {
-	Init(size int64)
-	Update(count int64, size int64)
-}
-
 func dropCR(data []byte) []byte {
 	if len(data) > 0 && data[len(data)-1] == '\r' {
 		return data[0 : len(data)-1]
@@ -60,7 +55,7 @@ func (c *ffmpegConfig) watchProgress(r io.ReadCloser, prg Progresser) {
 		var lastLine []byte
 
 		wf := 10 * time.Second
-		if c.debug {
+		if c.conf.debug {
 			wf = 10 * time.Hour
 		}
 
@@ -72,7 +67,7 @@ func (c *ffmpegConfig) watchProgress(r io.ReadCloser, prg Progresser) {
 		defer activityWatchDog.Stop()
 
 		for sc.Scan() {
-			if c.debug && len(lastLine) > 0 {
+			if c.conf.debug && len(lastLine) > 0 {
 				if !bytes.HasPrefix(lastLine, []byte("frame=")) {
 					log.Print("[FFMPEG] ", string(lastLine))
 				}
@@ -142,22 +137,21 @@ func (c *ffmpegConfig) watchProgress(r io.ReadCloser, prg Progresser) {
 }
 
 type ffmpegConfig struct {
-	debug    bool
-	pgr      Progresser
-	params   []string
+	conf     *DownloadConfiguration
 	lastLine string
 	cmd      *exec.Cmd
 }
 
-type ffmpegConfigurator func(c *ffmpegConfig)
-
-func FFMpeg(ctx context.Context, in, out string, info *nfo.MediaInfo, configurators ...ffmpegConfigurator) error {
-	cfg := ffmpegConfig{}
-	for _, c := range configurators {
-		c(&cfg)
+func FFMpeg(ctx context.Context, in, out string, info *nfo.MediaInfo, configurations ...ConfigurationFunction) error {
+	cfg := ffmpegConfig{
+		conf: NewDownloadConfiguration(),
 	}
-	if len(cfg.params) == 0 {
-		cfg.params = []string{
+	for _, c := range configurations {
+		c(cfg.conf)
+	}
+	params := []string{}
+	if len(cfg.conf.params) == 0 {
+		params = []string{
 			"-loglevel", "info", // Give me feedback
 			"-hide_banner", // I don't want banner
 			"-nostdin",
@@ -174,14 +168,14 @@ func FFMpeg(ctx context.Context, in, out string, info *nfo.MediaInfo, configurat
 			out, // output file
 		}
 	}
-	if cfg.debug {
-		log.Printf("[FFMPEG] runing ffmpeg %v", cfg.params)
+	if cfg.conf.debug {
+		log.Printf("[FFMPEG] runing ffmpeg %v", params)
 	}
 
-	cfg.cmd = exec.CommandContext(ctx, "ffmpeg", cfg.params...)
+	cfg.cmd = exec.CommandContext(ctx, "ffmpeg", params...)
 	stdOut, err := cfg.cmd.StderrPipe()
 
-	cfg.watchProgress(stdOut, cfg.pgr)
+	cfg.watchProgress(stdOut, cfg.conf.pgr)
 	err = cfg.cmd.Start()
 	if err != nil {
 		return err
@@ -192,22 +186,4 @@ func FFMpeg(ctx context.Context, in, out string, info *nfo.MediaInfo, configurat
 	}
 
 	return err
-}
-
-func FFMpegWithProgress(pgr Progresser) ffmpegConfigurator {
-	return func(c *ffmpegConfig) {
-		c.pgr = pgr
-	}
-}
-
-func FFMpegWithDebug(debug bool) ffmpegConfigurator {
-	return func(c *ffmpegConfig) {
-		c.debug = debug
-	}
-}
-
-func FFMpegWithParams(params []string) ffmpegConfigurator {
-	return func(c *ffmpegConfig) {
-		c.params = params
-	}
 }

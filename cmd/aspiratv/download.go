@@ -56,16 +56,15 @@ func (p *progressBar) Update(count int64, size int64) {
 var dlID = int32(0)
 
 func (a *app) DownloadShow(ctx context.Context, p providers.Provider, m *providers.Media, pc *mpb.Progress) {
-	if ctx.Err() != nil {
-		return
-	}
-	var ffmpegErr error
+	ctx, cancel := context.WithCancel(ctx)
+
+	var dlErr error
 	var itemName string
 	// Collect files beeing downloaded and to be deleted in case of cancellation
 	files := []string{}
 
 	defer func() {
-		if ffmpegErr != nil || ctx.Err() != nil {
+		if dlErr != nil || ctx.Err() != nil {
 			log.Printf("[%s] Cancelling download of %q.", p.Name(), itemName)
 			for _, f := range files {
 				log.Printf("[%s] Removing %q.", p.Name(), f)
@@ -80,7 +79,7 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, m *provide
 			}
 
 		}
-
+		cancel()
 	}()
 	id := 1000 + atomic.AddInt32(&dlID, 1)
 	itemName = filepath.Base(m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination]))
@@ -126,19 +125,19 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, m *provide
 
 	info := m.Metadata.GetMediaInfo()
 	if a.Config.Debug {
-		log.Printf("[%s] FFMPEG started %q", p.Name(), filepath.Base(fn))
+		log.Printf("[%s] Download started %q", p.Name(), filepath.Base(fn))
 	}
 
 	files = append(files, fn)
-	ffmpegErr = download.FFMpeg(ctx, url, fn, info, download.FFMpegWithProgress(pgr), download.FFMpegWithDebug(a.Config.Debug))
+	dlErr = download.Download(ctx, url, fn, info, download.WithProgress(pgr), download.WithDebug(a.Config.Debug))
 
-	if ffmpegErr != nil {
-		log.Printf("[%s] FFMEPG exits with error:\n%s", p.Name(), ffmpegErr)
+	if dlErr != nil {
+		log.Printf("[%s] Download exits with error:\n%s", p.Name(), dlErr)
 		return
 	}
 
 	if ctx.Err() != nil {
-		log.Printf("[%s] FFMEPG exits with error:\n%s", p.Name(), ctx.Err())
+		log.Printf("[%s] Download exits with error:\n%s", p.Name(), ctx.Err())
 		return
 	}
 

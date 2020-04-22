@@ -199,25 +199,27 @@ func (p *FranceTV) GetMediaDetails(ctx context.Context, m *providers.Media) erro
 			log.Printf("[%s] Player token's url %q", p.Name(), pl.URL)
 		}
 
-		// Now, get pl.URL, and watch for Location response header. It contains the dash ressource
-		// Set up the HTTP request
-		req, err := http.NewRequest("GET", pl.URL, nil)
-		if err != nil {
-			return err
-		}
-		transport := http.Transport{}
-		resp, err := transport.RoundTrip(req)
-		if err != nil {
-			return err
-		}
+		info.URL = pl.URL
 
-		// Check if you received the status codes you expect. There may
-		// status codes other than 200 which are acceptable.
-		if resp.StatusCode != 302 {
-			return fmt.Errorf("Failed with status: %q", resp.Status)
-		}
+		// // Now, get pl.URL, and watch for Location response header. It contains the dash ressource
+		// // Set up the HTTP request
+		// req, err := http.NewRequest("GET", pl.URL, nil)
+		// if err != nil {
+		// 	return err
+		// }
+		// transport := http.Transport{}
+		// resp, err := transport.RoundTrip(req)
+		// if err != nil {
+		// 	return err
+		// }
 
-		info.URL = resp.Header.Get("Location")
+		// // Check if you received the status codes you expect. There may
+		// // status codes other than 200 which are acceptable.
+		// if resp.StatusCode != 302 {
+		// 	return fmt.Errorf("Failed with status: %q", resp.Status)
+		// }
+
+		// info.URL = resp.Header.Get("Location")
 
 	}
 

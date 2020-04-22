@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 
 	"github.com/PuerkitoBio/purell"
@@ -187,12 +186,8 @@ func (p *MPDParser) KeepBestVideoStream() error {
 			bandwith := 0
 			best := -1
 			for i, r := range a.Representation {
-				b, err := strconv.Atoi(r.Bandwidth)
-				if err != nil {
-					continue
-				}
-				if b > bandwith {
-					bandwith = b
+				if r.Bandwidth > bandwith {
+					bandwith = r.Bandwidth
 					best = i
 				}
 			}

@@ -1,6 +1,8 @@
 package mpdparser
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+)
 
 type MPD struct {
 	XMLName xml.Name `xml:"urn:mpeg:dash:schema:mpd:2011 MPD"`
@@ -24,6 +26,33 @@ type Period struct {
 	AdaptationSet []*AdaptationSet `xml:"AdaptationSet"`
 }
 
+func (p *Period) GetAdaptationSetByID(s string) *AdaptationSet {
+	for _, a := range p.AdaptationSet {
+		if a.ID == s {
+			return a
+		}
+	}
+	return nil
+}
+
+func (p *Period) GetAdaptationSetByContentType(s string) *AdaptationSet {
+	for _, a := range p.AdaptationSet {
+		if a.ContentType == s {
+			return a
+		}
+	}
+	return nil
+}
+
+func (p *Period) GetAdaptationSetByMimeType(s string) *AdaptationSet {
+	for _, a := range p.AdaptationSet {
+		if a.MimeType == s {
+			return a
+		}
+	}
+	return nil
+}
+
 type AdaptationSet struct {
 	ID                        string                     `xml:"id,attr"`
 	Group                     string                     `xml:"group,attr,omitempty"`
@@ -35,16 +64,37 @@ type AdaptationSet struct {
 	Codecs                    string                     `xml:"codecs,attr,omitempty"`
 	StartWithSAP              string                     `xml:"startWithSAP,attr,omitempty"`
 	Par                       string                     `xml:"par,attr,omitempty"`
-	MinBandwidth              string                     `xml:"minBandwidth,attr,omitempty"`
-	MaxBandwidth              string                     `xml:"maxBandwidth,attr,omitempty"`
-	MaxWidth                  string                     `xml:"maxWidth,attr,omitempty"`
-	MaxHeight                 string                     `xml:"maxHeight,attr,omitempty"`
+	MinBandwidth              int                        `xml:"minBandwidth,attr,omitempty"`
+	MaxBandwidth              int                        `xml:"maxBandwidth,attr,omitempty"`
+	MaxWidth                  int                        `xml:"maxWidth,attr,omitempty"`
+	MaxHeight                 int                        `xml:"maxHeight,attr,omitempty"`
 	Sar                       string                     `xml:"sar,attr,omitempty"`
 	FrameRate                 string                     `xml:"frameRate,attr,omitempty"`
 	AudioChannelConfiguration *AudioChannelConfiguration `xml:"AudioChannelConfiguration,omitempty"`
 	Role                      []Role                     `xml:"Role,omitempty"`
-	SegmentTemplate           SegmentTemplate            `xml:"SegmentTemplate,omitempty"`
+	SegmentTemplate           *SegmentTemplate           `xml:"SegmentTemplate,omitempty"`
 	Representation            []*Representation          `xml:"Representation"`
+}
+
+func (a *AdaptationSet) GetRepresentationByID(s string) *Representation {
+	for _, r := range a.Representation {
+		if r.ID == s {
+			return r
+		}
+	}
+	return nil
+}
+
+func (a *AdaptationSet) GetBestRepresentation() *Representation {
+	bandwidth := 0
+	best := 0
+	for i, r := range a.Representation {
+		if r.Bandwidth > bandwidth {
+			bandwidth = r.Bandwidth
+			best = i
+		}
+	}
+	return a.Representation[best]
 }
 
 type AudioChannelConfiguration struct {
@@ -58,24 +108,26 @@ type Role struct {
 }
 
 type SegmentTemplate struct {
-	Timescale       string `xml:"timescale,attr"`
+	Timescale       int    `xml:"timescale,attr"`
+	Duration        int    `xml:"duration,attr,omitempty"`
+	StartNumber     int    `xml:"startNumber,attr,omitempty"`
 	Initialization  string `xml:"initialization,attr"`
 	Media           string `xml:"media,attr"`
 	SegmentTimeline struct {
 		S []struct {
-			N string `xml:"t,attr,omitempty"`
-			T string `xml:"t,attr,omitempty"`
-			D string `xml:"d,attr,omitempty"`
-			R string `xml:"r,attr,omitempty"`
+			N int `xml:"n,attr,omitempty"`
+			T int `xml:"t,attr,omitempty"`
+			D int `xml:"d,attr,omitempty"`
+			R int `xml:"r,attr,omitempty"`
 		} `xml:"S"`
 	} `xml:" ,omitempty"`
 }
 
 type Representation struct {
 	ID        string `xml:"id,attr"`
-	Bandwidth string `xml:"bandwidth,attr,omitempty"`
-	Width     string `xml:"width,attr,omitempty"`
-	Height    string `xml:"height,attr,omitempty"`
+	Bandwidth int    `xml:"bandwidth,attr,omitempty"`
+	Width     int    `xml:"width,attr,omitempty"`
+	Height    int    `xml:"height,attr,omitempty"`
 	Codecs    string `xml:"codecs,attr,omitempty"`
 	ScanType  string `xml:"scanType,attr,omitempty"`
 }
