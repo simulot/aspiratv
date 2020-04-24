@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -168,17 +167,7 @@ func (a *app) CheckPaths() {
 }
 
 func sanitizePath(p string) (string, error) {
-	abs, err := filepath.Abs(p)
-	if !filepath.IsAbs(p) {
-		p = filepath.Clean(p)
-	}
-	if err != nil {
-		return "", fmt.Errorf("Unsafe path: %w", err)
-	}
-	if !strings.Contains(abs, p) {
-		return "", errors.New("Unsafe path")
-	}
-	return abs, nil
+	return filepath.Abs(p)
 }
 
 func (a *app) Download(ctx context.Context) {
