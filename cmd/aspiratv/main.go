@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"flag"
+
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+
+	flag "github.com/spf13/pflag"
 
 	"github.com/simulot/aspiratv/net/myhttp"
 	"github.com/simulot/aspiratv/providers"
@@ -76,6 +78,26 @@ func main() {
 	breakChannel := make(chan os.Signal, 1)
 	signal.Notify(breakChannel, os.Interrupt)
 
+	flag.BoolVar(&a.Config.Debug, "debug", false, "Debug mode.")
+	flag.BoolVar(&a.Config.Force, "force", false, "Force media download.")
+	flag.BoolVar(&a.Config.Headless, "headless", false, "Headless mode. Progression bars are not displayed.")
+	flag.StringVar(&a.Config.ConfigFile, "config", "config.json", "Configuration file name.")
+	flag.IntVarP(&a.Config.ConcurrentTasks, "max-tasks", "m", runtime.NumCPU(), "Maximum concurrent downloads at a time.")
+	flag.StringVarP(&a.Config.Provider, "provider", "p", "", "Provider to be used with download command. Possible values : artetv,francetv,gulli")
+	flag.StringVarP(&a.Config.Destination, "destination", "d", "", "Destination path.")
+	flag.StringVar(&a.Config.LogFile, "log", "", "Give the log file name. When empty, no log.")
+	// flag.IntVar(&a.Config.RetentionDays, "retention", 0, "Delete media older than retention days for the downloaded show.")
+	flag.BoolVarP(&a.Config.WriteNFO, "write-nfo", "n", true, "Write NFO file for KODI,Emby,Plex...")
+	flag.BoolVarP(&a.Config.KeepBonus, "keep-bonuses", "b", true, "Download bonuses when true")
+	flag.IntVarP(&a.Config.MaxAgedDays, "max-aged", "a", 0, "Retrieve media younger than MaxAgedDays.")
+	flag.Parse()
+
+	if a.Config.Debug {
+		fmt.Print("PID: ", os.Getpid(), ", press enter to continue")
+		var input string
+		fmt.Scanln(&input)
+	}
+
 	defer func() {
 		// Normal end... cleaning up
 		signal.Stop(breakChannel)
@@ -91,27 +113,6 @@ func main() {
 			return
 		}
 	}()
-
-	flag.BoolVar(&a.Config.Debug, "debug", false, "Debug mode.")
-	flag.BoolVar(&a.Config.Force, "force", false, "Force media download.")
-	flag.BoolVar(&a.Config.Headless, "headless", false, "Headless mode. Progression bars are not displayed.")
-	flag.StringVar(&a.Config.ConfigFile, "config", "config.json", "Configuration file name.")
-	flag.IntVar(&a.Config.ConcurrentTasks, "max-tasks", runtime.NumCPU(), "Maximum concurrent downloads at a time.")
-	flag.StringVar(&a.Config.Provider, "provider", "", "Provider to be used with download command. Possible values : artetv,francetv,gulli")
-	flag.StringVar(&a.Config.Destination, "destination", "", "Destination path.")
-	flag.StringVar(&a.Config.LogFile, "log", "", "Give the log file name. When empty, no log.")
-	// flag.IntVar(&a.Config.RetentionDays, "retention", 0, "Delete media older than retention days for the downloaded show.")
-	flag.BoolVar(&a.Config.WriteNFO, "write-nfo", true, "Write NFO file for KODI,Emby,Plex...")
-	flag.BoolVar(&a.Config.KeepBonus, "keep-bonuses", true, "Download bonuses when true")
-	flag.IntVar(&a.Config.MaxAgedDays, "max-aged", 0, "Retrieve media younger than MaxAgedDays.")
-	flag.Parse()
-
-	if a.Config.Debug {
-		fmt.Print("PID: ", os.Getpid(), ", press enter to continue")
-		var input string
-		fmt.Scanln(&input)
-	}
-
 	if len(a.Config.LogFile) > 0 {
 		logFile, err := os.Create(a.Config.LogFile)
 		if err != nil {
