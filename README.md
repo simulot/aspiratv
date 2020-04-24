@@ -9,7 +9,7 @@ Ce programme interroge les serveurs de télévision de rattrapage et télécharg
 </p>
 
 ``` sh
-./aspiratv -provider=artetv -destination=$HOME/Videos/DL download "La minute vieille"
+./aspiratv --provider=artetv --destination=$HOME/Videos/DL download "La minute vieille"
 ```
 
 ## Télécharger les dernières diffusions à partir d'une liste
@@ -50,41 +50,32 @@ Les binaires pour Windows, Linux et FreeBSD sont directement disponibles sur la 
 - Télécharger les binaires correspondant à votre système sur la page de la dernière release de le répertoire de votre choix.
 - Puis décompresser l'archive
 ```
-tar -czvf aspiratv_0.4.0_Linux_x86_64.tar.gz
+tar -czvf aspiratv_0.8.0_Linux_x86_64.tar.gz
 ```
 
 
 # Ligne de commande
 
 ```
-Usage of ./aspiratv:
-  -config string
-        Configuration file name. (default "config.json")
-  -debug
-        Debug mode.
-  -destination string
-        Provider to be used with download command. Possible values : artetv,francetv,gulli
-  -force
-        Force media download.
-  -headless
-        Headless mode. Progression bars are not displayed.
-  -log string
-        Give the log file name. When empty, no log.
-  -max-aged int
-        Retrieve media younger than MaxAgedDays.
-  -max-tasks int
-        Maximum concurrent downloads at a time. (default 8)
-  -provider string
-        Provider to be used with download command. Possible values : artetv,francetv,gulli
-  -write-nfo
-        Write NFO file for KODI,Emby,Plex... (default true)
+Usage of aspiratv:
+      --config string        Configuration file name. (default "config.json")
+      --debug                Debug mode.
+  -d, --destination string   Destination path.
+      --force                Force media download.
+      --headless             Headless mode. Progression bars are not displayed.
+  -b, --keep-bonuses         Download bonuses when true (default true)
+      --log string           Give the log file name. When empty, no log.
+  -a, --max-aged int         Retrieve media younger than MaxAgedDays.
+  -m, --max-tasks int        Maximum concurrent downloads at a time. (default 8)
+  -p, --provider string      Provider to be used with download command. Possible values : artetv,francetv,gulli
+  -n, --write-nfo            Write NFO file for KODI,Emby,Plex... (default true)
 ```
 Le programme fonctionne selon deux modilités :
 ## Pour surveiller la mise à disposition de nouveaux épisodes d'une émission
 Dans ce mode, le fichiers de configuration `config.json` placé dans le même répertoire que le programe est lu pour pour interroger les différents serveur.
 
 ### -headless
-L'option `-headless` désactive les barres de progressions et produit une log sur la console.
+L'option `--headless` désactive les barres de progressions et produit une log sur la console.
 
 
 Note: L'option -server a été supprimée. Pour interroger automatiquement les serveur, ajouter une ligne dans crontab, ou une tâche planifiée dans windows.
