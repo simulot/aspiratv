@@ -220,7 +220,7 @@ func (a *app) DowloadImages(ctx context.Context, p providers.Provider, destinati
 
 	err := os.MkdirAll(filepath.Dir(destination), 0777)
 	if err != nil {
-		log.Printf("[%s] Can't create %s :%s", destination, err)
+		log.Printf("[DONWLOAD] Can't create %s :%s", destination, err)
 		return
 	}
 

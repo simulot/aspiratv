@@ -359,7 +359,7 @@ showLoop:
 		select {
 		case <-ctx.Done():
 			if a.Config.Debug {
-				log.Println("[%s] Context done, received %s", ctx.Err())
+				log.Printf("[%s] Context done, received %s", p.Name(), ctx.Err())
 			}
 			break showLoop
 		default:
@@ -380,7 +380,7 @@ showLoop:
 			}
 			if ctx.Err() != nil {
 				if a.Config.Debug {
-					log.Println("[%s] PullShows received %s", ctx.Err())
+					log.Printf("[%s] PullShows received %s", p.Name(), ctx.Err())
 				}
 				break showLoop
 			}
