@@ -74,15 +74,15 @@ Le programme fonctionne selon deux modilités :
 ## Pour surveiller la mise à disposition de nouveaux épisodes d'une émission
 Dans ce mode, le fichiers de configuration `config.json` placé dans le même répertoire que le programe est lu pour pour interroger les différents serveur.
 
-### -headless
+### --headless
 L'option `--headless` désactive les barres de progressions et produit une log sur la console.
 
 
 Note: L'option -server a été supprimée. Pour interroger automatiquement les serveur, ajouter une ligne dans crontab, ou une tâche planifiée dans windows.
 
-### -config votreconfig.json
+### --config votreconfig.json
 
-L'option `-config` indique le fichier de configuration à utiliser.
+L'option `--config` indique le fichier de configuration à utiliser.
 
 ## Pour télécharger une émission, ou une série
 ```sh
@@ -94,15 +94,24 @@ Cette commande cherchera les épisodes de la série "Les Dalton" sur france tél
 
 ## Les options communes aux deux modes :
 
-## -debug
+### --max-task NUM
+Précise le nombre maximal de téléchargements simultanés possible. La valeur par défaut est le nombre de processeurs de la machine.
+
+### --debug
 Ajoute au fichier de log des informations utiles au débugage.
 
-## -force
+### --force
 Télécharge toutes les émissions correspondant à la liste de recherche, même si elles ont été déjà téléchargées.
 
-## -log LOG_FILE
+### --log LOG_FILE
 
 L'option `-log` redirige les messages d'erreur dans le fichier indiqué. 
+
+### --keep-bonuses
+Télécharge les vidéos associées au show demandé.
+
+### --max-aged DAYS
+Ne télécharge que les émissions qui ont été diffusées moins de DAYS jours. Cette option est utile quand vous téléchargez une émission quotidienne par exemple.
 
 
 # Configuration
