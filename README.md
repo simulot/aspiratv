@@ -74,7 +74,7 @@ Le programme fonctionne selon deux modilités :
 ## Pour surveiller la mise à disposition de nouveaux épisodes d'une émission
 Dans ce mode, le fichiers de configuration `config.json` placé dans le même répertoire que le programe est lu pour pour interroger les différents serveur.
 
-### --headless
+### -headless
 L'option `--headless` désactive les barres de progressions et produit une log sur la console.
 
 
