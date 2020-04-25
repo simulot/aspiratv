@@ -94,7 +94,7 @@ Cette commande cherchera les épisodes de la série "Les Dalton" sur france tél
 
 ## Les options communes aux deux modes :
 
-### --max-task NUM
+### --max-tasks NUM
 Précise le nombre maximal de téléchargements simultanés possible. La valeur par défaut est le nombre de processeurs de la machine.
 
 ### --debug
