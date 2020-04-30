@@ -169,7 +169,7 @@ func FFMpeg(ctx context.Context, in, out string, info *nfo.MediaInfo, configurat
 		}
 	}
 	if cfg.conf.debug {
-		log.Printf("[FFMPEG] runing ffmpeg %v", params)
+		log.Printf("[FFMPEG] running ffmpeg %v", params)
 	}
 
 	cfg.cmd = exec.CommandContext(ctx, "ffmpeg", params...)
