@@ -458,15 +458,15 @@ func (p *ArteTV) getSerie(ctx context.Context, mr *providers.MatchRequest, d Dat
 									Type: "ARTETV",
 								},
 							},
-							Title:     ep.Subtitle,
-							Showtitle: d.Title,
+							Title:     ep.Title,
+							Showtitle: tvshow.Title,
 							Plot:      ep.ShortDescription,
 							Thumb:     getThumbs(ep.Images),
 							TVShow:    &tvshow,
 							Tag:       []string{"Arte"},
 						},
 					}
-					setEpisodeFormTitle(&info, ep.Title)
+					setEpisodeFormTitle(&info, tvshow, ep)
 					if info.Episode != 0 && info.Season != 0 {
 						tvshow.HasEpisodes = true
 					}
@@ -498,29 +498,34 @@ func (p *ArteTV) getSerie(ctx context.Context, mr *providers.MatchRequest, d Dat
 var (
 	parseTitleSeasonEpisode = regexp.MustCompile(`^(.+) - Saison (\d+) \((\d+)\/\d+\)$`)
 	parseTitleEpisode       = regexp.MustCompile(`^(.+) \((\d+)\/\d+\)$`)
+	removeHiphens           = regexp.MustCompile(`(?m)-{2,}|^\s*-*\s|\s*-\s*$`)
+	removeSpaces            = regexp.MustCompile(`(?m)^\s+|\s+$|\s{2,}`)
 )
 
-func setEpisodeFormTitle(show *nfo.EpisodeDetails, t string) {
+// setEpisodeFormTitle tries to normalize episode titles despite coding inconsistencies
+func setEpisodeFormTitle(show *nfo.EpisodeDetails, tvshow nfo.TVShow, ep Data) {
 
-	m := parseTitleSeasonEpisode.FindAllStringSubmatch(t, -1)
+	show.Showtitle = tvshow.Title
+
+	m := parseTitleSeasonEpisode.FindAllStringSubmatch(ep.Title, -1)
 	if len(m) > 0 {
-		show.Showtitle = m[0][1]
+		ep.Title = m[0][1]
 		show.Season, _ = strconv.Atoi(m[0][2])
 		show.Episode, _ = strconv.Atoi(m[0][3])
-		return
 	}
-	m = parseTitleEpisode.FindAllStringSubmatch(t, -1)
+	m = parseTitleEpisode.FindAllStringSubmatch(ep.Title, -1)
 	if len(m) > 0 {
-		show.Showtitle = m[0][1]
+		ep.Title = m[0][1]
 		show.Season = 1
 		show.Episode, _ = strconv.Atoi(m[0][2])
-		return
 	}
 
-	if show.Title == "" {
-		show.Title = t
-		return
-	}
+	title := ep.Title + " " + ep.Subtitle
+	title = strings.ReplaceAll(title, tvshow.Title, " ")
+	title = removeHiphens.ReplaceAllLiteralString(title, "")
+	title = removeSpaces.ReplaceAllLiteralString(title, "")
+
+	show.Title = title
 }
 
 func getThumbs(images map[string]Image) []nfo.Thumb {
