@@ -4,7 +4,6 @@ import (
 	"context"
 	"html"
 	"io/ioutil"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -30,15 +29,13 @@ func (p *Gulli) getPlayer(ctx context.Context, mr *providers.MatchRequest, ID st
 	ctx, done := context.WithTimeout(ctx, p.deadline)
 	defer done()
 
-	if p.debug {
-		log.Printf("[%s] Player URL: %q", p.Name(), gullyPlayer+ID)
-	}
+	p.config.Log.Debug().Printf("[%s] Player URL: %q", p.Name(), gullyPlayer+ID)
 	r, err := p.getter.Get(ctx, gullyPlayer+ID)
 	if err != nil {
 		return nil, err
 	}
-	if p.debug {
-		r = httptest.DumpReaderToFile(r, "gulli-player-")
+	if p.config.Log.IsDebug() {
+		r = httptest.DumpReaderToFile(p.config.Log, r, "gulli-player-")
 	}
 	defer r.Close()
 	b, err := ioutil.ReadAll(r)

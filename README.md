@@ -59,12 +59,12 @@ tar -czvf aspiratv_0.8.0_Linux_x86_64.tar.gz
 ```
 Usage of aspiratv:
       --config string        Configuration file name. (default "config.json")
-      --debug                Debug mode.
   -d, --destination string   Destination path.
       --force                Force media download.
       --headless             Headless mode. Progression bars are not displayed.
   -b, --keep-bonuses         Download bonuses when true (default true)
-      --log string           Give the log file name. When empty, no log.
+      --log string           Give the log file name.
+  -l, --log-level string     Log level (INFO,TRACE,ERROR,DEBUG) (default "ERROR")
   -a, --max-aged int         Retrieve media younger than MaxAgedDays.
   -m, --max-tasks int        Maximum concurrent downloads at a time. (default 8)
   -p, --provider string      Provider to be used with download command. Possible values : artetv,francetv,gulli
@@ -74,7 +74,7 @@ Le programme fonctionne selon deux modilités :
 ## Pour surveiller la mise à disposition de nouveaux épisodes d'une émission
 Dans ce mode, le fichiers de configuration `config.json` placé dans le même répertoire que le programe est lu pour pour interroger les différents serveur.
 
-### -headless
+### --headless
 L'option `--headless` désactive les barres de progressions et produit une log sur la console.
 
 
@@ -97,15 +97,20 @@ Cette commande cherchera les épisodes de la série "Les Dalton" sur france tél
 ### --max-tasks NUM
 Précise le nombre maximal de téléchargements simultanés possible. La valeur par défaut est le nombre de processeurs de la machine.
 
-### --debug
-Ajoute au fichier de log des informations utiles au débugage.
+### --log-level, -l
+Indique le niveau de détail du fichier de log. Les options possibles sont:
+* INFO 
+* TRACE  
+* DEBUG
+
+
+### --log LOG_FILE
+
+L'option `--log` indique le fichier dans lequel les messages d'erreur sont écrits. 
 
 ### --force
 Télécharge toutes les émissions correspondant à la liste de recherche, même si elles ont été déjà téléchargées.
 
-### --log LOG_FILE
-
-L'option `-log` redirige les messages d'erreur dans le fichier indiqué. 
 
 ### --keep-bonuses
 Télécharge les vidéos associées au show demandé.

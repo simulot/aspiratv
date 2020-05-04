@@ -3,7 +3,6 @@ package gulli
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 
@@ -32,7 +31,6 @@ func (p *Gulli) getCartoonPage(ctx context.Context, showTitle string) (string, s
 			return c.URL, c.ThumbURL, nil
 		}
 	}
-	log.Printf("[%s] Can't find cartoon %q", p.Name(), showTitle)
 	return "", "", fmt.Errorf("Cartoon %q not found", showTitle)
 }
 

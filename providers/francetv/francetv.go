@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -40,13 +39,12 @@ type getter interface {
 
 // FranceTV structure handles france-tv catalog of shows
 type FranceTV struct {
-	getter      getter
-	debug       bool
-	deadline    time.Duration
-	algolia     *AlgoliaConfig
-	seasons     sync.Map
-	shows       sync.Map
-	keepBonuses bool
+	getter   getter
+	deadline time.Duration
+	algolia  *AlgoliaConfig
+	seasons  sync.Map
+	shows    sync.Map
+	config   providers.Config
 }
 
 // WithGetter inject a getter in FranceTV object instead of normal one
@@ -59,11 +57,9 @@ func WithGetter(g getter) func(ftv *FranceTV) {
 // New setup a Show provider for France Télévisions
 func New() (*FranceTV, error) {
 	p := &FranceTV{
-		getter:      myhttp.DefaultClient,
-		deadline:    30 * time.Second,
-		keepBonuses: true,
+		getter:   myhttp.DefaultClient,
+		deadline: 30 * time.Second,
 	}
-
 	return p, nil
 }
 
@@ -71,14 +67,10 @@ func New() (*FranceTV, error) {
 func (FranceTV) Name() string { return "francetv" }
 
 func (p *FranceTV) Configure(c providers.Config) {
-	p.keepBonuses = c.KeepBonus
-	p.debug = c.Debug
-	if p.debug {
-		p.deadline = time.Hour
-	} else {
-		p.deadline = 30 * time.Second
+	p.config = c
+	if p.config.Log.IsDebug() {
+		p.deadline = 1 * time.Hour
 	}
-
 }
 
 // MediaList return media that match with matching list.
@@ -147,17 +139,14 @@ func (p *FranceTV) GetMediaDetails(ctx context.Context, m *providers.Media) erro
 	v.Set("gmt", "+1")
 
 	u := "https://player.webservices.francetelevisions.fr/v1/videos/" + m.ID + "?" + v.Encode()
-
-	if p.debug {
-		log.Printf("[%s] Player url %q", p.Name(), u)
-	}
+	p.config.Log.Debug().Printf("[%s] Player URL for title '%s' is %q.", p.Name(), m.Metadata.GetMediaInfo().Title, u)
 
 	r, err := p.getter.Get(ctx, u)
 	if err != nil {
 		return fmt.Errorf("Can't get player: %w", err)
 	}
-	if p.debug {
-		r = httptest.DumpReaderToFile(r, "francetv-player-"+m.ID+"-")
+	if p.config.Log.IsDebug() {
+		r = httptest.DumpReaderToFile(p.config.Log, r, "francetv-player-"+m.ID+"-")
 	}
 	defer r.Close()
 
@@ -176,16 +165,14 @@ func (p *FranceTV) GetMediaDetails(ctx context.Context, m *providers.Media) erro
 
 	// Get Token
 	if len(pl.Video.Token) > 0 {
-		if p.debug {
-			log.Printf("[%s] Player token %q", p.Name(), pl.Video.Token)
-		}
+		p.config.Log.Debug().Printf("[%s] Player token for '%s' is %q ", p.Name(), m.Metadata.GetMediaInfo().Title, pl.Video.Token)
 
 		r2, err := p.getter.Get(ctx, pl.Video.Token)
 		if err != nil {
 			return fmt.Errorf("Can't get token %s: %w", pl.Video.Token, err)
 		}
-		if p.debug {
-			r2 = httptest.DumpReaderToFile(r2, "francetv-token-"+m.ID+"-")
+		if p.config.Log.IsDebug() {
+			r2 = httptest.DumpReaderToFile(p.config.Log, r2, "francetv-token-"+m.ID+"-")
 		}
 		defer r2.Close()
 		pl := struct {
@@ -195,37 +182,9 @@ func (p *FranceTV) GetMediaDetails(ctx context.Context, m *providers.Media) erro
 		if err != nil {
 			return fmt.Errorf("Can't decode token's url : %w", err)
 		}
-		if p.debug {
-			log.Printf("[%s] Player token's url %q", p.Name(), pl.URL)
-		}
-
 		info.URL = pl.URL
 
-		// // Now, get pl.URL, and watch for Location response header. It contains the dash ressource
-		// // Set up the HTTP request
-		// req, err := http.NewRequest("GET", pl.URL, nil)
-		// if err != nil {
-		// 	return err
-		// }
-		// transport := http.Transport{}
-		// resp, err := transport.RoundTrip(req)
-		// if err != nil {
-		// 	return err
-		// }
-
-		// // Check if you received the status codes you expect. There may
-		// // status codes other than 200 which are acceptable.
-		// if resp.StatusCode != 302 {
-		// 	return fmt.Errorf("Failed with status: %q", resp.Status)
-		// }
-
-		// info.URL = resp.Header.Get("Location")
-
 	}
-
-	if p.debug {
-		log.Printf("[%s] Stream url %q", p.Name(), info.URL)
-	}
-
+	p.config.Log.Trace().Printf("[%s] Player URL for '%s' is %q ", p.Name(), m.Metadata.GetMediaInfo().Title, info.URL)
 	return nil
 }

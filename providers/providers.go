@@ -2,6 +2,8 @@ package providers
 
 import (
 	"context"
+
+	"github.com/simulot/aspiratv/mylog"
 )
 
 // Provider is the interface for a provider
@@ -12,6 +14,7 @@ type Provider interface {
 	GetMediaDetails(context.Context, *Media) error          // Download more details when available
 }
 
+// register of imported providers
 var providers = map[string]Provider{}
 
 // Register is called by provider's init to register the provider
@@ -24,7 +27,10 @@ func List() map[string]Provider {
 	return providers
 }
 
+// Config carries the configuration to providers
 type Config struct {
-	Debug     bool
-	KeepBonus bool
+	Log       *mylog.MyLog // Logger
+	KeepBonus bool         // Flag
+	// PreferredAudionLang    []string
+	// PreferredSubtitlesLang []string
 }

@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
+
+	"github.com/simulot/aspiratv/mylog"
 )
 
 // HTTPTest provides a HTTP getter to mock http requests
@@ -121,12 +122,12 @@ func (mc *myCloser) Close() error {
 	return nil
 }
 
-func DumpReaderToFile(r io.Reader, prefix string) io.ReadCloser {
+func DumpReaderToFile(log *mylog.MyLog, r io.Reader, prefix string) io.ReadCloser {
 	f, err := ioutil.TempFile(os.TempDir(), prefix)
 	if err != nil {
-		log.Panic(err)
+		log.Fatal().Printf("DumpReaderToFile: %w", err)
 	}
-	log.Printf("Dump reader to %q", f.Name())
+	log.Debug().Printf("Reader dumped in %s", f.Name())
 	return &myCloser{
 		Reader: io.TeeReader(r, f),
 		w:      f,

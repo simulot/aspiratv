@@ -2,7 +2,6 @@ package gulli
 
 import (
 	"context"
-	"log"
 	"path"
 
 	"github.com/gocolly/colly"
@@ -17,9 +16,7 @@ func (p *Gulli) getFirstEpisodeID(ctx context.Context, entry ShowEntry) (string,
 	parser.OnHTML("div.bloc.bloc_listing ul li:first-child a", func(e *colly.HTMLElement) {
 		playerURL = e.Attr("href")
 	})
-	if p.debug {
-		log.Println("[%s] Episode URL: %q", p.Name(), entry.URL)
-	}
+	p.config.Log.Debug().Printf("[%s] Episode URL: %q", p.Name(), entry.URL)
 	err := parser.Visit(entry.URL)
 	if err != nil {
 		return "", err

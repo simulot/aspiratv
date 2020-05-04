@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -12,6 +11,7 @@ import (
 	"sync/atomic"
 
 	"github.com/simulot/aspiratv/metadata/nfo"
+	"github.com/simulot/aspiratv/mylog"
 	"github.com/simulot/aspiratv/parsers/mpdparser"
 )
 
@@ -22,21 +22,30 @@ type DASHConfig struct {
 	bytesRead int64
 }
 
-func DASH(ctx context.Context, in, out string, info *nfo.MediaInfo, conf ...ConfigurationFunction) error {
+// DASH download mp4 file at media's url.
+// Open DSH manifest to get best audio and video streams.
+// Then download both streams and combine them using FFMPEG
+func DASH(ctx context.Context, log *mylog.MyLog, in, out string, info *nfo.MediaInfo, conf ...ConfigurationFunction) error {
 	ctx, cancel := context.WithCancel(ctx)
+
+	const concurentDownloads = 2
 
 	defer cancel()
 
 	d := &DASHConfig{
 		conf:      NewDownloadConfiguration(),
-		getTokens: make(chan bool, 2),
+		getTokens: make(chan bool, concurentDownloads), // concurentDownloads chunks at a time
 	}
 
+	// Give tokens for start
+	for i := 0; i < concurentDownloads; i++ {
+		d.getTokens <- true
+	}
+
+	// Apply configuration functions
 	for _, c := range conf {
 		c(d.conf)
 	}
-	d.getTokens <- true
-	d.getTokens <- true
 
 	d.mpd = mpdparser.NewMPDParser()
 	err := d.mpd.Get(ctx, in)
@@ -57,6 +66,11 @@ func DASH(ctx context.Context, in, out string, info *nfo.MediaInfo, conf ...Conf
 	var returnedErr error
 
 	defer func() {
+		if err != nil {
+			log.Error().Printf("[DASH] %w", returnedErr)
+		} else {
+			log.Trace().Printf("[DASH] successful download of %s", out)
+		}
 		os.Remove(out + ".audio.mp4")
 		os.Remove(out + ".video.mp4")
 		if returnedErr != nil {
@@ -66,11 +80,12 @@ func DASH(ctx context.Context, in, out string, info *nfo.MediaInfo, conf ...Conf
 
 	wg := sync.WaitGroup{}
 	wg.Add(2)
+	var errVideo, errAudio error
+
 	go func() {
 		err := d.downloadSegments(ctx, out+".video.mp4", videoIT)
 		if err != nil {
-			returnedErr = err
-			log.Println(err)
+			errVideo = fmt.Errorf("Video segment: %w", err)
 			cancel()
 		}
 		wg.Done()
@@ -78,19 +93,26 @@ func DASH(ctx context.Context, in, out string, info *nfo.MediaInfo, conf ...Conf
 	go func() {
 		err := d.downloadSegments(ctx, out+".audio.mp4", audioIT)
 		if err != nil {
-			returnedErr = err
-			log.Println(err)
+			errAudio = err
+			errVideo = fmt.Errorf("Audio segment: %w", err)
 			cancel()
 		}
 		wg.Done()
 	}()
 
 	wg.Wait()
-	if returnedErr = ctx.Err(); returnedErr != nil {
-		log.Println(returnedErr)
+	switch {
+	case errVideo != nil:
+		returnedErr = errVideo
+	case errAudio != nil:
+		returnedErr = errAudio
+	}
+
+	if returnedErr != nil {
 		return returnedErr
 	}
 
+	// Combine the streams
 	params := []string{
 		"-i", out + ".video.mp4",
 		"-i", out + ".audio.mp4",
@@ -111,11 +133,6 @@ func DASH(ctx context.Context, in, out string, info *nfo.MediaInfo, conf ...Conf
 	)
 	cmd := exec.Command("ffmpeg", params...)
 	returnedErr = cmd.Run()
-	if returnedErr != nil {
-		log.Println(returnedErr)
-		os.Exit(1)
-	}
-
 	return returnedErr
 }
 
@@ -123,17 +140,17 @@ func (d *DASHConfig) getSegments(manifest, mime string) (mpdparser.SegmentIterat
 
 	as := d.mpd.Period[0].GetAdaptationSetByMimeType(mime)
 	if as == nil {
-		return nil, fmt.Errorf("[DASH] Missing adaption set for '%s'", mime)
+		return nil, fmt.Errorf("Missing adaption set for '%s'", mime)
 	}
 	best := as.GetBestRepresentation()
 	if best == nil {
-		return nil, fmt.Errorf("[DASH] Missing Representation for '%s'", mime)
+		return nil, fmt.Errorf("Missing Representation for '%s'", mime)
 	}
 
 	it, err := d.mpd.MediaURIs(manifest, d.mpd.Period[0], as, best)
 
 	if err != nil {
-		return nil, fmt.Errorf("[DASH] Can't get segments list: %s", err)
+		return nil, fmt.Errorf("Can't get segments list: %s", err)
 	}
 	return it, nil
 }
@@ -213,23 +230,20 @@ func (d *DASHConfig) downloadSegments(ctx context.Context, filename string, it m
 			if s.Err != nil {
 				d.getTokens <- true
 				cancelled = true
-				return fmt.Errorf("[DASH] Can't get segment: %w", s.Err)
-			}
-			if d.conf.debug {
-				log.Println("[DASH] Get ", s.S)
+				return fmt.Errorf("Can't get segment: %w", s.Err)
 			}
 			r, err := http.Get(s.S)
 			if err != nil {
 				d.getTokens <- true
 				cancelled = true
 				it.Cancel()
-				return fmt.Errorf("[DASH] Can't get segment: %w", err)
+				return fmt.Errorf("Can't get segment: %w", err)
 			}
 			if r.StatusCode >= 400 {
 				it.Cancel()
 				d.getTokens <- true
 				cancelled = true
-				return fmt.Errorf("[DASH] Can't get segment: %s", r.Status)
+				return fmt.Errorf("Can't get segment: %s", r.Status)
 			}
 			n, err := io.CopyBuffer(f, r.Body, nil)
 			if err != nil {
@@ -237,7 +251,7 @@ func (d *DASHConfig) downloadSegments(ctx context.Context, filename string, it m
 				cancelled = true
 				d.getTokens <- true
 				it.Cancel()
-				return fmt.Errorf("[DASH] Can't add segment: %w", err)
+				return fmt.Errorf("Can't add segment: %w", err)
 			}
 			r.Body.Close()
 			atomic.AddInt64(&d.bytesRead, n)
