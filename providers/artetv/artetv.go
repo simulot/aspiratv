@@ -239,15 +239,14 @@ func (p *ArteTV) getShowList(ctx context.Context, mr *providers.MatchRequest) ch
 
 			for _, d := range result.Data {
 				if strings.Contains(strings.ToLower(d.Title), mr.Show) {
-					if !p.config.KeepBonus && d.Kind.Code != "SHOW" {
-						continue
-					}
 					if d.Kind.IsCollection {
 						matchedSeries = append(matchedSeries, d)
-					} else {
-						if strings.ToLower(d.Title) == mr.Show {
-							matchedShows = append(matchedShows, d)
-						}
+					}
+					if !p.config.KeepBonus && (d.Kind.Code != "SHOW") {
+						continue
+					}
+					if strings.ToLower(d.Title) == mr.Show {
+						matchedShows = append(matchedShows, d)
 					}
 				}
 			}
