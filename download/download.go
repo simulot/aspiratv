@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/simulot/aspiratv/metadata/nfo"
+	"github.com/simulot/aspiratv/mylog"
 )
 
 type Progresser interface {
@@ -17,37 +18,30 @@ type Progresser interface {
 }
 
 type DownloadConfiguration struct {
-	debug  bool
-	pgr    Progresser
-	params map[string]string
+	pgr Progresser
+	// params map[string]string
 }
 
 func NewDownloadConfiguration() *DownloadConfiguration {
 	return &DownloadConfiguration{
-		params: map[string]string{},
+		// params: map[string]string{},
 	}
 }
 
 type ConfigurationFunction func(*DownloadConfiguration)
 
-func Download(ctx context.Context, in, out string, info *nfo.MediaInfo, conf ...ConfigurationFunction) error {
-
+// Download determine the type of media at given url and launch the appropriate download method
+func Download(ctx context.Context, log *mylog.MyLog, in, out string, info *nfo.MediaInfo, configfn ...ConfigurationFunction) error {
 	req, err := http.NewRequest("HEAD", in, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("Download: can't get HEAD, %w", err)
 	}
 
 	transport := http.Transport{}
 	resp, err := transport.RoundTrip(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("Download: can't get HEAD, %w", err)
 	}
-
-	// // Check the content header
-	// resp, err := http.Head(in)
-	// if err != nil {
-	// 	return err
-	// }
 
 	if l := resp.Header.Get("Location"); l != "" {
 		// Substitute in URL by relocation address
@@ -58,7 +52,7 @@ func Download(ctx context.Context, in, out string, info *nfo.MediaInfo, conf ...
 		}
 	}
 	if resp.StatusCode >= 300 {
-		return fmt.Errorf("HTTP Error: %s", err)
+		return fmt.Errorf("[DOWNLOAD] HTTP Error: %s", err)
 	}
 
 	downloader := ""
@@ -88,10 +82,10 @@ func Download(ctx context.Context, in, out string, info *nfo.MediaInfo, conf ...
 
 	switch downloader {
 	case "DASH":
-		return DASH(ctx, in, out, info, conf...)
+		return DASH(ctx, log, in, out, info, configfn...)
 
 	case "FFMPEG":
-		return FFMpeg(ctx, in, out, info, conf...)
+		return FFMpeg(ctx, log, in, out, info, configfn...)
 	}
 	if downloader == "" {
 		return fmt.Errorf("How to download this:%s", in)
@@ -105,14 +99,14 @@ func WithProgress(pgr Progresser) ConfigurationFunction {
 	}
 }
 
-func WithDebug(debug bool) ConfigurationFunction {
-	return func(c *DownloadConfiguration) {
-		c.debug = debug
-	}
-}
+// func WithDebug(debug bool) ConfigurationFunction {
+// 	return func(c *DownloadConfiguration) {
+// 		c.debug = debug
+// 	}
+// }
 
-func WithParams(params map[string]string) ConfigurationFunction {
-	return func(c *DownloadConfiguration) {
-		c.params = params
-	}
-}
+// func WithParams(params map[string]string) ConfigurationFunction {
+// 	return func(c *DownloadConfiguration) {
+// 		c.params = params
+// 	}
+// }

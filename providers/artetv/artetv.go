@@ -3,9 +3,9 @@ package artetv
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/url"
 	"regexp"
 	"sort"
@@ -51,15 +51,14 @@ type getter interface {
 
 // ArteTV structure handles arte  catalog of shows
 type ArteTV struct {
+	config            providers.Config
 	getter            getter
 	preferredVersions []string // versionCode List of version in order of preference VF,VA...
 	preferredQuality  []string
 	preferredMedia    string // mediaType mp4,hls
-	debug             bool
 	htmlParserFactory *htmlparser.Factory
 	seenPrograms      map[string]bool
 	deadline          time.Duration
-	keepBonuses       bool
 }
 
 // WithGetter inject a getter in FranceTV object instead of normal one
@@ -133,18 +132,14 @@ func New() (*ArteTV, error) {
 		htmlParserFactory: htmlparser.NewFactory(),
 		seenPrograms:      map[string]bool{},
 		deadline:          30 * time.Second,
-		keepBonuses:       true,
 	}
 	return p, nil
 }
 
 func (p *ArteTV) Configure(c providers.Config) {
-	p.keepBonuses = c.KeepBonus
-	p.debug = c.Debug
-	if p.debug {
-		p.deadline = time.Hour
-	} else {
-		p.deadline = 30 * time.Second
+	p.config = c
+	if p.config.Log.IsDebug() {
+		p.deadline = 1 * time.Hour
 	}
 
 }
@@ -198,7 +193,7 @@ func (p *ArteTV) getShowList(ctx context.Context, mr *providers.MatchRequest) ch
 
 		u, err := url.Parse(apiSEARCH)
 		if err != nil {
-			log.Printf("[%s] Can't call search API: %q", p.Name(), err)
+			p.config.Log.Error().Printf("[%s] Can't call search API: %q", p.Name(), err)
 			return
 		}
 		v := u.Query()
@@ -211,33 +206,31 @@ func (p *ArteTV) getShowList(ctx context.Context, mr *providers.MatchRequest) ch
 		for {
 			u.RawQuery = v.Encode()
 
-			if p.debug {
-				log.Printf("[%s] Search url: %q", p.Name(), u.String())
-			}
-
+			p.config.Log.Debug().Printf("[%s] Search url: %q", p.Name(), u.String())
 			var result APIResult
 			ctxLocal, doneLocal := context.WithTimeout(ctx, p.deadline)
 
 			r, err := p.getter.Get(ctxLocal, u.String())
 			if err != nil {
-				log.Printf("[%s] Can't call search API: %q", p.Name(), err)
+				p.config.Log.Error().Printf("[%s] Can't call search API: %q", p.Name(), err)
 				doneLocal()
 				return
 			}
 
 			defer r.Close()
 
-			if p.debug {
-				r = httptest.DumpReaderToFile(r, "artetv-search-")
+			if p.config.Log.IsDebug() {
+				r = httptest.DumpReaderToFile(p.config.Log, r, "artetv-search-")
 			}
 
 			err = json.NewDecoder(r).Decode(&result)
 			if err != nil {
-				log.Printf("[%s] Can't decode search API result: %q", p.Name(), err)
+				p.config.Log.Error().Printf("[%s] Can't decode search API result: %q", p.Name(), err)
 				doneLocal()
 				return
 			}
 			if ctxLocal.Err() != nil {
+				p.config.Log.Error().Printf("%s", ctxLocal.Err())
 				doneLocal()
 				return
 			}
@@ -246,7 +239,7 @@ func (p *ArteTV) getShowList(ctx context.Context, mr *providers.MatchRequest) ch
 
 			for _, d := range result.Data {
 				if strings.Contains(strings.ToLower(d.Title), mr.Show) {
-					if !p.keepBonuses && d.Kind.Code != "SHOW" {
+					if !p.config.KeepBonus && d.Kind.Code != "SHOW" {
 						continue
 					}
 					if d.Kind.IsCollection {
@@ -271,7 +264,6 @@ func (p *ArteTV) getShowList(ctx context.Context, mr *providers.MatchRequest) ch
 				for info := range p.getSerie(ctx, mr, d) {
 					shows <- info
 				}
-
 			}
 			return
 		}
@@ -376,24 +368,20 @@ func (p *ArteTV) getSerie(ctx context.Context, mr *providers.MatchRequest, d Dat
 
 				u2, err := url.Parse(u)
 				if err != nil {
-					log.Printf("[%s] Can't get collection: %q", p.Name(), err)
+					p.config.Log.Error().Printf("[%s] GetSeries: '%s' ", p.Name(), err)
 					return
 				}
 				u2.Host = "www.arte.tv"
 				u2.Path = "guide/api/emac/v3/fr/web/data/COLLECTION_VIDEOS"
 				u = u2.String()
-
-				if p.debug {
-					log.Println(u)
-				}
-
+				p.config.Log.Trace().Printf("[%s] GetSeries URL is '%s'", p.Name(), u)
 				r, err := p.getter.Get(ctx, u)
 
-				if p.debug {
-					r = httptest.DumpReaderToFile(r, "artetv-getcollection-")
+				if p.config.Log.IsDebug() {
+					r = httptest.DumpReaderToFile(p.config.Log, r, "artetv-getcollection-")
 				}
 				if err != nil {
-					log.Printf("[%s] Can't get collection: %q", p.Name(), err)
+					p.config.Log.Error().Printf("[%s] Can't get collection: %q", p.Name(), err)
 					return
 				}
 				if ctx.Err() != nil {
@@ -403,14 +391,14 @@ func (p *ArteTV) getSerie(ctx context.Context, mr *providers.MatchRequest, d Dat
 				err = json.NewDecoder(r).Decode(&result)
 				r.Close()
 				if err != nil {
-					log.Printf("[%s] Can't get decode collection: %q", p.Name(), err)
+					p.config.Log.Error().Printf("[%s] Can't get decode collection: %q", p.Name(), err)
 					return
 				}
 
 				if len(result.Data) == 0 {
 					// A collection of collection (a series, indeed) entry hasn't any Data. We have to fetch collections for each season
 					if seasonSearched {
-						log.Printf("[%s] Can't found collection with ID(%s): %q", p.Name(), d.ProgramID, err)
+						p.config.Log.Error().Printf("[%s] Can't found collection with ID(%s): %q", p.Name(), d.ProgramID, err)
 						return
 					}
 					seasonSearched = true
@@ -436,7 +424,7 @@ func (p *ArteTV) getSerie(ctx context.Context, mr *providers.MatchRequest, d Dat
 
 					err := parser.Visit(d.URL)
 					if err != nil {
-						log.Printf("[%s] Can't get collection: %q", p.Name(), err)
+						p.config.Log.Error().Printf("[%s] Can't get collection: %q", p.Name(), err)
 						return
 					}
 					continue collectionLoop
@@ -588,15 +576,13 @@ func (p *ArteTV) GetMediaDetails(ctx context.Context, m *providers.Media) error 
 	}
 
 	url := fmt.Sprintf(arteDetails, m.ID)
-	if p.debug {
-		log.Println(url)
-	}
+	p.config.Log.Trace().Printf("[%s] Title '%s' url: %q", p.Name(), m.Metadata.GetMediaInfo().Title, url)
 	r, err := p.getter.Get(ctx, url)
 	if err != nil {
 		return fmt.Errorf("Can't get show's detailled information: %w", err)
 	}
-	if p.debug {
-		r = httptest.DumpReaderToFile(r, "artetv-info-"+m.ID+"-")
+	if p.config.Log.IsDebug() {
+		r = httptest.DumpReaderToFile(p.config.Log, r, "artetv-info-"+m.ID+"-")
 	}
 	defer r.Close()
 	player := playerAPI{}
@@ -605,7 +591,12 @@ func (p *ArteTV) GetMediaDetails(ctx context.Context, m *providers.Media) error 
 		return fmt.Errorf("Can't decode show's detailled information: %w", err)
 	}
 
-	info.URL = p.getBestVideo(player.VideoJSONPlayer.VSR)
+	u, err := p.getBestVideo(player.VideoJSONPlayer.VSR)
+	if err != nil {
+		return err
+	}
+
+	info.URL = u
 	info.Aired = nfo.Aired(player.VideoJSONPlayer.VRA.Time())
 
 	if info.TVShow != nil && !info.TVShow.HasEpisodes && info.Episode == 0 {
@@ -621,18 +612,15 @@ type mapStrInt map[string]uint64
 //   - Stream quality, the highest possible
 //   - Version (VF,VF_ST) that match preference
 
-func (p *ArteTV) getBestVideo(ss map[string]StreamInfo) string {
+func (p *ArteTV) getBestVideo(ss map[string]StreamInfo) (string, error) {
 	for _, v := range p.preferredVersions {
 		for _, r := range p.preferredQuality {
 			for _, s := range ss {
 				if s.Quality == r && s.VersionCode == v {
-					return s.URL
+					return s.URL, nil
 				}
 			}
 		}
 	}
-	if p.debug {
-		log.Printf("[%s] Couldn't find a suitable stream", p.Name())
-	}
-	return ""
+	return "", errors.New("Can't find a suitable video stream")
 }

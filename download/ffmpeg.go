@@ -6,11 +6,11 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"os/exec"
 	"time"
 
 	"github.com/simulot/aspiratv/metadata/nfo"
+	"github.com/simulot/aspiratv/mylog"
 )
 
 func dropCR(data []byte) []byte {
@@ -52,32 +52,20 @@ func (c *ffmpegConfig) watchProgress(r io.ReadCloser, prg Progresser) {
 		total := 0.0
 		perCent := 0.0
 		estimatedSize := int64(0)
-		var lastLine []byte
-
-		wf := 10 * time.Second
-		if c.conf.debug {
-			wf = 10 * time.Hour
-		}
+		var lastLine []byte // Keep the last line which contains the real error
 
 		// watch if frames are comming
-		activityWatchDog := newWatchDog(wf, func() {
+		activityWatchDog := newWatchDog(10*time.Second, func() {
 			lastLine = []byte("time out when receiving frames")
 			c.cmd.Process.Kill()
 		})
 		defer activityWatchDog.Stop()
 
 		for sc.Scan() {
-			if c.conf.debug && len(lastLine) > 0 {
-				if !bytes.HasPrefix(lastLine, []byte("frame=")) {
-					log.Print("[FFMPEG] ", string(lastLine))
-				}
-			}
-
 			l := sc.Bytes()
 			lastLine = l
 
 			if bytes.HasPrefix(l, []byte("frame=")) {
-
 				//  alive!
 				activityWatchDog.Kick()
 
@@ -129,9 +117,6 @@ func (c *ffmpegConfig) watchProgress(r io.ReadCloser, prg Progresser) {
 			}
 
 		}
-		if !bytes.HasPrefix(lastLine, []byte("frame=")) {
-			log.Print("[FFMPEG] ", string(lastLine))
-		}
 		c.lastLine = string(lastLine)
 	}()
 }
@@ -142,38 +127,37 @@ type ffmpegConfig struct {
 	cmd      *exec.Cmd
 }
 
-func FFMpeg(ctx context.Context, in, out string, info *nfo.MediaInfo, configurations ...ConfigurationFunction) error {
+func FFMpeg(ctx context.Context, log *mylog.MyLog, in, out string, info *nfo.MediaInfo, configurations ...ConfigurationFunction) error {
 	cfg := ffmpegConfig{
 		conf: NewDownloadConfiguration(),
 	}
 	for _, c := range configurations {
 		c(cfg.conf)
 	}
-	params := []string{}
-	if len(cfg.conf.params) == 0 {
-		params = []string{
-			"-loglevel", "info", // Give me feedback
-			"-hide_banner", // I don't want banner
-			"-nostdin",
-			"-i", in, // Where is the stream
-			"-vcodec", "copy", // copy video
-			"-acodec", "copy", // copy audio
-			"-bsf:a", "aac_adtstoasc", // I don't know
-			"-metadata", "title=" + info.Title, // Force title
-			"-metadata", "comment=" + info.Plot, // Force comment
-			"-metadata", "show=" + info.Showtitle, //Force show
-			"-metadata", "channel=" + info.Studio, // Force channel
-			"-y",        // Override output file
-			"-f", "mp4", // Be sure that output
-			out, // output file
-		}
+
+	params := []string{
+		"-loglevel", "info", // Give me feedback
+		"-hide_banner", // I don't want banner
+		"-nostdin",
+		"-i", in, // Where is the stream
+		"-vcodec", "copy", // copy video
+		"-acodec", "copy", // copy audio
+		"-bsf:a", "aac_adtstoasc", // I don't know
+		"-metadata", "title=" + info.Title, // Force title
+		"-metadata", "comment=" + info.Plot, // Force comment
+		"-metadata", "show=" + info.Showtitle, //Force show
+		"-metadata", "channel=" + info.Studio, // Force channel
+		"-y",        // Override output file
+		"-f", "mp4", // Be sure that output
+		out, // output file
 	}
-	if cfg.conf.debug {
-		log.Printf("[FFMPEG] running ffmpeg %v", params)
-	}
+	log.Trace().Printf("[FFMPEG] running ffmpeg %v", params)
 
 	cfg.cmd = exec.CommandContext(ctx, "ffmpeg", params...)
 	stdOut, err := cfg.cmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("[FFMPEG] %w", err)
+	}
 
 	cfg.watchProgress(stdOut, cfg.conf.pgr)
 	err = cfg.cmd.Start()
@@ -182,7 +166,7 @@ func FFMpeg(ctx context.Context, in, out string, info *nfo.MediaInfo, configurat
 	}
 	err = cfg.cmd.Wait()
 	if err != nil {
-		err = fmt.Errorf("FFMPEG can't process stream %s,\n %w", cfg.lastLine, err)
+		err = fmt.Errorf("[FFMPEG] Error %s,\n %w", cfg.lastLine, err)
 	}
 
 	return err

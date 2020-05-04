@@ -16,9 +16,6 @@ func Test_segmentPostion_Format(t *testing.T) {
 		RepresentationID string
 		Number           int
 		Time             int
-		// Duration         int
-		// StartNumber      int
-		// TimeScale        int
 	}
 	f := fields{
 		"video_50000",

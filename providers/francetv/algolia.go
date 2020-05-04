@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -57,8 +56,8 @@ func (p *FranceTV) getAlgoliaConfig(ctx context.Context) error {
 
 	defer r.Close()
 
-	if p.debug {
-		r = httptest.DumpReaderToFile(r, "franctv-home-")
+	if p.config.Log.IsDebug() {
+		r = httptest.DumpReaderToFile(p.config.Log, r, "francetv-home-")
 	}
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
@@ -104,9 +103,7 @@ func (p *FranceTV) queryAlgolia(ctx context.Context, mr *providers.MatchRequest)
 
 		u := algoliaURL + "?" + v.Encode()
 
-		if p.debug {
-			log.Printf("[%s] Search url %q", p.Name(), u)
-		}
+		p.config.Log.Debug().Printf("[%s] Search url %q", p.Name(), u)
 		page := 0
 		ts := time.Now().Unix()
 		req := AlgoliaParam{
@@ -144,32 +141,32 @@ func (p *FranceTV) queryAlgolia(ctx context.Context, mr *providers.MatchRequest)
 			h.Add("content-type", "https://www.france.tv")
 			h.Add("Origin", "https://www.france.tv")
 			h.Add("TE", "Trailers")
-			if p.debug {
-				log.Printf("[%s] Request body", p.Name())
+			if p.config.Log.IsDebug() {
+				p.config.Log.Debug().Printf("[%s] Request headers", p.Name())
 				for k, s := range h {
-					log.Printf("%q %s", k, strings.Join(s, ","))
+					p.config.Log.Debug().Printf("[%s] %q %s", p.Name(), k, strings.Join(s, ","))
 				}
-				log.Println(b.String())
+				p.config.Log.Debug().Printf(b.String())
 			}
 
 			r, err := p.getter.DoWithContext(ctx, "POST", u, h, b)
 			if err != nil {
-				log.Printf("[%s] Can't call algolia API: %s", p.Name(), err)
+				p.config.Log.Error().Printf("[%s] Can't call algolia API: %s", p.Name(), err)
 				return
 			}
-			if p.debug {
-				r = httptest.DumpReaderToFile(r, "francetv-algolia-")
+			if p.config.Log.IsDebug() {
+				r = httptest.DumpReaderToFile(p.config.Log, r, "francetv-algolia-")
 			}
 
 			resp, err := ioutil.ReadAll(r)
 			if err != nil {
-				log.Printf("[%s] Can't get API result: %s", p.Name(), err)
+				p.config.Log.Error().Printf("[%s] Can't get API result: %s", p.Name(), err)
 				return
 			}
 			results := query.QueryResults{}
 			err = json.Unmarshal(resp, &results)
 			if err != nil {
-				log.Printf("[%s] Can't decode API result: %s", p.Name(), err)
+				p.config.Log.Error().Printf("[%s] Can't decode API result: %s", p.Name(), err)
 				return
 			}
 			r.Close()
@@ -326,10 +323,7 @@ func (p *FranceTV) getProgram(ctx context.Context, program string, seasonID, pro
 	v.Set("x-algolia-api-key", p.algolia.AlgoliaAPIKey)
 
 	u := algoliaURL + "?" + v.Encode()
-
-	if p.debug {
-		log.Printf("[%s] Search url %q", p.Name(), u)
-	}
+	p.config.Log.Debug().Printf("[%s] Search url %q", p.Name(), u)
 	page := 0
 	req := AlgoliaParam{
 		"query":       program,
@@ -362,32 +356,31 @@ func (p *FranceTV) getProgram(ctx context.Context, program string, seasonID, pro
 		h.Add("content-type", "https://www.france.tv")
 		h.Add("Origin", "https://www.france.tv")
 		h.Add("TE", "Trailers")
-		if p.debug {
-			log.Printf("[%s] Request body", p.Name())
+		if p.config.Log.IsDebug() {
+			p.config.Log.Debug().Printf("[%s] Request headers", p.Name())
 			for k, s := range h {
-				log.Printf("%q %s", k, strings.Join(s, ","))
+				p.config.Log.Debug().Printf("%q %s", k, strings.Join(s, ","))
 			}
-			log.Println(b.String())
 		}
 
 		r, err := p.getter.DoWithContext(ctx, "POST", u, h, b)
 		if err != nil {
-			log.Printf("[%s] Can't call algolia API: %s", p.Name(), err)
+			p.config.Log.Error().Printf("[%s] Can't call algolia API: %s", p.Name(), err)
 			return nil, nil
 		}
-		if p.debug {
-			r = httptest.DumpReaderToFile(r, "francetv-algolia-pgm-")
+		if p.config.Log.IsDebug() {
+			r = httptest.DumpReaderToFile(p.config.Log, r, "francetv-algolia-pgm-")
 		}
 
 		resp, err := ioutil.ReadAll(r)
 		if err != nil {
-			log.Printf("[%s] Can't get API result: %s", p.Name(), err)
+			p.config.Log.Error().Printf("[%s] Can't get API result: %s", p.Name(), err)
 			return nil, nil
 		}
 		results := query.QueryResults{}
 		err = json.Unmarshal(resp, &results)
 		if err != nil {
-			log.Printf("[%s] Can't decode API result: %s", p.Name(), err)
+			p.config.Log.Error().Printf("[%s] Can't decode API result: %s", p.Name(), err)
 			return nil, nil
 		}
 		r.Close()

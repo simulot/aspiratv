@@ -21,28 +21,6 @@ func TestFRANCETVMpd(t *testing.T) {
 		baseURL        string
 		adaptations    []adaptation
 	}{
-		// {
-		// 	name:           "testdata/mdpsegment.mpd",
-		// 	videoBandWidth: "",
-		// },
-		// {
-		// 	name:           "testdata/show1.mpd",
-		// 	videoBandWidth: "2000000",
-		// 	givenBaseURL:   "https://videoserver.com/2535f38e-a6ae-49b2-a047-c01d7bd03c6e",
-		// 	baseURL:        "https://videoserver.com/2535f38e-a6ae-49b2-a047-c01d7bd03c6e/dash/",
-		// 	adaptations: []adaptation{
-		// 		{
-		// 			ID:                     "3",
-		// 			bandWith:               "2000000",
-		// 			templateInitialization: "226948192_france-domtom_TA-$RepresentationID$.dash",
-		// 			templateMedia:          "226948192_france-domtom_TA-$RepresentationID$-$Time$.dash",
-		// 		},
-		// 	},
-		// },
-		// {
-		// 	name:           "testdata/show2.mpd",
-		// 	videoBandWidth: "2000000",
-		// },
 		{
 			name:           "testdata/show3.mpd",
 			videoBandWidth: 4800000,

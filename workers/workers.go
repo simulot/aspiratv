@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"sync"
 	"sync/atomic"
+
+	"github.com/simulot/aspiratv/mylog"
 )
 
 // WorkItem is an interface to work item used b the Workers
@@ -17,12 +19,12 @@ type WorkerPool struct {
 	submit   chan WorkItem  // Send work items to this channel, one of workers will run it
 	wg       sync.WaitGroup // To wait completion of all workers
 	nbWorker int            // The number of concurrent workers
-	debug    bool           // True to enable logs
+	logger   *mylog.MyLog   // True to enable logs
 	ctx      context.Context
 }
 
 // New creates a new worker pool with NumCPU runing workers
-func New(ctx context.Context, workers int, debug bool) *WorkerPool {
+func New(ctx context.Context, workers int, logger *mylog.MyLog) *WorkerPool {
 	if workers < 1 {
 		workers = runtime.NumCPU()
 	}
@@ -30,7 +32,7 @@ func New(ctx context.Context, workers int, debug bool) *WorkerPool {
 		stop:     make(chan bool),
 		submit:   make(chan WorkItem),
 		nbWorker: workers,
-		debug:    debug,
+		logger:   logger,
 		ctx:      ctx,
 	}
 	for i := 0; i < workers; i++ {
@@ -42,24 +44,18 @@ func New(ctx context.Context, workers int, debug bool) *WorkerPool {
 // init creates a goroutine for worker
 func (w *WorkerPool) run(ctx context.Context, index int) {
 	defer func() {
-		if w.debug {
-			log.Printf("Worker goroutine %d is shutted down.", index)
-		}
+		w.logger.Debug().Printf("Worker goroutine %d is shutted down.", index)
 	}()
 	for {
 		select {
 		case <-ctx.Done():
-			if w.debug {
-				log.Printf("Worker %d has recieved a %q", index, ctx.Err())
-			}
+			w.logger.Debug().Printf("Worker %d has received a %q", index, ctx.Err())
 			return
 		case wi := <-w.submit:
 			wi()
 			w.wg.Done()
 		case <-w.stop:
-			if w.debug {
-				log.Printf("Worker %d has recieved a stop request.", index)
-			}
+			w.logger.Debug().Printf("Worker %d has received a stop request.", index)
 			return
 		}
 	}
@@ -69,14 +65,11 @@ func (w *WorkerPool) run(ctx context.Context, index int) {
 func (w *WorkerPool) Stop() {
 	// wait the end of all job
 	w.wg.Wait()
+	w.logger.Debug().Printf("Waiting for worker to end")
 	// Makes all goroutine ending
 	close(w.stop)
-	if w.debug {
-		log.Print("Waiting for worker to end")
-	}
-	if w.debug {
-		log.Print("Worker is ended")
-	}
+
+	w.logger.Debug().Printf("Worker pool is ended")
 }
 
 var jobID = int64(0)
@@ -92,24 +85,16 @@ func (w *WorkerPool) Submit(wi WorkItem, wg *sync.WaitGroup) {
 			log.Printf("Job %d is discarded", id)
 			return
 		}
-		if w.debug {
-			log.Printf("Job %d is started", id)
-		}
+		w.logger.Debug().Printf("Job %d is started", id)
 		w.wg.Add(1)
 		wi()
-		if w.debug {
-			log.Printf("Job %d is done", id)
-		}
+		w.logger.Debug().Printf("Job %d is done", id)
 
 	}:
-		if w.debug {
-			log.Printf("Job %d is queued", id)
-		}
+		w.logger.Debug().Printf("Job %d is queued", id)
 		return
 	case <-w.ctx.Done():
-		if w.debug {
-			log.Printf("Job %d cancelled", id)
-		}
+		w.logger.Debug().Printf("Job %d cancelled", id)
 		wg.Done()
 		return
 	}

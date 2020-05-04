@@ -14,7 +14,10 @@ import (
 )
 
 func (a *app) Initialize() {
-	a.ReadConfig(a.Config.ConfigFile)
+	err := a.ReadConfig(a.Config.ConfigFile)
+	if err != nil {
+		a.logger.Fatal().Printf("[Initialize] %s", err)
+	}
 
 	// Check ans normalize configuration file
 	a.Config.Check()
@@ -28,19 +31,15 @@ func (a *app) Initialize() {
 	}
 	b, err := cmd.Output()
 	if err != nil {
-		log.Fatal("Missing ffmpeg on your system, it's required to download video files.")
+		a.logger.Fatal().Printf("[Initialize] Can't determine ffmpeg path: %s", err)
 	}
 	a.ffmpeg = strings.Trim(strings.Trim(string(b), "\r\n"), "\n")
-	if a.Config.Debug {
-		log.Printf("FFMPEG path: %q", a.ffmpeg)
-	}
+	a.logger.Trace().Printf("[Initialize] FFMPEG path: %q", a.ffmpeg)
 
 	// Get FFMPEG version
 	cmd = exec.Command(a.ffmpeg, "-version")
 	b, err = cmd.Output()
-	if a.Config.Debug {
-		log.Printf("FFMPEG version: %q", string(b))
-	}
+	a.logger.Debug().Printf("[Initialize] FFMPEG version: %q", string(b))
 }
 
 type ProviderConfig struct {
@@ -83,7 +82,7 @@ var defaultConfig = &config{
 
 // WriteConfig create a JSON file with the current configuration
 func WriteConfig() {
-	f, err := os.Create("confing.json")
+	f, err := os.Create("config.json")
 	if err != nil {
 		log.Fatalf("Can't write configuration file: %v", err)
 	}
@@ -96,6 +95,7 @@ func WriteConfig() {
 
 // ReadConfig read the JSON configuration file
 func (a *app) ReadConfig(configFile string) error {
+	a.logger.Trace().Printf("[ReadConfig] opening '%s'", configFile)
 	f, err := os.Open(configFile)
 	if err != nil {
 		return fmt.Errorf("Can't open configuration file: %v", err)
@@ -108,15 +108,6 @@ func (a *app) ReadConfig(configFile string) error {
 	}
 	return nil
 }
-
-// // ReadConfigOrDie create a stub of config.json when it is missing from disk
-// func ReadConfigOrDie(conf *Config) {
-// 	err := ReadConfig(conf.ConfigFile, conf)
-// 	if err != nil {
-// 		log.Fatalf("Fatal: %v", err)
-// 	}
-
-// }
 
 // Check the configuration or die
 func (c *config) Check() {
@@ -131,7 +122,7 @@ func (c *config) Check() {
 		m.Show = strings.ToLower(m.Show)
 		m.Title = strings.ToLower(m.Title)
 		if _, ok := c.Destinations[m.Destination]; !ok {
-			log.Fatalf("Destination %q is not defined into section Destination of %q", m.Destination, c.ConfigFile)
+			log.Fatalf("Destination %q for show %q is not defined into section Destination of %q", m.Destination, m.Show, c.ConfigFile)
 		}
 	}
 

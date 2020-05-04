@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -65,19 +64,16 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, m *provide
 
 	defer func() {
 		if dlErr != nil || ctx.Err() != nil {
-			log.Printf("[%s] Cancelling download of %q.", p.Name(), itemName)
+			a.logger.Info().Printf("[%s] download of %q is cancelled.", p.Name(), itemName)
 			for _, f := range files {
-				log.Printf("[%s] Removing %q.", p.Name(), f)
+				a.logger.Debug().Printf("[%s] Removing %q.", p.Name(), f)
 				err := os.Remove(f)
 				if err != nil {
-					log.Printf("[%s] Error %s", p.Name(), err)
+					a.logger.Error().Printf("[%s] Error %s", p.Name(), err)
 				}
 			}
 		} else {
-			if a.Config.Headless || a.Config.Debug {
-				log.Printf("[%s] Media %q downloaded", p.Name(), filepath.Base(itemName))
-			}
-
+			a.logger.Info().Printf("[%s] Media %q downloaded", p.Name(), filepath.Base(itemName))
 		}
 		cancel()
 	}()
@@ -87,7 +83,7 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, m *provide
 	err := p.GetMediaDetails(ctx, m) // Side effect: Episode number can be determined at this point.
 	url := m.Metadata.GetMediaInfo().URL
 	if err != nil || len(url) == 0 {
-		log.Printf("[%s] Can't get url from %s.", p.Name(), filepath.Base(m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])))
+		a.logger.Error().Printf("[%s] Can't get url from %s.", p.Name(), filepath.Base(m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])))
 		return
 	}
 
@@ -102,48 +98,36 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, m *provide
 	fn := m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])
 	itemName = filepath.Base(fn)
 
-	if a.Config.Headless || a.Config.Debug {
-		log.Printf("[%s] Start downloading media %q", p.Name(), fn)
-	}
+	a.logger.Trace().Printf("[%s] Start downloading media %q", p.Name(), fn)
+
 	if !a.Config.Headless {
 		pgr = a.NewDownloadBar(pc, filepath.Base(fn), id)
 		defer pgr.bar.SetTotal(1, true)
 	}
-	if a.Config.Debug {
-		log.Printf("[%s] Stream url: %q", p.Name(), url)
-	}
-
-	if a.Config.Debug {
-		log.Printf("[%s] Downloading into file: %q", p.Name(), fn)
-	}
+	a.logger.Debug().Printf("[%s] Stream url: %q", p.Name(), url)
 
 	err = os.MkdirAll(filepath.Dir(fn), 0777)
 	if err != nil {
-		log.Println(err)
+		a.logger.Error().Printf("Can't create destination folder: %s", err)
 		return
 	}
 
 	info := m.Metadata.GetMediaInfo()
-	if a.Config.Debug {
-		log.Printf("[%s] Download started %q", p.Name(), filepath.Base(fn))
-	}
 
 	files = append(files, fn)
-	dlErr = download.Download(ctx, url, fn, info, download.WithProgress(pgr), download.WithDebug(a.Config.Debug))
+	dlErr = download.Download(ctx, a.logger, url, fn, info, download.WithProgress(pgr))
 
 	if dlErr != nil {
-		log.Printf("[%s] Download exits with error:\n%s", p.Name(), dlErr)
+		a.logger.Error().Printf("[%s] Download exits with error:\n%s", p.Name(), dlErr)
 		return
 	}
 
 	if ctx.Err() != nil {
-		log.Printf("[%s] Download exits with error:\n%s", p.Name(), ctx.Err())
+		a.logger.Error().Printf("[%s] Download exits with error:\n%s", p.Name(), dlErr)
 		return
 	}
 
-	if a.Config.Headless || a.Config.Debug {
-		log.Printf("[%s] %q downloaded.", p.Name(), filepath.Base(fn))
-	}
+	a.logger.Info().Printf("[%s] %q downloaded.", p.Name(), filepath.Base(fn))
 	return
 }
 
@@ -177,7 +161,7 @@ func (a *app) DownloadInfo(ctx context.Context, p providers.Provider, destinatio
 	if !nfoExists && err == nil {
 		err = m.Metadata.WriteNFO(nfoPath)
 		if err != nil {
-			log.Println(err)
+			a.logger.Error().Printf("WriteNFO: %s", err)
 		}
 		*downloadedFiles = append(*downloadedFiles, nfoPath)
 		a.DowloadImages(ctx, p, nfoPath, info.Thumb, downloadedFiles)
@@ -189,7 +173,7 @@ func (a *app) DownloadInfo(ctx context.Context, p providers.Provider, destinatio
 			if !nfoExists && err == nil {
 				info.SeasonInfo.WriteNFO(nfoPath)
 				if err != nil {
-					log.Println(err)
+					a.logger.Error().Printf("WriteNFO: %s", err)
 				}
 				*downloadedFiles = append(*downloadedFiles, nfoPath)
 
@@ -202,7 +186,7 @@ func (a *app) DownloadInfo(ctx context.Context, p providers.Provider, destinatio
 			if !nfoExists && err == nil {
 				info.TVShow.WriteNFO(nfoPath)
 				if err != nil {
-					log.Println(err)
+					a.logger.Error().Printf("WriteNFO: %s", err)
 				}
 				*downloadedFiles = append(*downloadedFiles, nfoPath)
 
@@ -220,14 +204,14 @@ func (a *app) DowloadImages(ctx context.Context, p providers.Provider, destinati
 
 	err := os.MkdirAll(filepath.Dir(destination), 0777)
 	if err != nil {
-		log.Printf("[DONWLOAD] Can't create %s :%s", destination, err)
+		a.logger.Error().Printf("[%s] Can't create %s", p.Name(), err)
 		return
 	}
 
 	for _, thumb := range thumbs {
 		var base string
 		if ctx.Err() != nil {
-			log.Printf("[%s] Cancelling %s", p.Name(), ctx.Err())
+			a.logger.Debug().Printf("[%s] Cancelling %s", p.Name(), ctx.Err())
 			return
 		}
 
@@ -248,11 +232,9 @@ func (a *app) DowloadImages(ctx context.Context, p providers.Provider, destinati
 		err := a.DownloadImage(ctx, thumb.URL, thumbName, downloadedFiles)
 
 		if err != nil {
-			log.Printf("[%s] Can't get thumbnail from %q: %s", p.Name(), thumb.URL, err)
+			a.logger.Error().Printf("[%s] Can't get thumbnail from %q: %s", p.Name(), thumb.URL, err)
 			continue
 		}
-		if a.Config.Headless || a.Config.Debug {
-			log.Printf("[%s] thumbnail %q downloaded.", p.Name(), thumbName)
-		}
+		a.logger.Trace().Printf("[%s] thumbnail %q downloaded.", p.Name(), thumbName)
 	}
 }

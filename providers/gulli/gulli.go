@@ -3,7 +3,6 @@ package gulli
 import (
 	"context"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -22,15 +21,14 @@ type getter interface {
 
 // Gulli provider gives access to Gulli catchup tv
 type Gulli struct {
+	config            providers.Config
 	getter            getter
 	htmlParserFactory *htmlparser.Factory
 	seenShows         map[string]bool
-	debug             bool
 	cacheFile         string
 	deadline          time.Duration
 	cartoonList       []ShowEntry
 	tvshows           map[string]*nfo.TVShow
-	keepBonuses       bool
 }
 
 // init registers Gulli provider
@@ -68,14 +66,10 @@ func New() (*Gulli, error) {
 }
 
 func (p *Gulli) Configure(c providers.Config) {
-	p.keepBonuses = c.KeepBonus
-	p.debug = c.Debug
-	if p.debug {
+	p.config = c
+	if p.config.Log.IsDebug() {
 		p.deadline = time.Hour
-	} else {
-		p.deadline = 30 * time.Second
 	}
-
 }
 
 // withGetter set a getter for Gulli
@@ -96,7 +90,7 @@ func (p *Gulli) MediaList(ctx context.Context, mm []*providers.MatchRequest) cha
 		defer close(shows)
 		cat, err := p.downloadCatalog(ctx)
 		if err != nil {
-			log.Printf("[%s] Can't call replay catalog: %q", p.Name(), err)
+			p.config.Log.Error().Printf("[%s] Can't call replay catalog: %q", p.Name(), err)
 			return
 		}
 
@@ -106,7 +100,7 @@ func (p *Gulli) MediaList(ctx context.Context, mm []*providers.MatchRequest) cha
 					ID, err := p.getFirstEpisodeID(ctx, s)
 					showTitles, err := p.getPlayer(ctx, m, ID)
 					if err != nil {
-						log.Printf("[%s] Can't decode replay catalog: %q", p.Name(), err)
+						p.config.Log.Error().Printf("[%s] Can't decode replay catalog: %q", p.Name(), err)
 						return
 					}
 					for _, s := range showTitles {

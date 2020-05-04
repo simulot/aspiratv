@@ -2,7 +2,6 @@ package gulli
 
 import (
 	"context"
-	"log"
 	"strings"
 
 	"github.com/gocolly/colly"
@@ -32,9 +31,7 @@ func (p *Gulli) downloadCatalog(ctx context.Context) ([]ShowEntry, error) {
 		cat = append(cat, entry)
 	})
 
-	if p.debug {
-		log.Println("[%s] Catalog url: %q", p.Name(), catalogURL)
-	}
+	p.config.Log.Trace().Printf("[%s] Catalog url: %q", p.Name(), catalogURL)
 	err := parser.Visit(catalogURL)
 	if err != nil {
 		return nil, err

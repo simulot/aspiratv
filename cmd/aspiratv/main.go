@@ -5,7 +5,6 @@ import (
 
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -17,6 +16,7 @@ import (
 
 	flag "github.com/spf13/pflag"
 
+	"github.com/simulot/aspiratv/mylog"
 	"github.com/simulot/aspiratv/net/myhttp"
 	"github.com/simulot/aspiratv/providers"
 	"github.com/simulot/aspiratv/workers"
@@ -50,7 +50,7 @@ type config struct {
 	MaxAgedDays     int                       // Retrieve media younger than MaxAgedDays when non zero
 	RetentionDays   int                       // Delete media from  series older than retention days.
 	KeepBonus       bool                      // True to keep bonus
-	Debug           bool                      // Verbose Log output
+	LogLevel        string                    // ERROR,WARN,INFO,TRACE,DEBUG
 }
 
 type app struct {
@@ -60,10 +60,15 @@ type app struct {
 	pb     *mpb.Progress // Progress bars
 	worker *workers.WorkerPool
 	getter getter
+	logger *mylog.MyLog
 }
 
 type getter interface {
 	Get(ctx context.Context, uri string) (io.ReadCloser, error)
+}
+
+type logger interface {
+	Printf(string, ...interface{})
 }
 
 func main() {
@@ -78,25 +83,45 @@ func main() {
 	breakChannel := make(chan os.Signal, 1)
 	signal.Notify(breakChannel, os.Interrupt)
 
-	flag.BoolVar(&a.Config.Debug, "debug", false, "Debug mode.")
+	flag.StringVarP(&a.Config.LogLevel, "log-level", "l", "ERROR", "Log level (INFO,TRACE,ERROR,DEBUG)")
 	flag.BoolVar(&a.Config.Force, "force", false, "Force media download.")
 	flag.BoolVar(&a.Config.Headless, "headless", false, "Headless mode. Progression bars are not displayed.")
 	flag.StringVar(&a.Config.ConfigFile, "config", "config.json", "Configuration file name.")
 	flag.IntVarP(&a.Config.ConcurrentTasks, "max-tasks", "m", runtime.NumCPU(), "Maximum concurrent downloads at a time.")
 	flag.StringVarP(&a.Config.Provider, "provider", "p", "", "Provider to be used with download command. Possible values : artetv,francetv,gulli")
 	flag.StringVarP(&a.Config.Destination, "destination", "d", "", "Destination path.")
-	flag.StringVar(&a.Config.LogFile, "log", "", "Give the log file name. When empty, no log.")
+	flag.StringVar(&a.Config.LogFile, "log", "", "Give the log file name.")
 	// flag.IntVar(&a.Config.RetentionDays, "retention", 0, "Delete media older than retention days for the downloaded show.")
 	flag.BoolVarP(&a.Config.WriteNFO, "write-nfo", "n", true, "Write NFO file for KODI,Emby,Plex...")
 	flag.BoolVarP(&a.Config.KeepBonus, "keep-bonuses", "b", true, "Download bonuses when true")
 	flag.IntVarP(&a.Config.MaxAgedDays, "max-aged", "a", 0, "Retrieve media younger than MaxAgedDays.")
 	flag.Parse()
 
-	if a.Config.Debug {
-		fmt.Print("PID: ", os.Getpid(), ", press enter to continue")
-		var input string
-		fmt.Scanln(&input)
+	consoleLogger := log.New(os.Stderr, "", log.LstdFlags)
+	fileLogger := logger(nil)
+
+	if len(a.Config.LogFile) > 0 {
+		logFile, err := os.Create(a.Config.LogFile)
+		if err != nil {
+			log.Printf("Can't create log file: %q", err)
+			os.Exit(1)
+		}
+		defer func() {
+			logFile.Sync()
+			logFile.Close()
+		}()
+		fileLogger = log.New(logFile, "", log.LstdFlags)
 	}
+
+	mylogger, err := mylog.NewLog(a.Config.LogLevel, consoleLogger, fileLogger)
+
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+	a.logger = mylogger
+	a.logger.Info().Printf("Command line paramters: %v", os.Args[1:])
+	a.logger.Debug().Printf("Process PID: %d", os.Getpid())
 
 	defer func() {
 		// Normal end... cleaning up
@@ -113,24 +138,6 @@ func main() {
 			return
 		}
 	}()
-	if len(a.Config.LogFile) > 0 {
-		logFile, err := os.Create(a.Config.LogFile)
-		if err != nil {
-			log.Printf("Can't create log file: %q", err)
-			os.Exit(1)
-		}
-		defer func() {
-			logFile.Sync()
-			logFile.Close()
-		}()
-		log.SetOutput(logFile)
-	} else {
-		if a.Config.Headless {
-			log.SetOutput(os.Stdout)
-		} else {
-			log.SetOutput(ioutil.Discard)
-		}
-	}
 
 	a.Initialize()
 	if len(os.Args) < 1 {
@@ -151,15 +158,13 @@ func (a *app) CheckPaths() {
 		var err error
 		v, err = sanitizePath(v)
 		if err != nil {
-			log.Printf("Destination %q is unsafe", k)
+			a.logger.Fatal().Printf("Can't sanitize path %q", k)
 			os.Exit(1)
 		}
-		if a.Config.Debug {
-			log.Printf("Destination %q is expanded into %q", k, v)
-		}
+		a.logger.Trace().Printf("Destination %q is expanded into %q", k, v)
 		err = os.MkdirAll(v, 0755)
 		if err != nil {
-			log.Printf("Can't create destination directory %q: %s", v, err)
+			a.logger.Fatal().Printf("Can't create destination directory %q: %s", v, err)
 			os.Exit(1)
 		}
 
@@ -172,6 +177,10 @@ func sanitizePath(p string) (string, error) {
 }
 
 func (a *app) Download(ctx context.Context) {
+
+	if len(a.Config.Destination) == 0 {
+		a.logger.Fatal().Printf("--destination parameter is mandatory for download operation")
+	}
 	if len(flag.Args()) < 2 {
 		flag.Usage()
 		os.Exit(1)
@@ -194,22 +203,21 @@ func (a *app) Download(ctx context.Context) {
 			},
 		)
 	}
-	a.worker = workers.New(ctx, a.Config.ConcurrentTasks, a.Config.Debug)
+	a.worker = workers.New(ctx, a.Config.ConcurrentTasks, a.logger) //TODO
 	a.getter = myhttp.DefaultClient
 
 	if a.Config.Provider == "" {
-		log.Println("Missing -provider PROVIDERNAME flag")
+		a.logger.Fatal().Printf("Missing --provider PROVIDERNAME flag")
 		os.Exit(1)
 	}
 
 	p, ok := providers.List()[a.Config.Provider]
 	if !ok {
-		log.Printf("Unknown provider %q", a.Config.Provider)
+		a.logger.Fatal().Printf("Unknown provider %q", a.Config.Provider)
 		os.Exit(1)
 	}
 	p.Configure(providers.Config{
-		Debug:     a.Config.Debug,
-		KeepBonus: a.Config.KeepBonus,
+		Log: a.logger,
 	})
 
 	pc := a.getProgres(ctx)
@@ -239,7 +247,7 @@ func (a *app) getProgres(ctx context.Context) *mpb.Progress {
 
 func (a *app) Run(ctx context.Context) {
 	a.CheckPaths()
-	a.worker = workers.New(ctx, a.Config.ConcurrentTasks, a.Config.Debug)
+	a.worker = workers.New(ctx, a.Config.ConcurrentTasks, a.logger) // TODO
 	a.getter = myhttp.DefaultClient
 
 	pc := a.getProgres(ctx)
@@ -249,8 +257,7 @@ func (a *app) Run(ctx context.Context) {
 		if a.Config.IsProviderActive(p.Name()) {
 			activeProviders++
 			p.Configure(providers.Config{
-				Debug:     a.Config.Debug,
-				KeepBonus: a.Config.KeepBonus,
+				Log: a.logger,
 			})
 		}
 	}
@@ -268,12 +275,10 @@ providerLoop:
 				}
 				wg.Add(1)
 				go func(p providers.Provider) {
-					if a.Config.Headless {
-						log.Printf("[%s] Pulling shows", p.Name())
-					}
+					a.logger.Trace().Printf("[%s] Pulling shows", p.Name())
 					a.PullShows(ctx, p, pc)
 					wg.Done()
-					log.Printf("[%s] Pulling completed", p.Name())
+					a.logger.Trace().Printf("[%s] Pulling completed", p.Name())
 				}(p)
 			}
 		}
@@ -285,16 +290,10 @@ providerLoop:
 	if !a.Config.Headless {
 		pc.Wait()
 	}
-	if a.Config.Debug {
-		log.Println("End of providerLoop")
-	}
+	a.logger.Debug().Printf("End of providerLoop")
 	a.worker.Stop()
-	if a.Config.Debug {
-		log.Println("Workers stop confirmed")
-	}
-	if a.Config.Debug {
-		log.Println("End of Run")
-	}
+	a.logger.Debug().Printf("Workers stop confirmed")
+	a.logger.Debug().Printf("End of Run")
 }
 
 type debugger interface {
@@ -312,9 +311,7 @@ var nbPuller = int32(0)
 
 // PullShows pull provider and download matched shows
 func (a *app) PullShows(ctx context.Context, p providers.Provider, pc *mpb.Progress) {
-	if a.Config.Debug {
-		log.Printf("[%s] Starting PullShows", p.Name())
-	}
+	a.logger.Debug().Printf("[%s] Starting PullShows", p.Name())
 	ctx, cancel := context.WithCancel(ctx)
 	defer func() {
 		cancel()
@@ -333,7 +330,7 @@ func (a *app) PullShows(ctx context.Context, p providers.Provider, pc *mpb.Progr
 		providerBar.SetPriority(int(atomic.AddInt32(&nbPuller, 1)))
 	}
 
-	//log.Printf("Get shows list for %s", p.Name())
+	a.logger.Trace().Printf("Get shows list for %s", p.Name())
 	seen := map[string]bool{}
 	wg := sync.WaitGroup{}
 
@@ -348,30 +345,22 @@ showLoop:
 
 		select {
 		case <-ctx.Done():
-			if a.Config.Debug {
-				log.Printf("[%s] Context done, received %s", p.Name(), ctx.Err())
-			}
+			a.logger.Trace().Printf("[%s] Context done, received %s", p.Name(), ctx.Err())
 			break showLoop
 		default:
 
 			if a.Config.Force || a.MustDownload(ctx, p, m) {
-				if a.Config.Headless {
-					log.Printf("[%s] Download of %q submitted", p.Name(), filepath.Base(m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])))
-				}
+				a.logger.Trace().Printf("[%s] Download of %q submitted", p.Name(), filepath.Base(m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])))
 				showCount++
 				if !a.Config.Headless {
 					providerBar.SetTotal(showCount, false)
 				}
 				a.SubmitDownload(ctx, &wg, p, m, pc, providerBar)
 			} else {
-				if a.Config.Headless {
-					log.Printf("[%s] %s already downloaded.", p.Name(), filepath.Base(m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])))
-				}
+				a.logger.Trace().Printf("[%s] %s already downloaded.", p.Name(), filepath.Base(m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])))
 			}
 			if ctx.Err() != nil {
-				if a.Config.Debug {
-					log.Printf("[%s] PullShows received %s", p.Name(), ctx.Err())
-				}
+				a.logger.Debug().Printf("[%s] PullShows received %s", p.Name(), ctx.Err())
 				break showLoop
 			}
 		}
@@ -379,9 +368,7 @@ showLoop:
 	if !a.Config.Headless {
 		providerBar.SetTotal(showCount, showCount == 0)
 	}
-	if a.Config.Debug {
-		log.Println("Waiting end of PullShows loop")
-	}
+	a.logger.Debug().Printf("Waiting end of PullShows loop")
 
 	// Wait for submitted jobs to be terminated
 	wg.Wait()
@@ -389,9 +376,7 @@ showLoop:
 	if !a.Config.Headless {
 		providerBar.SetTotal(showCount, true)
 	}
-	if a.Config.Debug {
-		log.Println("Exit PullShows")
-	}
+	a.logger.Debug().Printf("Exit PullShows")
 }
 
 // MustDownload check if the show isn't yet downloaded.
