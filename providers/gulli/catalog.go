@@ -31,7 +31,7 @@ func (p *Gulli) downloadCatalog(ctx context.Context) ([]ShowEntry, error) {
 		cat = append(cat, entry)
 	})
 
-	p.config.Log.Trace().Printf("[%s] Catalog url: %q", p.Name(), catalogURL)
+	p.config.Log.Debug().Printf("[%s] Catalog url: %q", p.Name(), catalogURL)
 	err := parser.Visit(catalogURL)
 	if err != nil {
 		return nil, err

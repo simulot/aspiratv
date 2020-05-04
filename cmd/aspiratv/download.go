@@ -72,8 +72,6 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, m *provide
 					a.logger.Error().Printf("[%s] Error %s", p.Name(), err)
 				}
 			}
-		} else {
-			a.logger.Info().Printf("[%s] Media %q downloaded", p.Name(), filepath.Base(itemName))
 		}
 		cancel()
 	}()
@@ -127,7 +125,7 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, m *provide
 		return
 	}
 
-	a.logger.Info().Printf("[%s] %q downloaded.", p.Name(), filepath.Base(fn))
+	a.logger.Info().Printf("[%s] Media %q downloaded.", p.Name(), filepath.Base(fn))
 	return
 }
 
@@ -235,6 +233,6 @@ func (a *app) DowloadImages(ctx context.Context, p providers.Provider, destinati
 			a.logger.Error().Printf("[%s] Can't get thumbnail from %q: %s", p.Name(), thumb.URL, err)
 			continue
 		}
-		a.logger.Trace().Printf("[%s] thumbnail %q downloaded.", p.Name(), thumbName)
+		a.logger.Debug().Printf("[%s] thumbnail %q downloaded.", p.Name(), thumbName)
 	}
 }
