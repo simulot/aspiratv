@@ -13,23 +13,24 @@ import (
 	"github.com/simulot/aspiratv/providers"
 )
 
-func (a *app) Initialize() {
-	err := a.ReadConfig(a.Config.ConfigFile)
-	if err != nil {
-		a.logger.Fatal().Printf("[Initialize] %s", err)
+func (a *app) Initialize(cmd string) {
+	if cmd != "download" {
+		err := a.ReadConfig(a.Config.ConfigFile)
+		if err != nil {
+			a.logger.Fatal().Printf("[Initialize] %s", err)
+		}
+		// Check and normalize configuration file
+		a.Config.Check()
 	}
-
-	// Check ans normalize configuration file
-	a.Config.Check()
 
 	// Check ffmpeg presence
-	var cmd *exec.Cmd
+	var c *exec.Cmd
 	if runtime.GOOS == "windows" {
-		cmd = exec.Command("where", "ffmpeg")
+		c = exec.Command("where", "ffmpeg")
 	} else {
-		cmd = exec.Command("which", "ffmpeg")
+		c = exec.Command("which", "ffmpeg")
 	}
-	b, err := cmd.Output()
+	b, err := c.Output()
 	if err != nil {
 		a.logger.Fatal().Printf("[Initialize] Can't determine ffmpeg path: %s", err)
 	}
@@ -37,8 +38,8 @@ func (a *app) Initialize() {
 	a.logger.Trace().Printf("[Initialize] FFMPEG path: %q", a.ffmpeg)
 
 	// Get FFMPEG version
-	cmd = exec.Command(a.ffmpeg, "-version")
-	b, err = cmd.Output()
+	c = exec.Command(a.ffmpeg, "-version")
+	b, err = c.Output()
 	a.logger.Debug().Printf("[Initialize] FFMPEG version: %q", string(b))
 }
 
