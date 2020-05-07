@@ -139,13 +139,14 @@ func main() {
 		}
 	}()
 
-	a.Initialize()
-	if len(os.Args) < 1 {
-		flag.Usage()
-		os.Exit(1)
+	cmd := ""
+	if len(flag.Args()) > 0 {
+		cmd = flag.Arg(0)
 	}
 
-	switch flag.Arg(0) {
+	a.Initialize(cmd)
+
+	switch cmd {
 	case "download":
 		a.Download(ctx)
 	default:
