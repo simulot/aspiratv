@@ -15,7 +15,7 @@ type seasonWrapper struct {
 type intOrString string
 
 type QueryResults struct {
-	Results []Results `json:"results"`
+	Results map[string]Result
 }
 
 type Format struct {
@@ -120,7 +120,7 @@ type Hits struct {
 	// HighlightResult         HighlightResult `json:"_highlightResult"`
 	// Parent *Hits `json:"parent"`
 }
-type Results struct {
+type Result struct {
 	Hits             []Hits `json:"hits"`
 	NbHits           int    `json:"nbHits"`
 	Page             int    `json:"page"`

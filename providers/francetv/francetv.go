@@ -41,7 +41,6 @@ type getter interface {
 type FranceTV struct {
 	getter   getter
 	deadline time.Duration
-	algolia  *AlgoliaConfig
 	seasons  sync.Map
 	shows    sync.Map
 	config   providers.Config
@@ -75,11 +74,6 @@ func (p *FranceTV) Configure(c providers.Config) {
 
 // MediaList return media that match with matching list.
 func (p *FranceTV) MediaList(ctx context.Context, mm []*providers.MatchRequest) chan *providers.Media {
-	err := p.getAlgoliaConfig(ctx)
-
-	if err != nil {
-		return nil
-	}
 	shows := make(chan *providers.Media)
 
 	go func() {
@@ -88,7 +82,7 @@ func (p *FranceTV) MediaList(ctx context.Context, mm []*providers.MatchRequest) 
 			if m.Provider != "francetv" {
 				continue
 			}
-			for s := range p.queryAlgolia(ctx, m) {
+			for s := range p.search(ctx, m) {
 				shows <- s
 			}
 		}
@@ -181,6 +175,9 @@ func (p *FranceTV) GetMediaDetails(ctx context.Context, m *providers.Media) erro
 		err = json.NewDecoder(r2).Decode(&pl)
 		if err != nil {
 			return fmt.Errorf("Can't decode token's url : %w", err)
+		}
+		if len(pl.URL) == 0 {
+			return fmt.Errorf("Show's URL is empty")
 		}
 		info.URL = pl.URL
 
