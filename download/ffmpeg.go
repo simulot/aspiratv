@@ -55,7 +55,7 @@ func (c *ffmpegConfig) watchProgress(r io.ReadCloser, prg Progresser) {
 		var lastLine []byte // Keep the last line which contains the real error
 
 		// watch if frames are comming
-		activityWatchDog := newWatchDog(10*time.Second, func() {
+		activityWatchDog := newWatchDog(60*time.Second, func() {
 			lastLine = []byte("time out when receiving frames")
 			c.cmd.Process.Kill()
 		})
