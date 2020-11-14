@@ -68,7 +68,8 @@ Usage of aspiratv:
   -a, --max-aged int          Retrieve media younger than MaxAgedDays.
   -m, --max-tasks int         Maximum concurrent downloads at a time. (default 8)
   -p, --provider string       Provider to be used with download command. Possible values : artetv,francetv,gulli
-  -f, --title-filter string   Episode title must satisfy regexp filter (default ".*")
+  -e, --title-exclude string   Showtitle and Episode title must not satisfy regexp filter
+  -f, --title-filter string    Showtitle or Episode title must satisfy regexp filter  
   -n, --write-nfo             Write NFO file for KODI,Emby,Plex... (default true)
 ```
 Le programme fonctionne selon deux modilités :
