@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/simulot/aspiratv/net/myhttp/httptest"
+	"github.com/simulot/aspiratv/providers/matcher"
 
 	"github.com/simulot/aspiratv/net/myhttp"
 	"github.com/simulot/aspiratv/providers"
@@ -73,7 +74,7 @@ func (p *FranceTV) Configure(c providers.Config) {
 }
 
 // MediaList return media that match with matching list.
-func (p *FranceTV) MediaList(ctx context.Context, mm []*providers.MatchRequest) chan *providers.Media {
+func (p *FranceTV) MediaList(ctx context.Context, mm []*matcher.MatchRequest) chan *providers.Media {
 	shows := make(chan *providers.Media)
 
 	go func() {

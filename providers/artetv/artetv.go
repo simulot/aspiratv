@@ -16,6 +16,7 @@ import (
 
 	"github.com/simulot/aspiratv/metadata/nfo"
 	"github.com/simulot/aspiratv/providers"
+	"github.com/simulot/aspiratv/providers/matcher"
 
 	"github.com/simulot/aspiratv/net/myhttp/httptest"
 
@@ -155,7 +156,7 @@ func withGetter(g getter) func(p *ArteTV) {
 func (p ArteTV) Name() string { return "artetv" }
 
 // Shows download the shows catalog from the web site.
-func (p *ArteTV) MediaList(ctx context.Context, mm []*providers.MatchRequest) chan *providers.Media {
+func (p *ArteTV) MediaList(ctx context.Context, mm []*matcher.MatchRequest) chan *providers.Media {
 	shows := make(chan *providers.Media)
 
 	go func() {
@@ -175,7 +176,7 @@ func (p *ArteTV) MediaList(ctx context.Context, mm []*providers.MatchRequest) ch
 	return shows
 }
 
-func (p *ArteTV) getShowList(ctx context.Context, mr *providers.MatchRequest) chan *providers.Media {
+func (p *ArteTV) getShowList(ctx context.Context, mr *matcher.MatchRequest) chan *providers.Media {
 	shows := make(chan *providers.Media)
 
 	go func() {
@@ -276,7 +277,7 @@ func (p *ArteTV) getShowList(ctx context.Context, mr *providers.MatchRequest) ch
 	return shows
 }
 
-func (p *ArteTV) getShows(ctx context.Context, mr *providers.MatchRequest, data []Data) chan *providers.Media {
+func (p *ArteTV) getShows(ctx context.Context, mr *matcher.MatchRequest, data []Data) chan *providers.Media {
 	shows := make(chan *providers.Media)
 	go func() {
 		defer close(shows)
@@ -327,7 +328,7 @@ var (
 
 // getSerie
 // Arte presents a serie either as collection of episodes for a single season or as a collection of collection of episodes for multiple seasons.
-func (p *ArteTV) getSerie(ctx context.Context, mr *providers.MatchRequest, d Data) chan *providers.Media {
+func (p *ArteTV) getSerie(ctx context.Context, mr *matcher.MatchRequest, d Data) chan *providers.Media {
 	ctx, done := context.WithTimeout(ctx, p.deadline)
 	shows := make(chan *providers.Media)
 

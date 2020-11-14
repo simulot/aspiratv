@@ -13,6 +13,7 @@ import (
 	"github.com/simulot/aspiratv/net/myhttp"
 	"github.com/simulot/aspiratv/parsers/htmlparser"
 	"github.com/simulot/aspiratv/providers"
+	"github.com/simulot/aspiratv/providers/matcher"
 )
 
 type getter interface {
@@ -83,7 +84,7 @@ func withGetter(g getter) func(p *Gulli) {
 func (p Gulli) Name() string { return "gulli" }
 
 // MediaList download the shows catalog from the web site.
-func (p *Gulli) MediaList(ctx context.Context, mm []*providers.MatchRequest) chan *providers.Media {
+func (p *Gulli) MediaList(ctx context.Context, mm []*matcher.MatchRequest) chan *providers.Media {
 	shows := make(chan *providers.Media)
 
 	go func() {

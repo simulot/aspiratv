@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/simulot/aspiratv/providers/matcher"
 )
 
 // EpisodeDetails gives details of a given episode
@@ -52,6 +54,28 @@ func (n EpisodeDetails) GetMediaPath(destination string) string {
 	}
 
 	return filepath.Join(n.GetSeasonPath(destination), cleanShow+" - "+episode+" - "+cleanTitle+".mp4")
+}
+
+// Accepted check if ShowTitle or episode Title matches the filter
+func (n EpisodeDetails) Accepted(m *matcher.MatchRequest) bool {
+	if m.TitleExclude.Regexp != nil {
+		if m.TitleExclude.Regexp.MatchString(n.Showtitle) {
+			return false
+		}
+		if m.TitleExclude.Regexp.MatchString(n.Title) {
+			return false
+		}
+	}
+	if m.TitleFilter.Regexp != nil {
+		if m.TitleFilter.Regexp.MatchString(n.Showtitle) {
+			return true
+		}
+		if m.TitleFilter.Regexp.MatchString(n.Title) {
+			return true
+		}
+		return false
+	}
+	return true
 }
 
 // GetMediaPathMatcher gives a name matcher for mis numbered episodes

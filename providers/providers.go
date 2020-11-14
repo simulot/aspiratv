@@ -4,14 +4,15 @@ import (
 	"context"
 
 	"github.com/simulot/aspiratv/mylog"
+	"github.com/simulot/aspiratv/providers/matcher"
 )
 
 // Provider is the interface for a provider
 type Provider interface {
-	Configure(c Config)                                     // Pass general configuration
-	Name() string                                           // Provider's name
-	MediaList(context.Context, []*MatchRequest) chan *Media // List of available shows that match one of MatchRequest
-	GetMediaDetails(context.Context, *Media) error          // Download more details when available
+	Configure(c Config)                                             // Pass general configuration
+	Name() string                                                   // Provider's name
+	MediaList(context.Context, []*matcher.MatchRequest) chan *Media // List of available shows that match one of MatchRequest
+	GetMediaDetails(context.Context, *Media) error                  // Download more details when available
 }
 
 // register of imported providers

@@ -19,110 +19,11 @@
   },
   "WatchList": [
     {
-      "Show": "Dragons : Par-delà les rives",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "gulli",
-      "Destination": "Jeunesse"
-    },
-    {
-      "Show": "Sonic Boom",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "gulli",
-      "Destination": "Jeunesse"
-    },
-    {
-      "Show": "Transformers Rescue Bots Academy",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "gulli",
-      "Destination": "Jeunesse"
-    },
-
-    {
-      "Show": "Des racines et des ailes",
-      "Title": "",
-      "Pitch": "",
+      "Show": "La maison France 5",
       "Provider": "francetv",
-      "Destination": "Documentaires"
-    },
-    {
-      "Show": "Lapins crétins",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "francetv",
-      "Destination": "Jeunesse"
-    },
-
-    {
-      "Show": "Les Dalton",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "francetv",
-      "Destination": "Jeunesse"
-    }, 
-
-    {
-      "Show": "Lego ninjago",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "francetv",
-      "Destination": "Jeunesse"
-    }, 
-    
-    {
-      "Show": "Les as de la jungle à la rescousse",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "francetv",
-      "Destination": "Jeunesse"
-    }, 
-    {
-      "Show": "La minute vieille",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "artetv",
-      "Destination": "Séries"
-    },  
-    {
-      "Show": "TAPE",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "artetv",
-      "Destination": "Documentaires"
-    },
-    {
-      "Show": "Tu mourras moins bête",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "artetv",
-      "Destination": "Documentaires"
-    },
-
-    
-    {
-      "Show": "Le doc du dimanche",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "francetv",
-      "Destination": "Documentaires"
-    },
-    {
-      "Show": "Science grand format",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "francetv",
-      "Destination": "Documentaires"
-    },
-    {
-      "Show": "Journal 99999",
-      "Title": "",
-      "Pitch": "",
-      "Provider": "francetv",
-      "Destination": "News",
-      "MaxAgedDays": 5,
-      "RetentionDays": 10
-    }     
+      "Destination": "Séries",
+      "TitleFilter": "(?i)spéciale",
+      "TitleExclude": "(?i)salon|suite|SALLE"
+    }
   ]
 }

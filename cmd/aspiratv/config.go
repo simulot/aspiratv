@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/simulot/aspiratv/providers"
+	"github.com/simulot/aspiratv/providers/matcher"
 )
 
 func (a *app) Initialize(cmd string) {
@@ -69,7 +69,7 @@ func (t *textDuration) UnmarshalJSON(b []byte) error {
 
 // Almost empty configuration for testing purpose
 var defaultConfig = &config{
-	WatchList: []*providers.MatchRequest{
+	WatchList: []*matcher.MatchRequest{
 		{
 			Provider:    "francetv",
 			Show:        "Les Lapins Crétins",

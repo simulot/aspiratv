@@ -58,17 +58,18 @@ tar -czvf aspiratv_0.8.0_Linux_x86_64.tar.gz
 
 ```
 Usage of aspiratv:
-      --config string        Configuration file name. (default "config.json")
-  -d, --destination string   Destination path.
-      --force                Force media download.
-      --headless             Headless mode. Progression bars are not displayed.
-  -b, --keep-bonuses         Download bonuses when true (default true)
-      --log string           Give the log file name.
-  -l, --log-level string     Log level (INFO,TRACE,ERROR,DEBUG) (default "ERROR")
-  -a, --max-aged int         Retrieve media younger than MaxAgedDays.
-  -m, --max-tasks int        Maximum concurrent downloads at a time. (default 8)
-  -p, --provider string      Provider to be used with download command. Possible values : artetv,francetv,gulli
-  -n, --write-nfo            Write NFO file for KODI,Emby,Plex... (default true)
+      --config string         Configuration file name. (default "config.json")
+  -d, --destination string    Destination path.
+      --force                 Force media download.
+      --headless              Headless mode. Progression bars are not displayed.
+  -b, --keep-bonuses          Download bonuses when true (default true)
+      --log string            Give the log file name.
+  -l, --log-level string      Log level (INFO,TRACE,ERROR,DEBUG) (default "ERROR")
+  -a, --max-aged int          Retrieve media younger than MaxAgedDays.
+  -m, --max-tasks int         Maximum concurrent downloads at a time. (default 8)
+  -p, --provider string       Provider to be used with download command. Possible values : artetv,francetv,gulli
+  -f, --title-filter string   Episode title must satisfy regexp filter (default ".*")
+  -n, --write-nfo             Write NFO file for KODI,Emby,Plex... (default true)
 ```
 Le programme fonctionne selon deux modilités :
 ## Pour surveiller la mise à disposition de nouveaux épisodes d'une émission
@@ -86,10 +87,26 @@ L'option `--config` indique le fichier de configuration à utiliser.
 
 ## Pour télécharger une émission, ou une série
 ```sh
-./aspiratv -provider=francetv -destination=$HOME/Videos/DL download "Les Dalton"
+./aspiratv --provider=francetv --destination=$HOME/Videos/DL download "Les Dalton"
 ```
 Cette commande cherchera les épisodes de la série "Les Dalton" sur france télévisions, et les téléchargera dans le répertoire ~/Video/DL
 
+Utiliser l'option `--title-filter` pour télécharger un épisode précis. Le filtre est une expression régulière GO. Voir la syntaxe précise (https://golang.org/pkg/regexp/syntax/).
+
+Par exemple, pour télécharger les émissions spéciales de "La maison France 5"
+
+```sh
+./aspiratv --provider=francetv --destination=$HOME/Videos/DL --title-filter "spéciale" download "La maison France 5"
+```
+ 
+Utiliser l'option `--title-exclude` pour exclure du téléchargment certains épisodes. Le filtre est une expression régulière GO. Voir la syntaxe précise (https://golang.org/pkg/regexp/syntax/).
+
+
+Pour télécharger tous les épisodes de "La Maison France 5" sauf les émissions sépciale
+```sh
+./aspiratv --provider=francetv --destination=$HOME/Videos/DL --title-exclude "spéciale" download "La maison France 5"
+
+La combinaison des deux filtres est possible.
 
 
 ## Les options communes aux deux modes :
@@ -147,16 +164,14 @@ Le fichier config.json contient les paramètres et la liste des émissions que l
   "WatchList": [
     {
       "Show": "Doctor Who", 
-      "Title": "",
-      "Pitch": "",
       "Provider": "francetv",
       "Destination": "Séries"
     },
     {
       "Show": "Oggy et les cafards",
-      "Pitch": "",
       "Provider": "gulli",
-      "Destination": "Jeunesse"
+      "Destination": "Jeunesse",
+      "TitleFilter": "(?i)Oggy"
     },
 
   ]
@@ -170,8 +185,8 @@ Défini les répertoires de destination des fichiers. A noter que les variables 
 Donne la liste des critères de recherche pour sélectionner les émissions à télécharger. L'ensemble des critères non vides doit être satisfait. Ils sont évalués dans l'ordre suivant :
 1. Provider: code du fournisseur de contenu
 1. Show : nom de l'émission
-1. Title: titre de l'émission ou de l'épisode
-1. Pitch: description de l'émission
+1. TitleFilter: Le titre doit contenir le filtre, ou correspondre à l'expression régulière
+1. TitleExclude: Le titre ne doit pas contenir le filtre, ou ne pas correspondre à l'expression régulière
 Le contenu du critère doit être contenu dans le champ correspondant obtenu sur le serveur de la télévision.
 
 * Destination: code du répertoire où les fichiers doivent être téléchargés, dont la définition est placée dans la section  **Destinations**
@@ -202,6 +217,4 @@ Pour obtenir un résultat acceptable, il faut configurer une librairie de type "
 
 # Compilation des sources
 Vous devez avoir un compilateur pour [le langage GO](https://golang.org/dl/).
-
-
 

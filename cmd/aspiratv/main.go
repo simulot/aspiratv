@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"regexp"
 
 	"fmt"
 	"io"
@@ -26,6 +27,7 @@ import (
 	_ "github.com/simulot/aspiratv/providers/artetv"
 	_ "github.com/simulot/aspiratv/providers/francetv"
 	_ "github.com/simulot/aspiratv/providers/gulli"
+	"github.com/simulot/aspiratv/providers/matcher"
 )
 
 var (
@@ -40,7 +42,7 @@ type config struct {
 	Force           bool                      // True to force reload medias
 	Destinations    map[string]string         // Mapping of destination path
 	ConfigFile      string                    // Name of configuration file
-	WatchList       []*providers.MatchRequest // Slice of show matchers
+	WatchList       []*matcher.MatchRequest   // Slice of show matchers
 	Headless        bool                      // When true, no progression bar
 	ConcurrentTasks int                       // Number of concurrent downloads
 	Provider        string                    // Provider for dowload command
@@ -51,6 +53,8 @@ type config struct {
 	RetentionDays   int                       // Delete media from  series older than retention days.
 	KeepBonus       bool                      // True to keep bonus
 	LogLevel        string                    // ERROR,WARN,INFO,TRACE,DEBUG
+	TitleFilter     string                    // ShowTitle or Episode title must match this regexp to be downloaded
+	TitleExclude    string                    // ShowTitle and Episode title must not match this regexp to be downloaded
 }
 
 type app struct {
@@ -72,6 +76,7 @@ type logger interface {
 }
 
 func main() {
+	var err error
 
 	fmt.Printf("%s: %v, commit %v, built at %v\n", filepath.Base(os.Args[0]), version, commit, date)
 	a := &app{
@@ -95,7 +100,23 @@ func main() {
 	flag.BoolVarP(&a.Config.WriteNFO, "write-nfo", "n", true, "Write NFO file for KODI,Emby,Plex...")
 	flag.BoolVarP(&a.Config.KeepBonus, "keep-bonuses", "b", true, "Download bonuses when true")
 	flag.IntVarP(&a.Config.MaxAgedDays, "max-aged", "a", 0, "Retrieve media younger than MaxAgedDays.")
+	flag.StringVarP(&a.Config.TitleFilter, "title-filter", "f", "", "Showtitle or Episode title must satisfy regexp filter")
+	flag.StringVarP(&a.Config.TitleExclude, "title-exclude", "e", "", "Showtitle and Episode title must not satisfy regexp filter")
 	flag.Parse()
+
+	if a.Config.TitleFilter != "" {
+		if _, err := regexp.Compile(a.Config.TitleFilter); err != nil {
+			log.Printf("Can't use the title-filter: %q", err)
+			os.Exit(1)
+		}
+	}
+
+	if a.Config.TitleExclude != "" {
+		if _, err := regexp.Compile(a.Config.TitleExclude); err != nil {
+			log.Printf("Can't use the title-exclude: %q", err)
+			os.Exit(1)
+		}
+	}
 
 	consoleLogger := log.New(os.Stderr, "", log.LstdFlags)
 	fileLogger := logger(nil)
@@ -191,16 +212,28 @@ func (a *app) Download(ctx context.Context) {
 		"DL": os.ExpandEnv(a.Config.Destination),
 	}
 	a.CheckPaths()
-	a.Config.WatchList = []*providers.MatchRequest{}
+	a.Config.WatchList = []*matcher.MatchRequest{}
+
+	var filter, exclude matcher.Filter
+
+	if a.Config.TitleFilter != "" {
+		filter = matcher.Filter{regexp.MustCompile(a.Config.TitleFilter)}
+	}
+	if a.Config.TitleExclude != "" {
+		exclude = matcher.Filter{regexp.MustCompile(a.Config.TitleExclude)}
+	}
 
 	for dl := 1; dl < flag.NArg(); dl++ {
+
 		a.Config.WatchList = append(a.Config.WatchList,
-			&providers.MatchRequest{
+			&matcher.MatchRequest{
 				Destination:   "DL",
 				Show:          strings.ToLower(flag.Arg(dl)),
 				Provider:      a.Config.Provider,
 				MaxAgedDays:   a.Config.MaxAgedDays,
 				RetentionDays: a.Config.RetentionDays,
+				TitleFilter:   filter,
+				TitleExclude:  exclude,
 			},
 		)
 	}
@@ -349,8 +382,9 @@ showLoop:
 			a.logger.Trace().Printf("[%s] Context done, received %s", p.Name(), ctx.Err())
 			break showLoop
 		default:
-
-			if a.Config.Force || a.MustDownload(ctx, p, m) {
+			if !m.Metadata.Accepted(m.Match) {
+				a.logger.Trace().Printf("[%s] %s is filtered out.", p.Name(), filepath.Base(m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])))
+			} else if a.Config.Force || a.MustDownload(ctx, p, m) {
 				a.logger.Trace().Printf("[%s] Download of %q submitted", p.Name(), filepath.Base(m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])))
 				showCount++
 				if !a.Config.Headless {

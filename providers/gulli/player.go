@@ -10,6 +10,7 @@ import (
 
 	"github.com/simulot/aspiratv/metadata/nfo"
 	"github.com/simulot/aspiratv/net/myhttp/httptest"
+	"github.com/simulot/aspiratv/providers/matcher"
 
 	"github.com/simulot/aspiratv/providers"
 )
@@ -25,7 +26,7 @@ var reVars = regexp.MustCompile(
 		`|(?:image:\s*(?U:"(?P<image>[^"]*)"))` +
 		`|(?:description:\s*(?U:"(?P<description>[^"]*)"))`)
 
-func (p *Gulli) getPlayer(ctx context.Context, mr *providers.MatchRequest, ID string) ([]*providers.Media, error) {
+func (p *Gulli) getPlayer(ctx context.Context, mr *matcher.MatchRequest, ID string) ([]*providers.Media, error) {
 	ctx, done := context.WithTimeout(ctx, p.deadline)
 	defer done()
 

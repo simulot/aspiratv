@@ -14,6 +14,7 @@ import (
 	"github.com/simulot/aspiratv/net/myhttp/httptest"
 	"github.com/simulot/aspiratv/providers"
 	"github.com/simulot/aspiratv/providers/francetv/query"
+	"github.com/simulot/aspiratv/providers/matcher"
 )
 
 const homeFranceTV = "https://www.france.tv"
@@ -31,7 +32,7 @@ type Options struct {
 	Types           string `json:"types"`
 }
 
-func (p *FranceTV) search(ctx context.Context, mr *providers.MatchRequest) chan *providers.Media {
+func (p *FranceTV) search(ctx context.Context, mr *matcher.MatchRequest) chan *providers.Media {
 	mm := make(chan *providers.Media)
 
 	go func() {
