@@ -59,7 +59,7 @@ tar -czvf aspiratv_0.8.0_Linux_x86_64.tar.gz
 ```
 Usage of aspiratv:
       --config string          Configuration file name. (default "config.json")
-  -d, --destination string     Destination path.
+  -d, --destination string     Destination path for all shows.
       --force                  Force media download.
       --headless               Headless mode. Progression bars are not displayed.
   -b, --keep-bonuses           Download bonuses when true (default true)
@@ -67,17 +67,16 @@ Usage of aspiratv:
   -l, --log-level string       Log level (INFO,TRACE,ERROR,DEBUG) (default "ERROR")
   -a, --max-aged int           Retrieve media younger than MaxAgedDays.
   -m, --max-tasks int          Maximum concurrent downloads at a time. (default 8)
-  -p, --provider string        Provider to be used with download command. Possible values : artetv,francetv,gulli
+  -p, --provider string        Provider to be used with download command. Possible values : artetv, francetv, gulli
+  -s, --show-path string       Force show's path.
   -e, --title-exclude string   Showtitle and Episode title must not satisfy regexp filter
   -f, --title-filter string    Showtitle or Episode title must satisfy regexp filter
   -n, --write-nfo              Write NFO file for KODI,Emby,Plex... (default true)
+ ``` 
+
 Le programme fonctionne selon deux modilités :
 ## Pour surveiller la mise à disposition de nouveaux épisodes d'une émission
 Dans ce mode, le fichiers de configuration `config.json` placé dans le même répertoire que le programe est lu pour pour interroger les différents serveur.
-
-### --headless
-L'option `--headless` désactive les barres de progressions et produit une log sur la console.
-
 
 Note: L'option -server a été supprimée. Pour interroger automatiquement les serveur, ajouter une ligne dans crontab, ou une tâche planifiée dans windows.
 
@@ -91,25 +90,45 @@ L'option `--config` indique le fichier de configuration à utiliser.
 ```
 Cette commande cherchera les épisodes de la série "Les Dalton" sur france télévisions, et les téléchargera dans le répertoire ~/Video/DL
 
-Utiliser l'option `--title-filter` pour télécharger un épisode précis. Le filtre est une expression régulière GO. Voir la syntaxe précise (https://golang.org/pkg/regexp/syntax/).
+### --title-filter
+Utiliser l'option `--title-filter` pour télécharger un épisode précis. Le filtre est une expression régulière GO. Voir la syntaxe précise (https://golang.org/pkg/regexp/syntax/). Le site (https://regex101.com/) permet de construire et tester les expressons régulières. 
+
 
 Par exemple, pour télécharger les émissions spéciales de "La maison France 5"
 
 ```sh
 ./aspiratv --provider=francetv --destination=$HOME/Videos/DL --title-filter "spéciale" download "La maison France 5"
 ```
- 
-Utiliser l'option `--title-exclude` pour exclure du téléchargment certains épisodes. Le filtre est une expression régulière GO. Voir la syntaxe précise (https://golang.org/pkg/regexp/syntax/).
+
+### --title-exclude
+Utiliser l'option `--title-exclude` pour exclure du téléchargment certains épisodes. Le filtre est une expression régulière GO. 
 
 
 Pour télécharger tous les épisodes de "La Maison France 5" sauf les émissions sépciale
 ```sh
 ./aspiratv --provider=francetv --destination=$HOME/Videos/DL --title-exclude "spéciale" download "La maison France 5"
-
+``` 
 La combinaison des deux filtres est possible.
+
+### --destination
+Cette option indique le répertoire de base des téléachargements. 
+```sh
+./aspiratv --provider=francetv --destination ~/Videos/FranceTV download "C à vous" "C dans l'air"
+```
+### --show-path
+Cette option force le chemin dans lequel la saison ou le film sera téléchargé. 
+
+Exemple, les épisodes seront téléchagés dans le répertoire `~/Videos/MaisonF5/Season ...`
+```sh
+./aspiratv --provider=francetv --show-path = ~/Videos/MaisonF5 download "La maison France 5"
+```
 
 
 ## Les options communes aux deux modes :
+
+### --headless
+
+L option `--headless` désactive les barres de progressions et produit une log sur la console.
 
 ### --max-tasks NUM
 Précise le nombre maximal de téléchargements simultanés possible. La valeur par défaut est le nombre de processeurs de la machine.

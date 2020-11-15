@@ -22,20 +22,15 @@ func (n *EpisodeDetails) GetMediaInfo() *MediaInfo {
 	return &n.MediaInfo
 }
 
-// GetSeriesPath gives path for the whole series
-func (n EpisodeDetails) GetSeriesPath(destination string) string {
-	return filepath.Join(destination, FileNameCleaner(n.Showtitle))
-}
-
-// GetSeasonPath give the path for the series' season
-func (n *EpisodeDetails) GetSeasonPath(destination string) string {
+// getSeasonPath give the path for the series' season
+func (n *EpisodeDetails) getSeasonPath(destination string) string {
 	season := "Season "
 	if n.Season <= 0 {
 		season += "00"
 	} else {
 		season += fmt.Sprintf("%02d", n.Season)
 	}
-	return filepath.Join(n.GetSeriesPath(destination), season)
+	return filepath.Join(destination, season)
 }
 
 // GetMediaPath gives the full filename of given media
@@ -49,11 +44,11 @@ func (n EpisodeDetails) GetMediaPath(destination string) string {
 		episode = n.Aired.Time().Format("2006-01-02")
 	}
 	if cleanTitle == "" {
-		return filepath.Join(n.GetSeasonPath(destination), cleanShow+" - "+episode+".mp4")
+		return filepath.Join(n.getSeasonPath(destination), cleanShow+" - "+episode+".mp4")
 
 	}
 
-	return filepath.Join(n.GetSeasonPath(destination), cleanShow+" - "+episode+" - "+cleanTitle+".mp4")
+	return filepath.Join(n.getSeasonPath(destination), cleanShow+" - "+episode+" - "+cleanTitle+".mp4")
 }
 
 // Accepted check if ShowTitle or episode Title matches the filter
@@ -82,7 +77,7 @@ func (n EpisodeDetails) Accepted(m *matcher.MatchRequest) bool {
 func (n EpisodeDetails) GetMediaPathMatcher(destination string) string {
 	cleanTitle := FileNameCleaner(n.Title)
 	cleanShow := FileNameCleaner(n.Showtitle)
-	return filepath.Join(n.GetSeriesPath(destination), "*", cleanShow+" - * - "+cleanTitle+".mp4")
+	return filepath.Join(destination, "*", cleanShow+" - * - "+cleanTitle+".mp4")
 
 }
 
@@ -90,16 +85,6 @@ func (n EpisodeDetails) GetMediaPathMatcher(destination string) string {
 func (n EpisodeDetails) GetNFOPath(destination string) string {
 	nf := n.GetMediaPath(destination)
 	return strings.TrimSuffix(nf, filepath.Ext(nf)) + ".nfo"
-}
-
-// GetShowNFOPath returns the path for TVShow.nfo
-func (n EpisodeDetails) GetShowNFOPath(destination string) string {
-	return filepath.Join(destination, FileNameCleaner(n.Showtitle), "tvshow.nfo")
-}
-
-// GetShowNFOPath returns the path for TVShow.nfo
-func (n EpisodeDetails) GetSeasonNFOPath(destination string) string {
-	return filepath.Join(destination, FileNameCleaner(n.Showtitle), fmt.Sprintf("Season %02d", n.Season), "season.nfo")
 }
 
 // WriteNFO file at expected place

@@ -76,24 +76,28 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, m *provide
 		cancel()
 	}()
 	id := 1000 + atomic.AddInt32(&dlID, 1)
-	itemName = filepath.Base(m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination]))
+	ShowPath := m.Match.ShowRootPath
+	if len(ShowPath) == 0 {
+		ShowPath = a.Config.Destinations[m.Match.Destination]
+	}
+	itemName = filepath.Base(m.Metadata.GetMediaPath(ShowPath))
 
 	err := p.GetMediaDetails(ctx, m) // Side effect: Episode number can be determined at this point.
 	url := m.Metadata.GetMediaInfo().URL
 	if err != nil || len(url) == 0 {
-		a.logger.Error().Printf("[%s] Can't get url from %s.", p.Name(), filepath.Base(m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])))
+		a.logger.Error().Printf("[%s] Can't get url from %s.", p.Name(), filepath.Base(m.Metadata.GetMediaPath(ShowPath)))
 		return
 	}
 
 	if a.Config.WriteNFO {
-		a.DownloadInfo(ctx, p, a.Config.Destinations[m.Match.Destination], m, pc, id, &files)
+		a.DownloadInfo(ctx, p, ShowPath, m, pc, id, &files)
 		if ctx.Err() != nil {
 			return
 		}
 	}
 
 	var pgr *progressBar
-	fn := m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])
+	fn := m.Metadata.GetMediaPath(ShowPath)
 	itemName = filepath.Base(fn)
 
 	a.logger.Trace().Printf("[%s] Start downloading media %q", p.Name(), fn)
@@ -132,7 +136,7 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, m *provide
 func (a *app) DownloadInfo(ctx context.Context, p providers.Provider, destination string, m *providers.Media, pc *mpb.Progress, id int32, downloadedFiles *[]string) {
 
 	var metaBar *mpb.Bar
-	itemName := filepath.Base(m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination]))
+	itemName := filepath.Base(m.Metadata.GetMediaPath(destination))
 
 	defer func() {
 		if metaBar != nil {
@@ -154,7 +158,7 @@ func (a *app) DownloadInfo(ctx context.Context, p providers.Provider, destinatio
 	}
 
 	info := m.Metadata.GetMediaInfo()
-	nfoPath := m.Metadata.GetNFOPath(a.Config.Destinations[m.Match.Destination])
+	nfoPath := m.Metadata.GetNFOPath(destination)
 	nfoExists, err := fileExists(nfoPath)
 	if !nfoExists && err == nil {
 		err = m.Metadata.WriteNFO(nfoPath)
@@ -165,8 +169,9 @@ func (a *app) DownloadInfo(ctx context.Context, p providers.Provider, destinatio
 		a.DowloadImages(ctx, p, nfoPath, info.Thumb, downloadedFiles)
 	}
 	if m.ShowType == providers.Series {
+		seasonPath := filepath.Dir(m.Metadata.GetMediaPath(destination))
 		if info.SeasonInfo != nil {
-			nfoPath = m.Metadata.GetSeasonNFOPath(a.Config.Destinations[m.Match.Destination])
+			nfoPath = filepath.Join(seasonPath, "season.nfo")
 			nfoExists, err = fileExists(nfoPath)
 			if !nfoExists && err == nil {
 				info.SeasonInfo.WriteNFO(nfoPath)
@@ -179,7 +184,7 @@ func (a *app) DownloadInfo(ctx context.Context, p providers.Provider, destinatio
 			}
 		}
 		if info.TVShow != nil {
-			nfoPath = m.Metadata.GetShowNFOPath(a.Config.Destinations[m.Match.Destination])
+			nfoPath = filepath.Join(destination, "tvshow.nfo")
 			nfoExists, err = fileExists(nfoPath)
 			if !nfoExists && err == nil {
 				info.TVShow.WriteNFO(nfoPath)

@@ -6,10 +6,12 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
 
+	"github.com/simulot/aspiratv/providers"
 	"github.com/simulot/aspiratv/providers/matcher"
 )
 
@@ -122,11 +124,14 @@ func (c *config) Check() {
 		m.Pitch = strings.ToLower(m.Pitch)
 		m.Show = strings.ToLower(m.Show)
 		m.Title = strings.ToLower(m.Title)
-		if _, ok := c.Destinations[m.Destination]; !ok {
-			log.Fatalf("Destination %q for show %q is not defined into section Destination of %q", m.Destination, m.Show, c.ConfigFile)
+		if len(m.ShowRootPath) == 0 {
+			if s, ok := c.Destinations[m.Destination]; !ok {
+				log.Fatalf("Destination %q for show %q is not defined into section Destination of %q", m.Destination, m.Show, c.ConfigFile)
+			} else {
+				m.ShowRootPath = filepath.Join(s, providers.PathNameCleaner(m.Show))
+			}
 		}
 	}
-
 }
 
 func (c *config) IsProviderActive(p string) bool {

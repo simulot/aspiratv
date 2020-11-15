@@ -47,6 +47,7 @@ type config struct {
 	ConcurrentTasks int                       // Number of concurrent downloads
 	Provider        string                    // Provider for dowload command
 	Destination     string                    // Destination folder for dowload command
+	ShowPath        string                    // Imposed show's path
 	LogFile         string                    // Log file
 	WriteNFO        bool                      // True when NFO files to be written
 	MaxAgedDays     int                       // Retrieve media younger than MaxAgedDays when non zero
@@ -93,8 +94,9 @@ func main() {
 	flag.BoolVar(&a.Config.Headless, "headless", false, "Headless mode. Progression bars are not displayed.")
 	flag.StringVar(&a.Config.ConfigFile, "config", "config.json", "Configuration file name.")
 	flag.IntVarP(&a.Config.ConcurrentTasks, "max-tasks", "m", runtime.NumCPU(), "Maximum concurrent downloads at a time.")
-	flag.StringVarP(&a.Config.Provider, "provider", "p", "", "Provider to be used with download command. Possible values : artetv,francetv,gulli")
-	flag.StringVarP(&a.Config.Destination, "destination", "d", "", "Destination path.")
+	flag.StringVarP(&a.Config.Provider, "provider", "p", "", "Provider to be used with download command. Possible values : artetv, francetv, gulli")
+	flag.StringVarP(&a.Config.Destination, "destination", "d", "", "Destination path for all shows.")
+	flag.StringVarP(&a.Config.ShowPath, "show-path", "s", "", "Force show's path.")
 	flag.StringVar(&a.Config.LogFile, "log", "", "Give the log file name.")
 	// flag.IntVar(&a.Config.RetentionDays, "retention", 0, "Delete media older than retention days for the downloaded show.")
 	flag.BoolVarP(&a.Config.WriteNFO, "write-nfo", "n", true, "Write NFO file for KODI,Emby,Plex...")
@@ -103,20 +105,6 @@ func main() {
 	flag.StringVarP(&a.Config.TitleFilter, "title-filter", "f", "", "Showtitle or Episode title must satisfy regexp filter")
 	flag.StringVarP(&a.Config.TitleExclude, "title-exclude", "e", "", "Showtitle and Episode title must not satisfy regexp filter")
 	flag.Parse()
-
-	if a.Config.TitleFilter != "" {
-		if _, err := regexp.Compile(a.Config.TitleFilter); err != nil {
-			log.Printf("Can't use the title-filter: %q", err)
-			os.Exit(1)
-		}
-	}
-
-	if a.Config.TitleExclude != "" {
-		if _, err := regexp.Compile(a.Config.TitleExclude); err != nil {
-			log.Printf("Can't use the title-exclude: %q", err)
-			os.Exit(1)
-		}
-	}
 
 	consoleLogger := log.New(os.Stderr, "", log.LstdFlags)
 	fileLogger := logger(nil)
@@ -192,35 +180,65 @@ func (a *app) CheckPaths() {
 
 		a.Config.Destinations[k] = v
 	}
+	if len(a.Config.ShowPath) > 0 {
+		var err error
+		a.Config.ShowPath, err = sanitizePath(a.Config.ShowPath)
+		if err != nil {
+			a.logger.Fatal().Printf("Can't sanitize path %q", a.Config.ShowPath)
+			os.Exit(1)
+		}
+		a.logger.Trace().Printf("ShowPath set to  %q", a.Config.ShowPath)
+	}
 }
 
 func sanitizePath(p string) (string, error) {
 	return filepath.Abs(p)
 }
 
+// Download command
 func (a *app) Download(ctx context.Context) {
 
-	if len(a.Config.Destination) == 0 {
-		a.logger.Fatal().Printf("--destination parameter is mandatory for download operation")
-	}
 	if len(flag.Args()) < 2 {
 		flag.Usage()
 		os.Exit(1)
 	}
 
+	if len(a.Config.Destination) == 0 && len(a.Config.ShowPath) == 0 {
+		a.logger.Fatal().Printf("Either --destination or --show-path parameter is mandatory for download operation")
+	}
+
+	// if (len(a.Config.Destinations) > 0) != (len(a.Config.ShowPath) > 0) {
+	// 	a.logger.Fatal().Printf("Choose one of paramters --destination or --show-path for download operation")
+	// }
+
+	if a.Config.TitleFilter != "" {
+		if _, err := regexp.Compile(a.Config.TitleFilter); err != nil {
+			a.logger.Fatal().Printf("Can't use the title-filter: %q", err)
+		}
+	}
+
+	if a.Config.TitleExclude != "" {
+		if _, err := regexp.Compile(a.Config.TitleExclude); err != nil {
+			a.logger.Fatal().Printf("Can't use the title-exclude: %q", err)
+		}
+	}
+
 	a.Config.Destinations = map[string]string{
 		"DL": os.ExpandEnv(a.Config.Destination),
 	}
+
+	a.Config.ShowPath = os.ExpandEnv(a.Config.ShowPath)
+
 	a.CheckPaths()
 	a.Config.WatchList = []*matcher.MatchRequest{}
 
 	var filter, exclude matcher.Filter
 
 	if a.Config.TitleFilter != "" {
-		filter = matcher.Filter{regexp.MustCompile(a.Config.TitleFilter)}
+		filter = matcher.Filter{Regexp: regexp.MustCompile(a.Config.TitleFilter)}
 	}
 	if a.Config.TitleExclude != "" {
-		exclude = matcher.Filter{regexp.MustCompile(a.Config.TitleExclude)}
+		exclude = matcher.Filter{Regexp: regexp.MustCompile(a.Config.TitleExclude)}
 	}
 
 	for dl := 1; dl < flag.NArg(); dl++ {
@@ -234,6 +252,7 @@ func (a *app) Download(ctx context.Context) {
 				RetentionDays: a.Config.RetentionDays,
 				TitleFilter:   filter,
 				TitleExclude:  exclude,
+				ShowRootPath:  a.Config.ShowPath,
 			},
 		)
 	}
@@ -377,22 +396,23 @@ showLoop:
 		}
 		seen[m.ID] = true
 
+		mediaBasePath := filepath.Base(m.Metadata.GetMediaPath(m.Match.ShowRootPath))
 		select {
 		case <-ctx.Done():
 			a.logger.Trace().Printf("[%s] Context done, received %s", p.Name(), ctx.Err())
 			break showLoop
 		default:
 			if !m.Metadata.Accepted(m.Match) {
-				a.logger.Trace().Printf("[%s] %s is filtered out.", p.Name(), filepath.Base(m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])))
+				a.logger.Trace().Printf("[%s] %s is filtered out.", p.Name(), mediaBasePath)
 			} else if a.Config.Force || a.MustDownload(ctx, p, m) {
-				a.logger.Trace().Printf("[%s] Download of %q submitted", p.Name(), filepath.Base(m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])))
+				a.logger.Trace().Printf("[%s] Download of %q submitted", p.Name(), mediaBasePath)
 				showCount++
 				if !a.Config.Headless {
 					providerBar.SetTotal(showCount, false)
 				}
 				a.SubmitDownload(ctx, &wg, p, m, pc, providerBar)
 			} else {
-				a.logger.Trace().Printf("[%s] %s already downloaded.", p.Name(), filepath.Base(m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])))
+				a.logger.Trace().Printf("[%s] %s already downloaded.", p.Name(), mediaBasePath)
 			}
 			if ctx.Err() != nil {
 				a.logger.Debug().Printf("[%s] PullShows received %s", p.Name(), ctx.Err())
@@ -416,13 +436,13 @@ showLoop:
 
 // MustDownload check if the show isn't yet downloaded.
 func (a *app) MustDownload(ctx context.Context, p providers.Provider, m *providers.Media) bool {
-	mediaPath := m.Metadata.GetMediaPath(a.Config.Destinations[m.Match.Destination])
+	mediaPath := m.Metadata.GetMediaPath(m.Match.ShowRootPath)
 	mediaExists, err := fileExists(mediaPath)
 	if mediaExists {
 		return false
 	}
 
-	mediaPath = m.Metadata.GetMediaPathMatcher(a.Config.Destinations[m.Match.Destination])
+	mediaPath = m.Metadata.GetMediaPathMatcher(m.Match.ShowRootPath)
 	files, err := filepath.Glob(mediaPath)
 	if err != nil {
 		log.Fatalf("Can't glob %s: %v", mediaPath, err)

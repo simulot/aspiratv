@@ -9,11 +9,8 @@ import (
 type MetaDataHandler interface {
 	GetMediaInfo() *nfo.MediaInfo
 	GetNFOPath(destination string) string
-	GetSeasonNFOPath(destination string) string
-	GetShowNFOPath(destination string) string
-	GetSeriesPath(destination string) string
+
 	GetMediaPath(destination string) string
-	GetSeasonPath(destination string) string
 	GetMediaPathMatcher(destination string) string
 	WriteNFO(destination string) error
 	Accepted(m *matcher.MatchRequest) bool
