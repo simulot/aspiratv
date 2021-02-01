@@ -122,7 +122,7 @@ func (t *throttler) Get(ctx context.Context, uri string) (io.ReadCloser, error) 
 
 // New setup a Show provider for Arte
 func New() (*ArteTV, error) {
-	throttler := newThrottler(myhttp.DefaultClient, 20, 25)
+	throttler := newThrottler(myhttp.DefaultClient, 2, 5)
 	p := &ArteTV{
 		getter: throttler,
 		//TODO: get preferences from config file
@@ -460,39 +460,6 @@ func getFirstString(ss []string) string {
 		}
 	}
 	return ""
-}
-
-var (
-	parseTitleSeasonEpisode = regexp.MustCompile(`^(.+) - Saison (\d+) \((\d+)\/\d+\)$`)
-	parseTitleEpisode       = regexp.MustCompile(`^(.+) \((\d+)\/\d+\)$`)
-	removeHiphens           = regexp.MustCompile(`(?m)-{2,}|^\s*-*\s|\s*-\s*$`)
-	removeSpaces            = regexp.MustCompile(`(?m)^\s+|\s+$|\s{2,}`)
-)
-
-// setEpisodeFormTitle tries to normalize episode titles despite coding inconsistencies
-func setEpisodeFormTitle(show *nfo.EpisodeDetails, tvshow nfo.TVShow, ep Data) {
-
-	show.Showtitle = tvshow.Title
-
-	m := parseTitleSeasonEpisode.FindAllStringSubmatch(ep.Title, -1)
-	if len(m) > 0 {
-		ep.Title = m[0][1]
-		show.Season, _ = strconv.Atoi(m[0][2])
-		show.Episode, _ = strconv.Atoi(m[0][3])
-	}
-	m = parseTitleEpisode.FindAllStringSubmatch(ep.Title, -1)
-	if len(m) > 0 {
-		ep.Title = m[0][1]
-		show.Season = 1
-		show.Episode, _ = strconv.Atoi(m[0][2])
-	}
-
-	title := ep.Title + " " + ep.Subtitle
-	title = strings.ReplaceAll(title, tvshow.Title, " ")
-	title = removeHiphens.ReplaceAllLiteralString(title, "")
-	title = removeSpaces.ReplaceAllLiteralString(title, "")
-
-	show.Title = title
 }
 
 func getThumbs(images map[string]Image) []nfo.Thumb {
