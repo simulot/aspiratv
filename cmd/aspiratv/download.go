@@ -76,10 +76,8 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, m *provide
 		cancel()
 	}()
 	id := 1000 + atomic.AddInt32(&dlID, 1)
-	ShowPath := m.Match.ShowRootPath
-	if len(ShowPath) == 0 {
-		ShowPath = a.Config.Destinations[m.Match.Destination]
-	}
+	ShowPath := m.ShowPath
+
 	itemName = filepath.Base(m.Metadata.GetMediaPath(ShowPath))
 
 	err := p.GetMediaDetails(ctx, m) // Side effect: Episode number can be determined at this point.

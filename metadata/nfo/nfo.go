@@ -54,6 +54,7 @@ type MediaInfo struct {
 	IsSpecial  bool    `xml:"-"` // True when special episode
 	SeasonInfo *Season `xml:"-"` // Possible Season nfo
 	TVShow     *TVShow `xml:"-"` // Possible TVShow nfo
+	IsDetailed bool    `xml:"-"` // True when details have been retrieved
 }
 
 // Aired type helper

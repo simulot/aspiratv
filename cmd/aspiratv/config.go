@@ -121,7 +121,7 @@ func (c *config) Check() {
 	}
 
 	for _, m := range c.WatchList {
-		m.Pitch = strings.ToLower(m.Pitch)
+		// m.Pitch = strings.ToLower(m.Pitch)
 		m.Show = strings.ToLower(m.Show)
 		m.Title = strings.ToLower(m.Title)
 		if len(m.ShowRootPath) == 0 {

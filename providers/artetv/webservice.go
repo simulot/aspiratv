@@ -41,8 +41,8 @@ type AlternativeLanguages struct {
 	Title string `json:"title"`
 }
 type Code struct {
-	Name string      `json:"name"`
-	ID   interface{} `json:"id"`
+	Name string `json:"name"`
+	ID   string `json:"id"`
 }
 type DisplayOptions struct {
 	ZoneLayout   string      `json:"zoneLayout"`
@@ -81,20 +81,47 @@ type Data struct {
 	URL              string           `json:"url"`
 	Deeplink         string           `json:"deeplink"`
 	Title            string           `json:"title"`
-	Subtitle         string           `json:"subtitle"`
+	Description      string           `json:"description"`
 	ShortDescription string           `json:"shortDescription"`
+	FullDescription  string           `json:"fullDescription"`
+	Subtitle         string           `json:"subtitle"`
 	Images           map[string]Image `json:"images"`
 	Stickers         []Stickers       `json:"stickers"`
-	Duration         interface{}      `json:"duration"`
 	ChildrenCount    interface{}      `json:"childrenCount"`
 	Geoblocking      interface{}      `json:"geoblocking"`
-	Availability     interface{}      `json:"availability"`
+	Duration         int              `json:"duration"`
+	Player           Player           `json:"player"`
+	Availability     Availability     `json:"availability"`
+	BroadcastDates   []tsUTC          `json:"broadcastDates"`
+	Credits          []Credits        `json:"credits"`
 	AgeRating        int              `json:"ageRating"`
 }
+
+type Credits struct {
+	Code   string   `json:"code"`
+	Label  string   `json:"label"`
+	Values []string `json:"values"`
+}
+
+type Player struct {
+	Config        string      `json:"config"`
+	Playlist      string      `json:"playlist"`
+	OrangeVideoID interface{} `json:"orangeVideoId"`
+	FreeVideoID   interface{} `json:"freeVideoId"`
+}
+type Availability struct {
+	End          string `json:"end"`
+	Label        string `json:"label"`
+	Start        tsUTC  `json:"start"`
+	Type         string `json:"type"`
+	UpcomingDate tsUTC  `json:"upcomingDate"`
+}
+
 type Zones struct {
 	ID             string         `json:"id"`
 	Code           Code           `json:"code"`
-	Title          interface{}    `json:"title"`
+	Title          string         `json:"title"`
+	Description    interface{}    `json:"description"`
 	DisplayOptions DisplayOptions `json:"displayOptions"`
 	Link           interface{}    `json:"link"`
 	PageNumber     int            `json:"pageNumber"`
@@ -105,11 +132,11 @@ type Zones struct {
 // tsGuide read broadcast time
 var utcTZ, _ = time.LoadLocation("UTC")
 
-type tsGuide time.Time
+type tsUTC time.Time
 
 const tsGuidefmt = "2006-01-02T15:04:05Z"
 
-func (t *tsGuide) UnmarshalJSON(b []byte) error {
+func (t *tsUTC) UnmarshalJSON(b []byte) error {
 	var s string
 	if err := json.Unmarshal(b, &s); err != nil {
 		return err
@@ -119,24 +146,24 @@ func (t *tsGuide) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	*t = tsGuide(d)
+	*t = tsUTC(d)
 	return nil
 }
 
-func (t tsGuide) MarshalJSON() ([]byte, error) {
+func (t tsUTC) MarshalJSON() ([]byte, error) {
 	u := time.Time(t).Unix()
 	return json.Marshal(u)
 }
 
-func (t tsGuide) Time() time.Time {
+func (t tsUTC) Time() time.Time {
 	return time.Time(t)
 }
 
-type tsAvailability time.Time
+type tsPlayer time.Time
 
 const tsAvailabilityfmt = "02/01/2006 15:04:05 -0700"
 
-func (t *tsAvailability) UnmarshalJSON(b []byte) error {
+func (t *tsPlayer) UnmarshalJSON(b []byte) error {
 	var s string
 	if err := json.Unmarshal(b, &s); err != nil {
 		return err
@@ -146,16 +173,16 @@ func (t *tsAvailability) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	*t = tsAvailability(d)
+	*t = tsPlayer(d)
 	return nil
 }
 
-func (t tsAvailability) MarshalJSON() ([]byte, error) {
+func (t tsPlayer) MarshalJSON() ([]byte, error) {
 	u := time.Time(t).Unix()
 	return json.Marshal(u)
 }
 
-func (t tsAvailability) Time() time.Time {
+func (t tsPlayer) Time() time.Time {
 	return time.Time(t)
 }
 
@@ -184,29 +211,29 @@ type StreamInfo struct {
 type VSR map[string]StreamInfo
 
 type VideoJSONPlayer struct {
-	VID                  string         `json:"VID"`
-	VPI                  string         `json:"VPI"`
-	VideoDurationSeconds int            `json:"videoDurationSeconds"`
-	VideoIsoLang         string         `json:"videoIsoLang"`
-	VTY                  string         `json:"VTY"`
-	VTX                  string         `json:"VTX"`
-	VTI                  string         `json:"VTI"`
-	VDU                  int            `json:"VDU"`
-	TcStartFrom          int            `json:"tc_start_from"`
-	Autostart            bool           `json:"autostart"`
-	LiveStreamRights     bool           `json:"liveStreamRights"`
-	VGB                  string         `json:"VGB"`
-	VRA                  tsAvailability `json:"VRA"`
-	VRU                  tsAvailability `json:"VRU"`
-	VAD                  bool           `json:"VAD"`
-	VideoWarning         bool           `json:"videoWarning"`
-	VTU                  VTU            `json:"VTU"`
-	VTR                  string         `json:"VTR"`
-	VUP                  string         `json:"VUP"`
-	V7T                  string         `json:"V7T"`
-	VDE                  string         `json:"VDE"`
-	Postroll             string         `json:"postroll"`
-	VSR                  VSR            `json:"VSR"`
+	VID                  string   `json:"VID"`
+	VPI                  string   `json:"VPI"`
+	VideoDurationSeconds int      `json:"videoDurationSeconds"`
+	VideoIsoLang         string   `json:"videoIsoLang"`
+	VTY                  string   `json:"VTY"`
+	VTX                  string   `json:"VTX"`
+	VTI                  string   `json:"VTI"`
+	VDU                  int      `json:"VDU"`
+	TcStartFrom          int      `json:"tc_start_from"`
+	Autostart            bool     `json:"autostart"`
+	LiveStreamRights     bool     `json:"liveStreamRights"`
+	VGB                  string   `json:"VGB"`
+	VRA                  tsPlayer `json:"VRA"`
+	VRU                  tsPlayer `json:"VRU"`
+	VAD                  bool     `json:"VAD"`
+	VideoWarning         bool     `json:"videoWarning"`
+	VTU                  VTU      `json:"VTU"`
+	VTR                  string   `json:"VTR"`
+	VUP                  string   `json:"VUP"`
+	V7T                  string   `json:"V7T"`
+	VDE                  string   `json:"VDE"`
+	Postroll             string   `json:"postroll"`
+	VSR                  VSR      `json:"VSR"`
 	// Tracking             Tracking       `json:"tracking"`
 	Platform       string `json:"platform"`
 	VideoPlayerURL string `json:"videoPlayerUrl"`
@@ -231,4 +258,33 @@ type VideoJSONPlayer struct {
 	// Smart            Smart         `json:"smart"`
 	Illico        bool `json:"illico"`
 	EnablePreroll bool `json:"enablePreroll"`
+}
+
+type InitialProgram struct {
+	// AlternateLanguages []AlternateLanguages `json:"alternateLanguages"`
+	Error  string `json:"error"`
+	Locale string `json:"locale"`
+	// Navbar Navbar `json:"navbar"`
+	Pages Pages `json:"pages"`
+	// Categories []Categories `json:"categories"`
+}
+
+type Pages struct {
+	Loading     bool            `json:"loading"`
+	CurrentCode string          `json:"currentCode"`
+	List        map[string]Page `json:"list"`
+}
+
+type Page struct {
+	ID          string  `json:"id"`
+	Page        string  `json:"page"`
+	Language    string  `json:"language"`
+	Support     string  `json:"support"`
+	Level       int     `json:"level"`
+	URL         string  `json:"url"`
+	Deeplink    string  `json:"deeplink"`
+	Title       string  `json:"title"`
+	Description string  `json:"description"`
+	Slug        string  `json:"slug"`
+	Zones       []Zones `json:"zones"`
 }

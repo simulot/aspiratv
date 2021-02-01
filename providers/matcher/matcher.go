@@ -2,19 +2,20 @@ package matcher
 
 import (
 	"regexp"
+	"strings"
 )
 
 // MatchRequest holds criterions for selecting show
 type MatchRequest struct {
+	Provider string
 	// Fields for matching
-	Show        string
-	ShowID      string // Future use
-	Title       string
-	TitleID     string // Future use
-	Pitch       string
-	Provider    string
-	Playlist    string // Playlist search is implemented in providers.
-	MaxAgedDays int    // Retrive media younger than MaxAgedDays when not zero
+	Show  string
+	Title string
+	// ShowID   string // Future use
+	// TitleID  string // Future use
+	// Pitch    string // Future use
+	// Playlist    string // Playlist search is implemented in providers.
+	MaxAgedDays int // Retrive media younger than MaxAgedDays when not zero
 
 	Destination   string // Destination name when found
 	ShowRootPath  string // Show/Movie path. For expisodes, actual season will append to the path
@@ -22,6 +23,38 @@ type MatchRequest struct {
 	TitleFilter   Filter // ShowTitle or Episode title must match this regexp to be downloaded
 	TitleExclude  Filter // ShowTitle and Episode title must not match this regexp to be downloaded
 }
+
+// TODO implement IsTitleMatch for all providers
+func (m MatchRequest) IsTitleMatch(title string) bool {
+	if m.TitleExclude.Regexp != nil {
+		if m.TitleExclude.Regexp.MatchString(title) {
+			return false
+		}
+	}
+	if m.TitleFilter.Regexp != nil {
+		if m.TitleFilter.Regexp.MatchString(title) {
+			return true
+		}
+	}
+	title = strings.ToUpper(strings.TrimSpace(title))
+	return strings.Contains(title, m.Title)
+}
+
+// // TODO implement IsShowMatch for all providers
+// func (m MatchRequest) IsShowMatch(showTitle string) bool {
+// 	if m.TitleExclude.Regexp != nil {
+// 		if m.TitleExclude.Regexp.MatchString(showTitle) {
+// 			return false
+// 		}
+// 	}
+// 	if m.TitleFilter.Regexp != nil {
+// 		if m.TitleFilter.Regexp.MatchString(showTitle) {
+// 			return true
+// 		}
+// 	}
+// 	showTitle = strings.ToLower(strings.TrimSpace(showTitle))
+// 	return strings.Contains(showTitle, m.Show)
+// }
 
 // Filter is a wrapper for regexp
 type Filter struct {

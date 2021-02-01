@@ -23,18 +23,18 @@ func (n *EpisodeDetails) GetMediaInfo() *MediaInfo {
 }
 
 // getSeasonPath give the path for the series' season
-func (n *EpisodeDetails) getSeasonPath(destination string) string {
+func (n *EpisodeDetails) getSeasonPath() string {
 	season := "Season "
 	if n.Season <= 0 {
 		season += "00"
 	} else {
 		season += fmt.Sprintf("%02d", n.Season)
 	}
-	return filepath.Join(destination, season)
+	return season
 }
 
 // GetMediaPath gives the full filename of given media
-func (n EpisodeDetails) GetMediaPath(destination string) string {
+func (n EpisodeDetails) GetMediaPath(showPath string) string {
 	cleanTitle := FileNameCleaner(n.Title)
 	cleanShow := FileNameCleaner(n.Showtitle)
 	var episode string
@@ -44,11 +44,11 @@ func (n EpisodeDetails) GetMediaPath(destination string) string {
 		episode = n.Aired.Time().Format("2006-01-02")
 	}
 	if cleanTitle == "" {
-		return filepath.Join(n.getSeasonPath(destination), cleanShow+" - "+episode+".mp4")
+		return filepath.Join(showPath, n.getSeasonPath(), cleanShow+" - "+episode+".mp4")
 
 	}
 
-	return filepath.Join(n.getSeasonPath(destination), cleanShow+" - "+episode+" - "+cleanTitle+".mp4")
+	return filepath.Join(showPath, n.getSeasonPath(), cleanShow+" - "+episode+" - "+cleanTitle+".mp4")
 }
 
 // Accepted check if ShowTitle or episode Title matches the filter
@@ -74,20 +74,21 @@ func (n EpisodeDetails) Accepted(m *matcher.MatchRequest) bool {
 }
 
 // GetMediaPathMatcher gives a name matcher for mis numbered episodes
-func (n EpisodeDetails) GetMediaPathMatcher(destination string) string {
+func (n EpisodeDetails) GetMediaPathMatcher(showPath string) string {
 	cleanTitle := FileNameCleaner(n.Title)
 	cleanShow := FileNameCleaner(n.Showtitle)
-	return filepath.Join(destination, "*", cleanShow+" - * - "+cleanTitle+".mp4")
+	return filepath.Join(showPath, "*", cleanShow+" - * - "+cleanTitle+".mp4")
 
 }
 
 // GetNFOPath give the path where the episode's NFO should be
-func (n EpisodeDetails) GetNFOPath(destination string) string {
-	nf := n.GetMediaPath(destination)
+func (n EpisodeDetails) GetNFOPath(showPath string) string {
+	nf := n.GetMediaPath(showPath)
 	return strings.TrimSuffix(nf, filepath.Ext(nf)) + ".nfo"
 }
 
 // WriteNFO file at expected place
+// TODO remove destination and get it from show path
 func (n *EpisodeDetails) WriteNFO(destination string) error {
 	err := os.MkdirAll(filepath.Dir(destination), 0777)
 	if err != nil {

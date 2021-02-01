@@ -1,0 +1,96 @@
+package artetv
+
+import (
+	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"os"
+
+	"path"
+	"strings"
+	"testing"
+
+	"github.com/gocolly/colly"
+	"github.com/simulot/aspiratv/parsers/htmlparser"
+)
+
+func TestExtractList(t *testing.T) {
+	// Save arte program's page into DATA folder
+
+	files, err := ioutil.ReadDir("DATA")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, file := range files {
+		if strings.ToLower(path.Ext(file.Name())) == ".html" {
+			testHTML(t, "/DATA/"+file.Name())
+		}
+	}
+}
+
+func testHTML(t *testing.T, filename string) {
+	ts := setupTestServer()
+	parser := htmlparser.NewFactory().New()
+	var js string
+
+	t.Log(filename)
+
+	parser.OnHTML("body > script", func(e *colly.HTMLElement) {
+		if strings.Index(e.Text, "__INITIAL_STATE__") < 0 {
+			return
+		}
+		start := strings.Index(e.Text, "{")
+		end := strings.LastIndex(e.Text, "}")
+		if start < 0 || end < 0 {
+			return
+		}
+
+		js = e.Text[:end+1][start:]
+
+	})
+	err := parser.Visit(ts.URL + filename)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if js == "" {
+		t.Error("Script not found")
+	}
+
+	pgm := InitialProgram{}
+	err = json.NewDecoder(strings.NewReader(js)).Decode(&pgm)
+	if err != nil {
+		t.Log(err)
+	}
+
+	_ = js
+
+}
+
+func setupTestServer() *httptest.Server {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/DATA/", func(w http.ResponseWriter, r *http.Request) {
+		wd, _ := os.Getwd()
+		f, err := os.Open(wd + r.URL.Path)
+		if err != nil {
+			w.WriteHeader(500)
+			w.Write([]byte("<p>error</p>"))
+			return
+		}
+		content, err := ioutil.ReadAll(f)
+		if err != nil {
+			w.WriteHeader(500)
+			w.Write([]byte("<p>error</p>"))
+			return
+		}
+		f.Close()
+
+		w.Header().Set("Content-Type", "text/html")
+		w.Write(content)
+	})
+
+	return httptest.NewServer(mux)
+}

@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/url"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -322,12 +321,15 @@ func (p *ArteTV) getShows(ctx context.Context, mr *matcher.MatchRequest, data []
 //https://    www.arte.tv/guide/api/emac/v3/fr/web/data/COLLECTION_VIDEOS/?collectionId=RC-014408&page=1&limit=100
 //https://api-cdn.arte.tv/      api/emac/v3/fr/web/data/COLLECTION_VIDEOS/?collectionId=RC-015842&page=2&limit=12
 var (
-	parseCollectionInURL = regexp.MustCompile(`RC-\d+`)       // Detect Season URL
-	parseSeason          = regexp.MustCompile(`Saison (\d+)`) // Detect season number in web page
+	parseSeason  = regexp.MustCompile(`Saison (\d+)`)              // Detect season number in web page
+	parseEpisode = regexp.MustCompile(`^(?:.+) \((\d+)\/(\d+)\)$`) // Extract episode number
 )
 
 // getSerie
 // Arte presents a serie either as collection of episodes for a single season or as a collection of collection of episodes for multiple seasons.
+
+var parseShowSeason = regexp.MustCompile(`^(.+) - Saison (\d+)$`)
+
 func (p *ArteTV) getSerie(ctx context.Context, mr *matcher.MatchRequest, d Data) chan *providers.Media {
 	ctx, done := context.WithTimeout(ctx, p.deadline)
 	shows := make(chan *providers.Media)
@@ -338,149 +340,126 @@ func (p *ArteTV) getSerie(ctx context.Context, mr *matcher.MatchRequest, d Data)
 			done()
 		}()
 
-		//TODO: use user's preferred language
-		const apiSEARCH = "https://www.arte.tv/guide/api/emac/v3/fr/web/data/COLLECTION_VIDEOS/?collectionId=%s&page=%d&limit=12"
+		// TODO: use user's preferred language
+		// Refactoring. The collection's page contains a script with the full serie split per seasons, no need to call the api
 
-		collectionIDs := map[string]string{"": d.ProgramID} // Collection per season
-		seasonSearched := false
+		parser := p.htmlParserFactory.New()
+		pgm := InitialProgram{}
 
-		tvshow := nfo.TVShow{
-			Title: d.Title,
-			Plot:  d.ShortDescription,
-			Thumb: getThumbs(d.Images),
-		}
-
-	collectionLoop:
-		for len(collectionIDs) > 0 {
-			if ctx.Err() != nil {
+		parser.OnHTML("body > script", func(e *colly.HTMLElement) {
+			if strings.Index(e.Text, "__INITIAL_STATE__") < 0 {
+				return
+			}
+			// Get JSON with collection data from the HTML page of the collection
+			start := strings.Index(e.Text, "{")
+			end := strings.LastIndex(e.Text, "}")
+			if start < 0 || end < 0 {
 				return
 			}
 
-			seasons := []string{}
-			for k := range collectionIDs {
-				seasons = append(seasons, k)
+			js := e.Text[:end+1][start:]
+			err := json.NewDecoder(strings.NewReader(js)).Decode(&pgm)
+			if err != nil {
+				p.config.Log.Error().Printf("[%s] Can't parse JSON collection: %w", p.Name(), err)
+				return
 			}
-			sort.Strings(seasons)
-			u := fmt.Sprintf(apiSEARCH, collectionIDs[seasons[0]], 1)
 
-			// Loop collections's pages
-			for len(u) > 0 {
+		})
 
-				u2, err := url.Parse(u)
-				if err != nil {
-					p.config.Log.Error().Printf("[%s] GetSeries: '%s' ", p.Name(), err)
-					return
-				}
-				u2.Host = "www.arte.tv"
-				u2.Path = "guide/api/emac/v3/fr/web/data/COLLECTION_VIDEOS"
-				u = u2.String()
-				p.config.Log.Trace().Printf("[%s] GetSeries URL is '%s'", p.Name(), u)
-				r, err := p.getter.Get(ctx, u)
+		err := parser.Visit(d.URL)
+		if err != nil {
+			p.config.Log.Error().Printf("[%s] Can't visit URL: %w", p.Name(), err)
+			return
+		}
 
-				if p.config.Log.IsDebug() {
-					r = httptest.DumpReaderToFile(p.config.Log, r, "artetv-getcollection-")
-				}
-				if err != nil {
-					p.config.Log.Error().Printf("[%s] Can't get collection: %q", p.Name(), err)
-					return
-				}
-				if ctx.Err() != nil {
-					return
-				}
-				var result APIResult
-				err = json.NewDecoder(r).Decode(&result)
-				r.Close()
-				if err != nil {
-					p.config.Log.Error().Printf("[%s] Can't get decode collection: %q", p.Name(), err)
-					return
-				}
+		for _, page := range pgm.Pages.List {
+			var tvshow nfo.TVShow
+			for _, zone := range page.Zones {
 
-				if len(result.Data) == 0 {
-					// A collection of collection (a series, indeed) entry hasn't any Data. We have to fetch collections for each season
-					if seasonSearched {
-						p.config.Log.Error().Printf("[%s] Can't found collection with ID(%s): %q", p.Name(), d.ProgramID, err)
-						return
+				// Get show level info
+				if zone.Code.Name == "collection_content" {
+					for _, data := range zone.Data {
+						tvshow.Title = data.Title
+						tvshow.Plot = data.Description
+						tvshow.Thumb = getThumbs(data.Images)
 					}
-					seasonSearched = true
+					continue
+				}
 
-					// No results on a collection ID? this means this is a collection of collections...
-					// Let's scrap the web page to get the collection list, most likely all seasons
-					delete(collectionIDs, "")
+				// Get episodes
+				if zone.Code.Name == "collection_subcollection" || zone.Code.Name == "collection_videos" {
+					season := 0
 
-					parser := p.htmlParserFactory.New()
+					m := parseShowSeason.FindAllStringSubmatch(zone.Title, -1)
+					if len(m) > 0 {
+						season, _ = strconv.Atoi(m[0][2])
+					}
 
-					parser.OnHTML("a.next-navbar__slide", func(e *colly.HTMLElement) {
-						var season, id string
-						m := parseSeason.FindAllStringSubmatch(e.Text, -1)
-						if len(m) == 1 {
-							season = m[0][1]
+					for _, ep := range zone.Data {
+						episode := 0
+						m := parseEpisode.FindAllStringSubmatch(ep.Title, -1)
+						if len(m) > 0 {
+							episode, _ = strconv.Atoi(m[0][1])
 						}
-						m = parseCollectionInURL.FindAllStringSubmatch(e.Attr("href"), -1)
-						if len(m) == 2 {
-							id = m[1][0]
+
+						// Emit media found in the current collection/season
+						media := &providers.Media{
+							ID:       ep.ProgramID,
+							ShowType: providers.Series,
+							Match:    mr,
 						}
-						collectionIDs[season] = id
-					})
 
-					err := parser.Visit(d.URL)
-					if err != nil {
-						p.config.Log.Error().Printf("[%s] Can't get collection: %q", p.Name(), err)
-						return
-					}
-					continue collectionLoop
-				}
-
-				// Emit media found in the current collection/season
-				for _, ep := range result.Data {
-					media := &providers.Media{
-						ID:       ep.ProgramID,
-						ShowType: providers.Series,
-						Match:    mr,
-					}
-
-					info := nfo.EpisodeDetails{
-						MediaInfo: nfo.MediaInfo{
-							UniqueID: []nfo.ID{
-								{
-									ID:   ep.ProgramID,
-									Type: "ARTETV",
+						info := nfo.EpisodeDetails{
+							MediaInfo: nfo.MediaInfo{
+								UniqueID: []nfo.ID{
+									{
+										ID:   ep.ProgramID,
+										Type: "ARTETV",
+									},
 								},
+								Title:     getFirstString([]string{ep.Subtitle, ep.Title, tvshow.Title}),
+								Showtitle: tvshow.Title,
+								Plot:      getFirstString([]string{ep.Description, ep.ShortDescription}),
+								Thumb:     getThumbs(ep.Images),
+								TVShow:    &tvshow,
+								Tag:       []string{"Arte"},
+								Season:    season,
+								Episode:   episode,
+								Aired:     nfo.Aired(ep.Availability.Start),
+								URL:       ep.URL,
 							},
-							Title:     ep.Title,
-							Showtitle: tvshow.Title,
-							Plot:      ep.ShortDescription,
-							Thumb:     getThumbs(ep.Images),
-							TVShow:    &tvshow,
-							Tag:       []string{"Arte"},
-						},
-					}
-					setEpisodeFormTitle(&info, tvshow, ep)
-					if info.Episode != 0 && info.Season != 0 {
-						tvshow.HasEpisodes = true
-					}
+						}
 
-					if ep.Kind.Code == "BONUS" {
-						info.Season = 0 // Specials
-					}
-					if tvshow.HasEpisodes && info.Episode == 0 {
-						info.Season = 0 // Specials
-					}
-					if !tvshow.HasEpisodes && info.Episode == 0 {
-						info.Season = info.Aired.Time().Year()
-					}
+						tvshow.HasEpisodes = len(zone.Data) > 0
 
-					// TODO Actors
+						if ep.Kind.Code == "SHOW" && info.Season == 0 {
+							info.Season = info.Aired.Time().Year()
+						}
 
-					media.SetMetaData(&info)
-					shows <- media
+						if ep.Kind.Code == "BONUS" {
+							info.Season = 0 // Specials
+						}
+						// TODO Actors --> details in player
+
+						media.SetMetaData(&info)
+						shows <- media
+					}
 				}
-				u = result.NextPage
 			}
-			delete(collectionIDs, seasons[0]) // Season on top of the stack is done.
+
 		}
 	}()
 
 	return shows
+}
+
+func getFirstString(ss []string) string {
+	for _, s := range ss {
+		if s != "" {
+			return s
+		}
+	}
+	return ""
 }
 
 var (
@@ -571,15 +550,89 @@ const arteDetails = "https://api.arte.tv/api/player/v1/config/fr/%s?autostart=1&
 func (p *ArteTV) GetMediaDetails(ctx context.Context, m *providers.Media) error {
 	info := m.Metadata.GetMediaInfo()
 
-	if info.URL != "" {
-		return nil
+	player_url := fmt.Sprintf(arteDetails, info.UniqueID[0].ID) // TODO search for ARTE ID
+
+	if !info.IsDetailed {
+		parser := p.htmlParserFactory.New()
+		pgm := InitialProgram{}
+		js := ""
+
+		parser.OnHTML("body > script", func(e *colly.HTMLElement) {
+			if strings.Index(e.Text, "__INITIAL_STATE__") < 0 {
+				return
+			}
+			// Get JSON with collection data from the HTML page of the collection
+			start := strings.Index(e.Text, "{")
+			end := strings.LastIndex(e.Text, "}")
+			if start < 0 || end < 0 {
+				return
+			}
+
+			js = e.Text[:end+1][start:]
+
+		})
+
+		err := parser.Visit(info.URL)
+		if err != nil {
+			p.config.Log.Error().Printf("[%s] Can't visit URL: %w", p.Name(), err)
+			return err
+		}
+		err = json.NewDecoder(strings.NewReader(js)).Decode(&pgm)
+		if err != nil {
+			p.config.Log.Error().Printf("[%s] Can't parse JSON collection: %w", p.Name(), err)
+			return err
+		}
+		for _, page := range pgm.Pages.List {
+			for _, zone := range page.Zones {
+				// Get episodes details
+				if zone.Code.Name == "program_content" {
+					for _, ep := range zone.Data {
+						for _, credit := range ep.Credits {
+							switch credit.Code {
+							case "ACT":
+								regActors := regexp.MustCompile(`^(.+)(?:\s\((.+)\))$|(.+)$`)
+
+								for _, v := range credit.Values {
+									actor := nfo.Actor{}
+
+									m := regActors.FindAllStringSubmatch(v, -1)
+									if len(m) > 0 {
+										if len(m[0]) == 4 {
+											if len(m[0][3]) > 0 {
+												actor.Name = m[0][3]
+											} else {
+												actor.Name = m[0][1]
+												actor.Role = m[0][2]
+											}
+										}
+									}
+									info.Actor = append(info.Actor, actor)
+								}
+							case "REA":
+								for _, v := range credit.Values {
+									info.Director = append(info.Director, v)
+								}
+							case "COUNTRY", "PRODUCTION_YEAR":
+								for _, v := range credit.Values {
+									info.Tag = append(info.Tag, v)
+								}
+							default:
+								for _, v := range credit.Values {
+									info.Credits = append(info.Credits, fmt.Sprintf("%s (%s)", v, credit.Label))
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
-	url := fmt.Sprintf(arteDetails, m.ID)
-	p.config.Log.Trace().Printf("[%s] Title '%s' url: %q", p.Name(), m.Metadata.GetMediaInfo().Title, url)
-	r, err := p.getter.Get(ctx, url)
+	p.config.Log.Trace().Printf("[%s] Title '%s' player url: %q", p.Name(), info.Title, player_url)
+
+	r, err := p.getter.Get(ctx, player_url)
 	if err != nil {
-		return fmt.Errorf("Can't get show's detailled information: %w", err)
+		return fmt.Errorf("Can't get player for %q: %w", info.Title, err)
 	}
 	if p.config.Log.IsDebug() {
 		r = httptest.DumpReaderToFile(p.config.Log, r, "artetv-info-"+m.ID+"-")
@@ -597,11 +650,13 @@ func (p *ArteTV) GetMediaDetails(ctx context.Context, m *providers.Media) error 
 	}
 
 	info.URL = u
-	info.Aired = nfo.Aired(player.VideoJSONPlayer.VRA.Time())
-
-	if info.TVShow != nil && !info.TVShow.HasEpisodes && info.Episode == 0 {
-		info.Season = info.Aired.Time().Year()
+	if info.Aired.Time().IsZero() {
+		info.Aired = nfo.Aired(player.VideoJSONPlayer.VRA.Time())
 	}
+
+	// if info.TVShow != nil && !info.TVShow.HasEpisodes && info.Episode == 0 {
+	// 	info.Season = info.Aired.Time().Year()
+	// }
 	return nil
 }
 

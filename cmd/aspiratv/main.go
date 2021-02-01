@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"path"
 	"regexp"
 
 	"fmt"
@@ -17,6 +18,7 @@ import (
 
 	flag "github.com/spf13/pflag"
 
+	"github.com/simulot/aspiratv/metadata/nfo"
 	"github.com/simulot/aspiratv/mylog"
 	"github.com/simulot/aspiratv/net/myhttp"
 	"github.com/simulot/aspiratv/providers"
@@ -396,23 +398,30 @@ showLoop:
 		}
 		seen[m.ID] = true
 
-		mediaBasePath := filepath.Base(m.Metadata.GetMediaPath(m.Match.ShowRootPath))
+		if m.Match.ShowRootPath == "" {
+			m.ShowPath = path.Join(a.Config.Destinations[m.Match.Destination], nfo.FileNameCleaner(m.Metadata.GetMediaInfo().Showtitle))
+		} else {
+			m.ShowPath = m.Match.ShowRootPath
+		}
+
+		mediaBaseName := filepath.Base(m.Metadata.GetMediaPath(m.ShowPath))
+
 		select {
 		case <-ctx.Done():
 			a.logger.Trace().Printf("[%s] Context done, received %s", p.Name(), ctx.Err())
 			break showLoop
 		default:
 			if !m.Metadata.Accepted(m.Match) {
-				a.logger.Trace().Printf("[%s] %s is filtered out.", p.Name(), mediaBasePath)
+				a.logger.Trace().Printf("[%s] %s is filtered out.", p.Name(), mediaBaseName)
 			} else if a.Config.Force || a.MustDownload(ctx, p, m) {
-				a.logger.Trace().Printf("[%s] Download of %q submitted", p.Name(), mediaBasePath)
+				a.logger.Trace().Printf("[%s] Download of %q submitted", p.Name(), mediaBaseName)
 				showCount++
 				if !a.Config.Headless {
 					providerBar.SetTotal(showCount, false)
 				}
 				a.SubmitDownload(ctx, &wg, p, m, pc, providerBar)
 			} else {
-				a.logger.Trace().Printf("[%s] %s already downloaded.", p.Name(), mediaBasePath)
+				a.logger.Trace().Printf("[%s] %s already downloaded.", p.Name(), mediaBaseName)
 			}
 			if ctx.Err() != nil {
 				a.logger.Debug().Printf("[%s] PullShows received %s", p.Name(), ctx.Err())
@@ -436,13 +445,13 @@ showLoop:
 
 // MustDownload check if the show isn't yet downloaded.
 func (a *app) MustDownload(ctx context.Context, p providers.Provider, m *providers.Media) bool {
-	mediaPath := m.Metadata.GetMediaPath(m.Match.ShowRootPath)
+	mediaPath := m.Metadata.GetMediaPath(m.ShowPath)
 	mediaExists, err := fileExists(mediaPath)
 	if mediaExists {
 		return false
 	}
 
-	mediaPath = m.Metadata.GetMediaPathMatcher(m.Match.ShowRootPath)
+	mediaPath = m.Metadata.GetMediaPathMatcher(m.ShowPath)
 	files, err := filepath.Glob(mediaPath)
 	if err != nil {
 		log.Fatalf("Can't glob %s: %v", mediaPath, err)
