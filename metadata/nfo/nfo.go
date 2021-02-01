@@ -50,7 +50,8 @@ type MediaInfo struct {
 	Actor          []Actor  `xml:"actor,omitempty"`
 	Tag            []string `xml:"tag,omitempty"`
 
-	URL        string  `xml:"-"` // Media URL
+	MediaURL   string  `xml:"-"` // Media URL mp4
+	PageURL    string  `xml:"-"` // Show page url
 	IsSpecial  bool    `xml:"-"` // True when special episode
 	SeasonInfo *Season `xml:"-"` // Possible Season nfo
 	TVShow     *TVShow `xml:"-"` // Possible TVShow nfo

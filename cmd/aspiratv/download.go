@@ -81,7 +81,7 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, m *provide
 	itemName = filepath.Base(m.Metadata.GetMediaPath(ShowPath))
 
 	err := p.GetMediaDetails(ctx, m) // Side effect: Episode number can be determined at this point.
-	url := m.Metadata.GetMediaInfo().URL
+	url := m.Metadata.GetMediaInfo().MediaURL
 	if err != nil || len(url) == 0 {
 		a.logger.Error().Printf("[%s] Can't get url from %s.", p.Name(), filepath.Base(m.Metadata.GetMediaPath(ShowPath)))
 		return

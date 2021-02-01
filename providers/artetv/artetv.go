@@ -296,9 +296,10 @@ func (p *ArteTV) getShows(ctx context.Context, mr *matcher.MatchRequest, data []
 							Type: "ARTETV",
 						},
 					},
-					Title: ep.Title,
-					Plot:  ep.ShortDescription,
-					Thumb: getThumbs(ep.Images),
+					Title:   ep.Title,
+					Plot:    ep.ShortDescription,
+					Thumb:   getThumbs(ep.Images),
+					PageURL: ep.URL,
 					// TVShow:    &tvshow,
 					Tag: []string{"Arte"},
 				},
@@ -368,7 +369,7 @@ func (p *ArteTV) getSerie(ctx context.Context, mr *matcher.MatchRequest, d Data)
 
 		err := parser.Visit(d.URL)
 		if err != nil {
-			p.config.Log.Error().Printf("[%s] Can't visit URL: %w", p.Name(), err)
+			p.config.Log.Error().Printf("[%s] Can't visit URL %q: %w", p.Name(), err)
 			return
 		}
 
@@ -426,7 +427,7 @@ func (p *ArteTV) getSerie(ctx context.Context, mr *matcher.MatchRequest, d Data)
 								Season:    season,
 								Episode:   episode,
 								Aired:     nfo.Aired(ep.Availability.Start),
-								URL:       ep.URL,
+								PageURL:   ep.URL,
 							},
 						}
 
@@ -513,7 +514,7 @@ func getBestImage(image Image) string {
 
 const arteDetails = "https://api.arte.tv/api/player/v1/config/fr/%s?autostart=1&lifeCycle=1" // Player to get Video streams ProgID
 
-// GetMediaDetails return the show's URL, a mp4 file
+// GetMediaDetails return the media's URL, a mp4 file
 func (p *ArteTV) GetMediaDetails(ctx context.Context, m *providers.Media) error {
 	info := m.Metadata.GetMediaInfo()
 
@@ -539,9 +540,9 @@ func (p *ArteTV) GetMediaDetails(ctx context.Context, m *providers.Media) error 
 
 		})
 
-		err := parser.Visit(info.URL)
+		err := parser.Visit(info.PageURL)
 		if err != nil {
-			p.config.Log.Error().Printf("[%s] Can't visit URL: %w", p.Name(), err)
+			p.config.Log.Error().Printf("[%s] Can't visit URL %q: %w", p.Name(), err)
 			return err
 		}
 		err = json.NewDecoder(strings.NewReader(js)).Decode(&pgm)
@@ -616,7 +617,7 @@ func (p *ArteTV) GetMediaDetails(ctx context.Context, m *providers.Media) error 
 		return err
 	}
 
-	info.URL = u
+	info.MediaURL = u
 	if info.Aired.Time().IsZero() {
 		info.Aired = nfo.Aired(player.VideoJSONPlayer.VRA.Time())
 	}

@@ -180,9 +180,9 @@ func (p *FranceTV) GetMediaDetails(ctx context.Context, m *providers.Media) erro
 		if len(pl.URL) == 0 {
 			return fmt.Errorf("Show's URL is empty")
 		}
-		info.URL = pl.URL
+		info.MediaURL = pl.URL
 
 	}
-	p.config.Log.Trace().Printf("[%s] Player URL for '%s' is %q ", p.Name(), m.Metadata.GetMediaInfo().Title, info.URL)
+	p.config.Log.Trace().Printf("[%s] Player URL for '%s' is %q ", p.Name(), m.Metadata.GetMediaInfo().Title, info.MediaURL)
 	return nil
 }

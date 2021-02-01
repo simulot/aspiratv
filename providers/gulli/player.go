@@ -72,7 +72,7 @@ func (p *Gulli) getPlayer(ctx context.Context, mr *matcher.MatchRequest, ID stri
 					info = &nfo.MediaInfo{}
 				case "file":
 					if strings.HasSuffix(strings.ToLower(s), ".m3u8") {
-						info.URL = s
+						info.MediaURL = s
 					}
 				case "image":
 					info.Thumb = []nfo.Thumb{
