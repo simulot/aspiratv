@@ -244,19 +244,18 @@ func (a *app) Download(ctx context.Context) {
 	}
 
 	for dl := 1; dl < flag.NArg(); dl++ {
+		mr := matcher.MatchRequest{
+			Destination:   "DL",
+			Show:          strings.ToLower(flag.Arg(dl)),
+			Provider:      a.Config.Provider,
+			MaxAgedDays:   a.Config.MaxAgedDays,
+			RetentionDays: a.Config.RetentionDays,
+			TitleFilter:   filter,
+			TitleExclude:  exclude,
+			ShowRootPath:  a.Config.ShowPath,
+		}
+		a.Config.WatchList = append(a.Config.WatchList, &mr)
 
-		a.Config.WatchList = append(a.Config.WatchList,
-			&matcher.MatchRequest{
-				Destination:   "DL",
-				Show:          strings.ToLower(flag.Arg(dl)),
-				Provider:      a.Config.Provider,
-				MaxAgedDays:   a.Config.MaxAgedDays,
-				RetentionDays: a.Config.RetentionDays,
-				TitleFilter:   filter,
-				TitleExclude:  exclude,
-				ShowRootPath:  a.Config.ShowPath,
-			},
-		)
 	}
 	a.worker = workers.New(ctx, a.Config.ConcurrentTasks, a.logger) //TODO
 	a.getter = myhttp.DefaultClient
@@ -385,7 +384,7 @@ func (a *app) PullShows(ctx context.Context, p providers.Provider, pc *mpb.Progr
 		providerBar.SetPriority(int(atomic.AddInt32(&nbPuller, 1)))
 	}
 
-	a.logger.Trace().Printf("Get shows list for %s", p.Name())
+	a.logger.Trace().Printf("[%s] Get shows list", p.Name())
 	seen := map[string]bool{}
 	wg := sync.WaitGroup{}
 
@@ -393,6 +392,8 @@ func (a *app) PullShows(ctx context.Context, p providers.Provider, pc *mpb.Progr
 showLoop:
 
 	for m := range p.MediaList(ctx, a.Config.WatchList) {
+		a.logger.Trace().Printf("[%s] Get id  %s", p.Name(), m.ID)
+
 		if _, ok := seen[m.ID]; ok {
 			continue
 		}

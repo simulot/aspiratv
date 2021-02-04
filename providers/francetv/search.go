@@ -5,11 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/gocolly/colly"
 	"github.com/simulot/aspiratv/metadata/nfo"
 	"github.com/simulot/aspiratv/net/myhttp/httptest"
 	"github.com/simulot/aspiratv/providers"
@@ -20,9 +23,9 @@ import (
 const homeFranceTV = "https://www.france.tv"
 
 type RequestPayLoad struct {
-	Term    string  `json:"term"`
-	Signal  Signal  `json:"signal"`
-	Options Options `json:"options"`
+	Term    string   `json:"term"`
+	Signal  Signal   `json:"signal"`
+	Options *Options `json:"options,omitempty"`
 }
 type Signal struct {
 }
@@ -36,19 +39,31 @@ func (p *FranceTV) search(ctx context.Context, mr *matcher.MatchRequest) chan *p
 	mm := make(chan *providers.Media)
 
 	go func() {
-		defer close(mm)
+		var err error
+		p.config.Log.Trace().Printf("[%s] Search for %q", p.Name(), mr.Show)
+
+		defer func() {
+			p.config.Log.Trace().Printf("[%s] Search for %q is done", p.Name(), mr.Show)
+			if err != nil {
+				p.config.Log.Error().Printf("[%s] Can't search: %w", p.Name(), err)
+
+			}
+			close(mm)
+		}()
 		// ctx, done := context.WithTimeout(ctx, p.deadline)
 		// defer done()
 
 		rq := RequestPayLoad{
 			Term: mr.Show,
-			Options: Options{
+			Options: &Options{
 				ContentsLimit: 20,
 				// TaxonomiesLimit: 20,
 				Types: "content",
 			},
 		}
-		encRq, err := json.Marshal(rq)
+
+		var resp []byte
+		resp, err = json.Marshal(rq)
 		if err != nil {
 			p.config.Log.Error().Printf("[%s] Can't encode request: %s", p.Name(), err)
 			return
@@ -61,10 +76,11 @@ func (p *FranceTV) search(ctx context.Context, mr *matcher.MatchRequest) chan *p
 			for k, s := range h {
 				p.config.Log.Debug().Printf("[%s] %q %s", p.Name(), k, strings.Join(s, ","))
 			}
-			p.config.Log.Debug().Printf(string(encRq))
+			p.config.Log.Debug().Printf(string(resp))
 		}
 
-		r, err := p.getter.DoWithContext(ctx, "POST", "https://www.france.tv/recherche/lancer/", h, bytes.NewBuffer(encRq))
+		var r io.ReadCloser
+		r, err = p.getter.DoWithContext(ctx, "POST", "https://www.france.tv/recherche/lancer/", h, bytes.NewBuffer(resp))
 		if err != nil {
 			p.config.Log.Error().Printf("[%s] Can't call search API: %s", p.Name(), err)
 			return
@@ -73,7 +89,7 @@ func (p *FranceTV) search(ctx context.Context, mr *matcher.MatchRequest) chan *p
 			r = httptest.DumpReaderToFile(p.config.Log, r, "francetv-recherche-")
 		}
 
-		resp, err := ioutil.ReadAll(r)
+		resp, err = ioutil.ReadAll(r)
 		r.Close()
 		if err != nil {
 			p.config.Log.Error().Printf("[%s] Can't get API result: %s", p.Name(), err)
@@ -95,20 +111,35 @@ func (p *FranceTV) search(ctx context.Context, mr *matcher.MatchRequest) chan *p
 			return
 		}
 		if p.config.Log.IsDebug() {
-			p.config.Log.Trace().Printf("Decoded result")
 			reEncode, err := json.MarshalIndent(results, "", "  ")
 			if err != nil {
 				p.config.Log.Error().Printf("Can't encode json response: %s", err)
 			}
-			p.config.Log.Trace().Printf("\n%s", string(reEncode))
+			p.config.Log.Debug().Printf("[%s] Decoded result\n%s", p.Name(), string(reEncode))
 		}
-		for k, result := range results {
-			_ = k
+
+		// Search for series first
+		series := map[int]query.Program{}
+		for _, hit := range results["content"].Hits {
+			if strings.Contains(strings.ToLower(hit.Program.Label), mr.Show) {
+				series[hit.Program.ID] = hit.Program
+			}
+		}
+
+		if len(series) > 0 {
+			for _, prog := range series {
+				p.visitPageSerie(ctx, mr, mm, prog.URLComplete)
+			}
+			return
+		}
+
+		// Other videos
+
+		for _, result := range results {
 			for _, h := range result.Hits {
 				if h.Type != "integrale" {
 					continue
 				}
-
 				found := false
 				found = found || strings.Contains(strings.ToLower(h.Program.Label), mr.Show)
 				found = found || strings.Contains(strings.ToLower(h.Title), mr.Show)
@@ -122,7 +153,7 @@ func (p *FranceTV) search(ctx context.Context, mr *matcher.MatchRequest) chan *p
 				}
 				var info *nfo.MediaInfo
 
-				if h.SeasonNumber != 0 || h.Program.Class == "program" {
+				if h.SeasonNumber != 0 || h.Class == "program" || h.Program.Class == "program" {
 					meta := nfo.EpisodeDetails{}
 					info = &meta.MediaInfo
 					media.SetMetaData(&meta)
@@ -230,4 +261,85 @@ func (p *FranceTV) search(ctx context.Context, mr *matcher.MatchRequest) chan *p
 		}
 	}()
 	return mm
+}
+
+var reID = regexp.MustCompile(`\/(\d+)-[^\/]+\.html$`)
+var reAnalyseTitle = regexp.MustCompile(`^\s?S(\d+)?\s+E(\d+)\s+-\s+(.*)$`)
+
+func (p *FranceTV) visitPageSerie(ctx context.Context, mr *matcher.MatchRequest, mm chan *providers.Media, url string) error {
+	// https://www.france.tv/series-et-fictions/series-policieres-thrillers/district-31
+	// https://www.france.tv/recherche/lancer/query=district+31\u0026hitsPerPage=20\u0026page=0\u0026filters=(class%3Aprogram%20OR%20class%3Aevent)%20AND%20(counters.web.integral_counter%20%3E%200%20OR%20counters.web.extract_counter%20%3E%200)%20AND%20NOT%20type%3Asaison%20AND%20NOT%20type%3Acomposite\u0026restrictSearchableAttributes=%5B%22label%22%2C%22title%22%2C%22description%22%2C%22seo%22%5D
+
+	parser := p.htmlParserFactory.New()
+	page := 0
+	hits := 0
+	lastPageWithHits := 0
+
+	parser.OnHTML("a.c-card-video", func(e *colly.HTMLElement) {
+		if strings.Contains(e.Attr("class"), "unavailable") {
+			return
+		}
+
+		showTitle := e.ChildText("span.c-card-video__textarea-title")
+		if !strings.Contains(strings.ToLower(showTitle), mr.Show) {
+			return
+		}
+
+		u := e.Attr("href")
+		id := ""
+
+		match := reID.FindStringSubmatch(u)
+		if len(match) == 2 {
+			id = match[1]
+		}
+
+		info := nfo.MediaInfo{
+			UniqueID: []nfo.ID{
+				{
+					ID:   id,
+					Type: "francetv",
+				},
+			},
+			PageURL:   "https://www.france.tv/" + u,
+			Showtitle: showTitle,
+		}
+
+		if match = reAnalyseTitle.FindStringSubmatch(e.ChildText("span.c-card-video__textarea-subtitle")); len(match) != 4 {
+			return
+		}
+		info.Season, _ = strconv.Atoi(match[1])
+		info.Episode, _ = strconv.Atoi(match[2])
+		info.Title = strings.TrimSpace(match[3])
+
+		p.config.Log.Trace().Printf("[%s] Found %q", p.Name(), info.Title)
+
+		media := &providers.Media{
+			ID:    id,
+			Match: mr,
+			Metadata: &nfo.EpisodeDetails{
+				MediaInfo: info,
+			},
+		}
+		hits++
+		lastPageWithHits = page
+		mm <- media
+	})
+
+	url = "https://www.france.tv/" + url + "/toutes-les-videos/"
+
+	for {
+		u := url + "?page=" + strconv.Itoa(page)
+
+		p.config.Log.Trace().Printf("[%s] Visiting page %q", p.Name(), u)
+		err := parser.Visit(u)
+		if err != nil {
+			return err
+		}
+		if hits == 0 && page-lastPageWithHits > 1 {
+			break
+		}
+		page++
+		hits = 0
+	}
+	return nil
 }
