@@ -22,6 +22,7 @@ type MatchRequest struct {
 	RetentionDays int    // Media retention time, when not zero the system will delete old files
 	TitleFilter   Filter // ShowTitle or Episode title must match this regexp to be downloaded
 	TitleExclude  Filter // ShowTitle and Episode title must not match this regexp to be downloaded
+	KeepBonus     bool   // When trie bonuses and trailer are retrieved
 }
 
 // TODO implement IsTitleMatch for all providers

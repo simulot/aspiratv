@@ -1,6 +1,7 @@
 package download
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -13,13 +14,16 @@ import (
 	"github.com/simulot/aspiratv/metadata/nfo"
 	"github.com/simulot/aspiratv/mylog"
 	"github.com/simulot/aspiratv/parsers/mpdparser"
+	"github.com/simulot/aspiratv/parsers/ttml"
 )
 
 type DASHConfig struct {
-	getTokens chan bool
-	conf      *DownloadConfiguration
-	mpd       *mpdparser.MPDParser
-	bytesRead int64
+	getTokens     chan bool
+	conf          *DownloadConfiguration
+	mpd           *mpdparser.MPDParser
+	bytesRead     int64
+	lastFFMPGLine string
+	cmd           *exec.Cmd
 }
 
 // DASH download mp4 file at media's url.
@@ -48,92 +52,169 @@ func DASH(ctx context.Context, log *mylog.MyLog, in, out string, info *nfo.Media
 	}
 
 	d.mpd = mpdparser.NewMPDParser()
+	d.conf.logger.Trace().Printf("[DASH] Get manifest at %q", in)
 	err := d.mpd.Get(ctx, in)
 	if err != nil {
 		return fmt.Errorf("[DASH] Can't get manifest: %s", err)
 	}
 
-	videoIT, err := d.progression(in, "video/mp4")
-	if err != nil {
-		return err
+	segmentIterators := []mpdparser.SegmentIterator{}
+	segmentFileName := []string{}
+
+	for _, as := range d.mpd.Period[0].AdaptationSet {
+
+		best := as.GetBestRepresentation()
+		if best == nil {
+			continue
+		}
+
+		it, err := d.mpd.MediaURIs(in, d.mpd.Period[0], as, best)
+		if err != nil {
+			return fmt.Errorf("Can't get segments list: %s", err)
+		}
+		d.conf.logger.Trace().Printf("[DASH] Found representation for type=%q, lang=%q, representation=%q", as.ContentType, as.Lang, best.ID)
+		segmentIterators = append(segmentIterators, it)
+		segmentFileName = append(segmentFileName, out+"."+it.Content()+"-"+it.Lang()+".mp4")
 	}
 
-	audioIT, err := d.getSegments(in, "audio/mp4")
-
-	if err != nil {
-		return err
-	}
 	var returnedErr error
 
 	defer func() {
-		if err != nil {
-			log.Error().Printf("[DASH] %w", returnedErr)
+		if returnedErr != nil {
+			log.Error().Printf("[DASH] %v", returnedErr)
 		} else {
 			log.Trace().Printf("[DASH] successful download of %s", out)
 		}
-		os.Remove(out + ".audio.mp4")
-		os.Remove(out + ".video.mp4")
-		if returnedErr != nil {
-			os.Remove(out)
+		for _, k := range segmentFileName {
+			os.Remove(k)
 		}
 	}()
 
 	wg := sync.WaitGroup{}
-	wg.Add(2)
-	var errVideo, errAudio error
-
-	go func() {
-		err := d.downloadSegments(ctx, out+".video.mp4", videoIT)
-		if err != nil {
-			errVideo = fmt.Errorf("Video segment: %w", err)
-			cancel()
-		}
-		wg.Done()
-	}()
-	go func() {
-		err := d.downloadSegments(ctx, out+".audio.mp4", audioIT)
-		if err != nil {
-			errAudio = err
-			errVideo = fmt.Errorf("Audio segment: %w", err)
-			cancel()
-		}
-		wg.Done()
-	}()
-
-	wg.Wait()
-	switch {
-	case errVideo != nil:
-		returnedErr = errVideo
-	case errAudio != nil:
-		returnedErr = errAudio
+	for k, it := range segmentIterators {
+		wg.Add(1)
+		go func(k int, it mpdparser.SegmentIterator) {
+			switch it.Content() {
+			case "text":
+				returnedErr = d.downloadSegments(ctx, segmentFileName[k], it, ttml.TrancodeToSRT)
+			case "video":
+				returnedErr = d.downloadSegments(ctx, segmentFileName[k], d.progression(it), straitCopy)
+			default:
+				returnedErr = d.downloadSegments(ctx, segmentFileName[k], it, straitCopy)
+			}
+			if err != nil {
+				cancel()
+			}
+			wg.Done()
+		}(k, it)
 	}
+	wg.Wait()
 
 	if returnedErr != nil {
 		return returnedErr
 	}
 
-	// Combine the streams
-	params := []string{
-		"-i", out + ".video.mp4",
-		"-i", out + ".audio.mp4",
-		"-codec", "copy",
+	// Combine the streams and subtiles
+	// http://zoid.cc/12/12/ffmpeg-audio-video/
+	// https://en.wikibooks.org/wiki/FFMPEG_An_Intermediate_Guide/subtitle_options
+	params := []string{}
+	for _, f := range segmentFileName {
+		params = append(params, "-i", f)
 	}
-	if info != nil {
-		params = append(params,
-			"-metadata", "title="+info.Title, // Force title
-			"-metadata", "comment="+info.Plot, // Force comment
-			"-metadata", "show="+info.Showtitle, //Force show
-			"-metadata", "channel="+info.Studio, // Force channel
-		)
+
+	for i, it := range segmentIterators {
+		switch it.Content() {
+		case "audio":
+			params = append(params, "-map", fmt.Sprintf("%d:a", i))
+		case "video":
+			params = append(params, "-map", fmt.Sprintf("%d:v", i))
+		case "text":
+			params = append(params, "-map", fmt.Sprintf("%d:s", i))
+		}
 	}
+
+	for i, it := range segmentIterators {
+		lang := "eng"
+		switch it.Lang() {
+		case "fr":
+			lang = "fra"
+		case "de":
+			lang = "deu"
+		case "nl":
+			lang = "dut"
+		case "it":
+			lang = "ita"
+		case "sp":
+			lang = "spa"
+		case "da":
+			lang = "dan"
+		}
+
+		switch it.Content() {
+		case "audio":
+			params = append(params, fmt.Sprintf("-metadata:s:%d", i), fmt.Sprintf("language=%s", lang))
+		case "text":
+			params = append(params, fmt.Sprintf("-metadata:s:%d", i), fmt.Sprintf("language=%s", lang), fmt.Sprintf("-metadata:s:%d", i), fmt.Sprintf("title=Subtitles %s", lang))
+		}
+	}
+
+	params = append(params, "-c:a", "copy")
+	params = append(params, "-c:v", "copy")
+	params = append(params, "-c:s", "mov_text")
+
+	// if info != nil {
+	// 	params = append(params,
+	// 		"-metadata", "title="+info.Title, // Force title
+	// 		"-metadata", "comment="+info.Plot, // Force comment
+	// 		"-metadata", "show="+info.Showtitle, //Force show
+	// 		"-metadata", "channel="+info.Studio, // Force channel
+	// 	)
+	// }
 	params = append(params,
 		"-f", "mp4",
 		"-y",
 		out,
 	)
-	cmd := exec.Command("ffmpeg", params...)
-	returnedErr = cmd.Run()
+
+	d.conf.logger.Trace().Printf("[DASH] ffmpeg %q", params)
+
+	d.cmd = exec.CommandContext(ctx, "ffmpeg", params...)
+	stdOut, returnedErr := d.cmd.StderrPipe()
+	if returnedErr != nil {
+		return fmt.Errorf("[DASH] %w", returnedErr)
+	}
+	d.watchFFMPG(stdOut)
+
+	returnedErr = d.cmd.Start()
+	if returnedErr != nil {
+		return fmt.Errorf("[DASH] %w", returnedErr)
+	}
+
+	returnedErr = d.cmd.Wait()
+	if returnedErr != nil {
+		returnedErr = fmt.Errorf("[FFMPEG] Error %s,\n %w", d.lastFFMPGLine, returnedErr)
+	}
+
 	return returnedErr
+}
+
+func (d *DASHConfig) watchFFMPG(r io.Reader) {
+
+	sc := bufio.NewScanner(r)
+	sc.Split(scanLines)
+	go func() {
+		const (
+			start int = iota
+			inInput
+			inRunning
+		)
+		var lastLine []byte // Keep the last line which contains the real error
+		for sc.Scan() {
+			l := sc.Bytes()
+			lastLine = l
+		}
+		d.lastFFMPGLine = string(lastLine)
+	}()
 }
 
 func (d *DASHConfig) getSegments(manifest, mime string) (mpdparser.SegmentIterator, error) {
@@ -160,15 +241,18 @@ type progressionIterator struct {
 	it mpdparser.SegmentIterator
 }
 
-func (d *DASHConfig) progression(manifest string, mime string) (mpdparser.SegmentIterator, error) {
-	it, err := d.getSegments(manifest, mime)
-	if err != nil {
-		return nil, err
-	}
+func (d *DASHConfig) progression(it mpdparser.SegmentIterator) mpdparser.SegmentIterator {
 	return &progressionIterator{
 		d:  d,
 		it: it,
-	}, nil
+	}
+}
+
+func (p *progressionIterator) Content() string {
+	return p.it.Content()
+}
+func (p *progressionIterator) Lang() string {
+	return p.it.Lang()
 }
 
 func (p *progressionIterator) Cancel() {
@@ -202,7 +286,13 @@ func (p *progressionIterator) Err() error {
 	return p.it.Err()
 }
 
-func (d *DASHConfig) downloadSegments(ctx context.Context, filename string, it mpdparser.SegmentIterator) error {
+type tFilter func(dst io.Writer, src io.Reader) (written int64, err error)
+
+func straitCopy(dst io.Writer, src io.Reader) (written int64, err error) {
+	return io.CopyBuffer(dst, src, nil)
+}
+
+func (d *DASHConfig) downloadSegments(ctx context.Context, filename string, it mpdparser.SegmentIterator, filter tFilter) error {
 	ctx, cancel := context.WithCancel(ctx)
 
 	cancelled := false
@@ -232,6 +322,7 @@ func (d *DASHConfig) downloadSegments(ctx context.Context, filename string, it m
 				cancelled = true
 				return fmt.Errorf("Can't get segment: %w", s.Err)
 			}
+			d.conf.logger.Debug().Printf("[DASH] Get segment %q", s.S)
 			r, err := http.Get(s.S)
 			if err != nil {
 				d.getTokens <- true
@@ -245,7 +336,8 @@ func (d *DASHConfig) downloadSegments(ctx context.Context, filename string, it m
 				cancelled = true
 				return fmt.Errorf("Can't get segment: %s", r.Status)
 			}
-			n, err := io.CopyBuffer(f, r.Body, nil)
+			// n, err := io.CopyBuffer(f, r.Body, nil)
+			n, err := filter(f, r.Body)
 			if err != nil {
 				r.Body.Close()
 				cancelled = true

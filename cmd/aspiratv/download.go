@@ -115,7 +115,7 @@ func (a *app) DownloadShow(ctx context.Context, p providers.Provider, m *provide
 	info := m.Metadata.GetMediaInfo()
 
 	files = append(files, fn)
-	dlErr = download.Download(ctx, a.logger, url, fn, info, download.WithProgress(pgr))
+	dlErr = download.Download(ctx, a.logger, url, fn, info, download.WithProgress(pgr), download.WithLogger(a.logger))
 
 	if dlErr != nil {
 		a.logger.Error().Printf("[%s] Download exits with error:\n%s", p.Name(), dlErr)

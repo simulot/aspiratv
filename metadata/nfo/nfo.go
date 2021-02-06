@@ -56,6 +56,7 @@ type MediaInfo struct {
 	SeasonInfo *Season `xml:"-"` // Possible Season nfo
 	TVShow     *TVShow `xml:"-"` // Possible TVShow nfo
 	IsDetailed bool    `xml:"-"` // True when details have been retrieved
+	IsBonus    bool    `xml:"-"` // True when the media is a bonus or a teaser
 }
 
 // Aired type helper

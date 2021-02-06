@@ -18,7 +18,8 @@ type Progresser interface {
 }
 
 type DownloadConfiguration struct {
-	pgr Progresser
+	pgr    Progresser
+	logger *mylog.MyLog
 	// params map[string]string
 }
 
@@ -96,6 +97,12 @@ func Download(ctx context.Context, log *mylog.MyLog, in, out string, info *nfo.M
 func WithProgress(pgr Progresser) ConfigurationFunction {
 	return func(c *DownloadConfiguration) {
 		c.pgr = pgr
+	}
+}
+
+func WithLogger(logger *mylog.MyLog) ConfigurationFunction {
+	return func(c *DownloadConfiguration) {
+		c.logger = logger
 	}
 }
 

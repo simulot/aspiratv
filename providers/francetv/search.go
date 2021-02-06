@@ -120,9 +120,11 @@ func (p *FranceTV) search(ctx context.Context, mr *matcher.MatchRequest) chan *p
 
 		// Search for series first
 		series := map[int]query.Program{}
-		for _, hit := range results["content"].Hits {
-			if strings.Contains(strings.ToLower(hit.Program.Label), mr.Show) {
-				series[hit.Program.ID] = hit.Program
+		for _, cat := range []string{"content", "taxonomy"} {
+			for _, hit := range results[cat].Hits {
+				if strings.Contains(strings.ToLower(hit.Program.Label), mr.Show) {
+					series[hit.Program.ID] = hit.Program
+				}
 			}
 		}
 
@@ -304,13 +306,23 @@ func (p *FranceTV) visitPageSerie(ctx context.Context, mr *matcher.MatchRequest,
 			Showtitle: showTitle,
 		}
 
-		if match = reAnalyseTitle.FindStringSubmatch(e.ChildText("span.c-card-video__textarea-subtitle")); len(match) != 4 {
+		subtitle := e.ChildText("span.c-card-video__textarea-subtitle")
+		if match = reAnalyseTitle.FindStringSubmatch(subtitle); len(match) == 4 {
+			info.Season, _ = strconv.Atoi(match[1])
+			info.Episode, _ = strconv.Atoi(match[2])
+			info.Title = strings.TrimSpace(match[3])
+		} else {
+			info.Title = subtitle
+		}
+
+		switch e.ChildText("span.c-label") {
+		case "extrait":
+			info.IsBonus = true
+		}
+
+		if !mr.KeepBonus && info.IsBonus {
 			return
 		}
-		info.Season, _ = strconv.Atoi(match[1])
-		info.Episode, _ = strconv.Atoi(match[2])
-		info.Title = strings.TrimSpace(match[3])
-
 		p.config.Log.Trace().Printf("[%s] Found %q", p.Name(), info.Title)
 
 		media := &providers.Media{

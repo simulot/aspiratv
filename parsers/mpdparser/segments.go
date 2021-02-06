@@ -96,6 +96,8 @@ type SegmentIterator interface {
 	Next() <-chan SegmentItem // Call it until error == io.EOF
 	Cancel()                  // To stop the iterator before the end
 	Err() error
+	Content() string
+	Lang() string
 }
 
 func (mpd *MPDParser) MediaURIs(ManifestURL string, p *Period, a *AdaptationSet, r *Representation) (SegmentIterator, error) {
@@ -179,6 +181,13 @@ type timeLineIterator struct {
 	closeChan   chan interface{}
 }
 
+func (i timeLineIterator) Content() string {
+	return i.a.ContentType
+}
+
+func (i timeLineIterator) Lang() string {
+	return i.a.Lang
+}
 func (i *timeLineIterator) Next() <-chan SegmentItem {
 	return i.segmentChan
 }
@@ -274,6 +283,14 @@ type numberIterator struct {
 	err         error
 	segmentChan chan SegmentItem
 	closeChan   chan interface{}
+}
+
+func (i numberIterator) Content() string {
+	return i.a.ContentType
+}
+
+func (i numberIterator) Lang() string {
+	return i.a.Lang
 }
 
 func (it *numberIterator) Next() <-chan SegmentItem {

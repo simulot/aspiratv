@@ -75,6 +75,10 @@ func (p *FranceTV) GetMediaDetails(ctx context.Context, m *providers.Media) erro
 
 	})
 
+	if info.Season == 0 && info.Episode == 0 {
+		info.Season = info.Aired.Time().Year()
+	}
+
 	parser.OnHTML("div.l-content script", func(e *colly.HTMLElement) {
 		if !strings.Contains(e.Text, "FTVPlayerVideos") {
 			return

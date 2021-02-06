@@ -102,7 +102,7 @@ func main() {
 	flag.StringVar(&a.Config.LogFile, "log", "", "Give the log file name.")
 	// flag.IntVar(&a.Config.RetentionDays, "retention", 0, "Delete media older than retention days for the downloaded show.")
 	flag.BoolVarP(&a.Config.WriteNFO, "write-nfo", "n", true, "Write NFO file for KODI,Emby,Plex...")
-	flag.BoolVarP(&a.Config.KeepBonus, "keep-bonuses", "b", true, "Download bonuses when true")
+	flag.BoolVarP(&a.Config.KeepBonus, "keep-bonuses", "b", false, "Download bonuses when true")
 	flag.IntVarP(&a.Config.MaxAgedDays, "max-aged", "a", 0, "Retrieve media younger than MaxAgedDays.")
 	flag.StringVarP(&a.Config.TitleFilter, "title-filter", "f", "", "Showtitle or Episode title must satisfy regexp filter")
 	flag.StringVarP(&a.Config.TitleExclude, "title-exclude", "e", "", "Showtitle and Episode title must not satisfy regexp filter")
@@ -253,6 +253,7 @@ func (a *app) Download(ctx context.Context) {
 			TitleFilter:   filter,
 			TitleExclude:  exclude,
 			ShowRootPath:  a.Config.ShowPath,
+			KeepBonus:     a.Config.KeepBonus,
 		}
 		a.Config.WatchList = append(a.Config.WatchList, &mr)
 
