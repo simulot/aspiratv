@@ -116,21 +116,21 @@ func (p *Gulli) MediaList(ctx context.Context, mm []*matcher.MatchRequest) chan 
 
 // GetMediaDetails gather show information from dedicated web page.
 func (p *Gulli) GetMediaDetails(ctx context.Context, m *providers.Media) error {
-	var err error
-	info := m.Metadata.GetMediaInfo()
-	title := strings.ToLower(info.Showtitle)
-	if info.TVShow == nil {
-		tvshow, ok := p.tvshows[title]
-		if !ok {
-			tvshow, err = p.getShowInfo(ctx, title)
-			if err != nil {
-				return err
-			}
-		}
+	// var err error
+	// info := m.Metadata.GetMediaInfo()
+	// title := strings.ToLower(info.Showtitle)
+	// if info.TVShow == nil {
+	// 	tvshow, ok := p.tvshows[title]
+	// 	if !ok {
+	// 		tvshow, err = p.getShowInfo(ctx, title)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 	}
 
-		info.TVShow = tvshow
-		return nil
+	// 	info.TVShow = tvshow
+	// 	return nil
 
-	}
+	// }
 	return nil
 }
