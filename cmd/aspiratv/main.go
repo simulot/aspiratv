@@ -403,7 +403,7 @@ showLoop:
 		if m.Match.ShowRootPath == "" {
 			m.ShowPath = path.Join(a.Config.Destinations[m.Match.Destination], nfo.FileNameCleaner(m.Metadata.GetMediaInfo().Showtitle))
 		} else {
-			m.ShowPath = m.Match.ShowRootPath
+			m.ShowPath = os.ExpandEnv(m.Match.ShowRootPath)
 		}
 
 		mediaBaseName := filepath.Base(m.Metadata.GetMediaPath(m.ShowPath))

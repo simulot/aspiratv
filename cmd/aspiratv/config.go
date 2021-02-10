@@ -22,7 +22,7 @@ func (a *app) Initialize(cmd string) {
 			a.logger.Fatal().Printf("[Initialize] %s", err)
 		}
 		// Check and normalize configuration file
-		a.Config.Check()
+		a.Check(&a.Config)
 	}
 
 	// Check ffmpeg presence
@@ -113,7 +113,7 @@ func (a *app) ReadConfig(configFile string) error {
 }
 
 // Check the configuration or die
-func (c *config) Check() {
+func (a *app) Check(c *config) {
 
 	// Expand paths
 	for d, p := range c.Destinations {
@@ -126,7 +126,9 @@ func (c *config) Check() {
 		m.Title = strings.ToLower(m.Title)
 		if len(m.ShowRootPath) == 0 {
 			if s, ok := c.Destinations[m.Destination]; !ok {
-				log.Fatalf("Destination %q for show %q is not defined into section Destination of %q", m.Destination, m.Show, c.ConfigFile)
+				if m.ShowRootPath == "" {
+					a.logger.Fatal().Printf("Destination %q for show %q is not defined into section Destination of %q", m.Destination, m.Show, c.ConfigFile)
+				}
 			} else {
 				m.ShowRootPath = filepath.Join(s, providers.PathNameCleaner(m.Show))
 			}

@@ -11,17 +11,17 @@
       "enabled": true
     },
     "gulli": {
-      "enabled": true
+      "enabled": false
     },
     "artetv": {
-      "enabled": true
+      "enabled": false
     }
   },
   "WatchList": [
     {
-      "Show": "La maison France 5",
+      "Show": "Les Lapins Crétins - Invasion",
       "Provider": "francetv",
-      "Destination": "Séries"
+      "ShowPath": "${HOME}/Videos/DL/TEST/LAPINS"
     }
   ]
 }
