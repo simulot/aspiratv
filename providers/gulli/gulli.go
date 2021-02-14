@@ -9,11 +9,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/simulot/aspiratv/matcher"
+	"github.com/simulot/aspiratv/media"
 	"github.com/simulot/aspiratv/metadata/nfo"
 	"github.com/simulot/aspiratv/net/myhttp"
 	"github.com/simulot/aspiratv/parsers/htmlparser"
 	"github.com/simulot/aspiratv/providers"
-	"github.com/simulot/aspiratv/providers/matcher"
 )
 
 type getter interface {
@@ -84,8 +85,8 @@ func withGetter(g getter) func(p *Gulli) {
 func (p Gulli) Name() string { return "gulli" }
 
 // MediaList download the shows catalog from the web site.
-func (p *Gulli) MediaList(ctx context.Context, mm []*matcher.MatchRequest) chan *providers.Media {
-	shows := make(chan *providers.Media)
+func (p *Gulli) MediaList(ctx context.Context, mm []*matcher.MatchRequest) chan *media.Media {
+	shows := make(chan *media.Media)
 
 	go func() {
 		defer close(shows)
@@ -115,22 +116,7 @@ func (p *Gulli) MediaList(ctx context.Context, mm []*matcher.MatchRequest) chan 
 }
 
 // GetMediaDetails gather show information from dedicated web page.
-func (p *Gulli) GetMediaDetails(ctx context.Context, m *providers.Media) error {
-	// var err error
-	// info := m.Metadata.GetMediaInfo()
-	// title := strings.ToLower(info.Showtitle)
-	// if info.TVShow == nil {
-	// 	tvshow, ok := p.tvshows[title]
-	// 	if !ok {
-	// 		tvshow, err = p.getShowInfo(ctx, title)
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 	}
+func (p *Gulli) GetMediaDetails(ctx context.Context, m *media.Media) error {
 
-	// 	info.TVShow = tvshow
-	// 	return nil
-
-	// }
 	return nil
 }

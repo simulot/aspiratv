@@ -8,11 +8,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/simulot/aspiratv/matcher"
+	"github.com/simulot/aspiratv/media"
 	"github.com/simulot/aspiratv/metadata/nfo"
 	"github.com/simulot/aspiratv/net/myhttp/httptest"
-	"github.com/simulot/aspiratv/providers/matcher"
-
-	"github.com/simulot/aspiratv/providers"
 )
 
 const gullyPlayer = "http://replay.gulli.fr/jwplayer/embed/" // + VOD ID
@@ -26,7 +25,7 @@ var reVars = regexp.MustCompile(
 		`|(?:image:\s*(?U:"(?P<image>[^"]*)"))` +
 		`|(?:description:\s*(?U:"(?P<description>[^"]*)"))`)
 
-func (p *Gulli) getPlayer(ctx context.Context, mr *matcher.MatchRequest, ID string) ([]*providers.Media, error) {
+func (p *Gulli) getPlayer(ctx context.Context, mr *matcher.MatchRequest, ID string) ([]*media.Media, error) {
 	ctx, done := context.WithTimeout(ctx, p.deadline)
 	defer done()
 
@@ -46,7 +45,7 @@ func (p *Gulli) getPlayer(ctx context.Context, mr *matcher.MatchRequest, ID stri
 
 	match := reVars.FindAllStringSubmatch(string(b), -1)
 
-	shows := []*providers.Media{}
+	shows := []*media.Media{}
 
 	var info *nfo.MediaInfo
 
@@ -58,10 +57,9 @@ func (p *Gulli) getPlayer(ctx context.Context, mr *matcher.MatchRequest, ID stri
 				case "sources":
 					if info != nil {
 						if !p.seenShows[info.UniqueID[0].ID] {
-							shows = append(shows, &providers.Media{
-								ID:       info.UniqueID[0].ID,
-								ShowType: providers.Series,
-								Match:    mr,
+							shows = append(shows, &media.Media{
+								ID:    info.UniqueID[0].ID,
+								Match: mr,
 								Metadata: &nfo.EpisodeDetails{
 									MediaInfo: *info,
 								},
@@ -115,10 +113,13 @@ func (p *Gulli) getPlayer(ctx context.Context, mr *matcher.MatchRequest, ID stri
 	}
 	if info != nil && len(info.UniqueID) > 0 {
 		if !p.seenShows[info.UniqueID[0].ID] {
-			shows = append(shows, &providers.Media{
-				ID:       info.UniqueID[0].ID,
-				ShowType: providers.Series,
-				Match:    mr,
+			info.MediaType = nfo.TypeSeries
+			if info.Episode == 0 && info.Season == 0 {
+				info.MediaType = nfo.TypeMovie
+			}
+			shows = append(shows, &media.Media{
+				ID:    info.UniqueID[0].ID,
+				Match: mr,
 				Metadata: &nfo.EpisodeDetails{
 					MediaInfo: *info,
 				},

@@ -58,20 +58,22 @@ tar -czvf aspiratv_0.8.0_Linux_x86_64.tar.gz
 
 ```
 Usage of aspiratv:
-      --config string          Configuration file name. (default "config.json")
-  -d, --destination string     Destination path for all shows.
-      --force                  Force media download.
-      --headless               Headless mode. Progression bars are not displayed.
-  -b, --keep-bonuses           Download bonuses when true (default true)
-      --log string             Give the log file name.
-  -l, --log-level string       Log level (INFO,TRACE,ERROR,DEBUG) (default "ERROR")
-  -a, --max-aged int           Retrieve media younger than MaxAgedDays.
-  -m, --max-tasks int          Maximum concurrent downloads at a time. (default 8)
-  -p, --provider string        Provider to be used with download command. Possible values : artetv, francetv, gulli
-  -s, --show-path string       Force show's path.
-  -e, --title-exclude string   Showtitle and Episode title must not satisfy regexp filter
-  -f, --title-filter string    Showtitle or Episode title must satisfy regexp filter
-  -n, --write-nfo              Write NFO file for KODI,Emby,Plex... (default true)
+      --config string              Configuration file name. (default "config.json")
+  -d, --destination string         Destination path for all shows.
+      --force                      Force media download.
+      --headless                   Headless mode. Progression bars are not displayed.
+  -b, --keep-bonuses               Download bonuses when true
+      --log string                 Give the log file name.
+  -l, --log-level string           Log level (INFO,TRACE,ERROR,DEBUG) (default "ERROR")
+  -a, --max-aged int               Retrieve media younger than MaxAgedDays.
+  -m, --max-tasks int              Maximum concurrent downloads at a time. (default 12)
+      --name-template template     Show name file template
+  -p, --provider string            Provider to be used with download command. Possible values : artetv, francetv, gulli
+      --season-template template   Season directory template
+  -s, --show-path string           Force show's path.
+  -e, --title-exclude string       Showtitle and Episode title must not satisfy regexp filter
+  -f, --title-filter string        Showtitle or Episode title must satisfy regexp filter
+  -n, --write-nfo                  Write NFO file for Jellyfin, KODI, Emby, Plex... (default true)
  ``` 
 
 Le programme fonctionne selon deux modilités :
@@ -123,6 +125,66 @@ Exemple, les épisodes seront téléchagés dans le répertoire `~/Videos/Maison
 ./aspiratv --provider=francetv --show-path = ~/Videos/MaisonF5 download "La maison France 5"
 ```
 
+### --name-template
+
+Cette option permet de constituer le nom du fichier .mp4 selon vos besoins. Le système de template est système de la librairie standard. [Voir la documentation de la libraie.](https://pkg.go.dev/text/template)
+
+Il est possible d'utiliser les champs suivants:
+| Champ | Description |
+|-|-
+|    .Title          | Titre de l'épisode
+|    .Showtitle      | Nom de la série, de l'émission
+|    .Season         | Numéro de saison ou année de diffusion
+|    .Episode        | Episode
+|    .UniqueID       | Identifion de l'émission chez le diffuseur (voir exemple)
+|    .Aired          | Date de difusion (voir exemple)
+
+
+#### Modèle par défaut pour les séries:
+`{{.Showtitle}} - s{{.Season | printf "%02d" }}e{{.Episode | printf "%02d" }} - {{.Title}}.mp4`
+
+Exemples : 
+> Les Dalton - s03e03 - A l'intérieur de Rantanplan.mp4 
+
+> Doctor Who - s12e01 - La chute des espions  partie 1.mp4 
+#### Modèle par défaut pour les émissions régulières:
+`{{.Showtitle}} - {{.Aired.Time.Format "2006-01-02"}}.mp4`
+
+Exemple:
+
+> Tout le monde a son mot à dire - 2021-02-10.mp4
+
+> 28 minutes - 2021-02-11.mp4
+#### Autres Exemples
+
+Plusieurs émissions peuvent être diffusées le même jour, à la même date et avec le même titre. Sans précaution, le fichier de la deuximème diffusion écrase le premier. Pour garder toutes les diffusions, on peut rajouter l'identifiant unique donné par le diffuseur: 
+
+`{{ .Showtitle}} - {{ .Aired.Time.Format \"2006-01-02\" }} - {{(index .UniqueID 0).ID}}.mp4`
+
+>Tout le monde a son mot à dire - 2021-02-10 - 2235183.nfo
+
+### --season-template
+Il est possible d'adapter le nom du répertoire correspondant à la saison. Les mêmes champs sont possibles. 
+
+#### Modèle par défaut pour les séries:
+`Season {{.Season | printf "%02d" }}`
+
+Exemple: 
+> Season 03
+
+#### Modèle par défaut pour les émissions régulières:
+`Season {{.Aired.Time.Year | printf "%04d" }}`
+
+Exemple:
+> Season 2021
+
+
+## --title-filter string 
+Permet de télécharger que les épisodes dont le titre correspond à l'expression régulière.
+
+### --title-exclude string 
+Permet d'exclure les épisodes dont le titre correspond à l'expression régulière.
+Il est possible de combiner les deux filtres.
 
 ## Les options communes aux deux modes :
 
@@ -192,7 +254,13 @@ Le fichier config.json contient les paramètres et la liste des émissions que l
       "Destination": "Jeunesse",
       "TitleFilter": "(?i)Oggy"
     },
-
+    {
+      "Show": "Tout le monde a son mot à dire",
+      "Provider": "francetv",
+      "ShowPath": "${HOME}/Videos/TV/TLMASMAD",
+      "SeasonPathTemplate": "Season {{.Aired.Time.Year | printf \"%04d\"}}",
+      "ShowNameTemplate": "{{ .Showtitle}} - {{ .Aired.Time.Format \"2006-01-02\" }} - {{(index .UniqueID 0).ID}}.mp4"
+    }
   ]
 }
 ```

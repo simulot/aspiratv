@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/simulot/aspiratv/parsers/htmlparser"
-	"github.com/simulot/aspiratv/providers/matcher"
-
+	"github.com/simulot/aspiratv/matcher"
+	"github.com/simulot/aspiratv/media"
 	"github.com/simulot/aspiratv/net/myhttp"
+	"github.com/simulot/aspiratv/parsers/htmlparser"
 	"github.com/simulot/aspiratv/providers"
 )
 
@@ -71,8 +71,8 @@ func (p *FranceTV) Configure(c providers.Config) {
 }
 
 // MediaList return media that match with matching list.
-func (p *FranceTV) MediaList(ctx context.Context, mm []*matcher.MatchRequest) chan *providers.Media {
-	shows := make(chan *providers.Media)
+func (p *FranceTV) MediaList(ctx context.Context, mm []*matcher.MatchRequest) chan *media.Media {
+	shows := make(chan *media.Media)
 
 	go func() {
 		defer close(shows)

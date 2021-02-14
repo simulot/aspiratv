@@ -11,17 +11,34 @@
       "enabled": true
     },
     "gulli": {
-      "enabled": false
+      "enabled": true
     },
     "artetv": {
-      "enabled": false
+      "enabled": true
     }
   },
   "WatchList": [
     {
-      "Show": "Les Lapins Crétins - Invasion",
+      "Show": "Tout le monde a son mot à dire",
       "Provider": "francetv",
-      "ShowPath": "${HOME}/Videos/DL/TEST/LAPINS"
+      "ShowPath": "${HOME}/Videos/DL/TEST/TLMASMAD",
+      "SeasonPathTemplate": "Season {{.Aired.Time.Year | printf \"%04d\"}}",
+      "ShowNameTemplate": "{{ .Showtitle}} - {{ .Aired.Time.Format \"2006-01-02\" }} - {{(index .UniqueID 0).ID}}.mp4"
+    },
+    {
+      "Show": "Chasseurs de troll",
+      "Provider": "gulli",
+      "Destination": "Jeunesse"
+    },
+    {
+      "Show": "Pokémon",
+      "Provider": "gulli",
+      "Destination": "Jeunesse"
+    },
+    {
+      "Show": "Les aventures de tintin",
+      "Provider": "gulli",
+      "Destination": "Jeunesse"
     }
   ]
 }

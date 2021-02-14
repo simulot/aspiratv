@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/gocolly/colly"
+	"github.com/simulot/aspiratv/media"
 	"github.com/simulot/aspiratv/metadata/nfo"
 	"github.com/simulot/aspiratv/net/myhttp/httptest"
-	"github.com/simulot/aspiratv/providers"
 )
 
 type FTVPlayerVideo struct {
@@ -47,7 +47,7 @@ type FTVPlayerVideo struct {
 // The video stream is in fact a MPD manifest files. We can edit this manifest for removing unwanted tracks.
 //
 
-func (p *FranceTV) GetMediaDetails(ctx context.Context, m *providers.Media) error {
+func (p *FranceTV) GetMediaDetails(ctx context.Context, m *media.Media) error {
 	info := m.Metadata.GetMediaInfo()
 	parser := p.htmlParserFactory.New() // TODO withContext
 	videoID := ""

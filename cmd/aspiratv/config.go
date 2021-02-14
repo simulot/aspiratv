@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/simulot/aspiratv/providers"
-	"github.com/simulot/aspiratv/providers/matcher"
+	"github.com/simulot/aspiratv/download"
+	"github.com/simulot/aspiratv/matcher"
 )
 
 func (a *app) Initialize(cmd string) {
@@ -130,7 +130,7 @@ func (a *app) Check(c *config) {
 					a.logger.Fatal().Printf("Destination %q for show %q is not defined into section Destination of %q", m.Destination, m.Show, c.ConfigFile)
 				}
 			} else {
-				m.ShowRootPath = filepath.Join(s, providers.PathNameCleaner(m.Show))
+				m.ShowRootPath = filepath.Join(s, download.PathNameCleaner(m.Show))
 			}
 		}
 	}

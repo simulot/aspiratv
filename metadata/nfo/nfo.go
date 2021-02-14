@@ -57,7 +57,19 @@ type MediaInfo struct {
 	TVShow     *TVShow `xml:"-"` // Possible TVShow nfo
 	IsDetailed bool    `xml:"-"` // True when details have been retrieved
 	IsBonus    bool    `xml:"-"` // True when the media is a bonus or a teaser
+	MediaType  ShowType
 }
+
+// ShowType says if the media is a movie (one time broadcast), Show (recurring show) or a series (with seasons and episodes)
+type ShowType int
+
+// ShowType values
+const (
+	TypeNotSpecified ShowType = iota
+	TypeSeries                // Series has seasons and episodes
+	TypeMovie                 // Just one media
+	TypeShow                  // Regular TV show
+)
 
 // Aired type helper
 type Aired time.Time

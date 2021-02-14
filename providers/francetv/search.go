@@ -11,13 +11,14 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gocolly/colly"
+	"github.com/simulot/aspiratv/matcher"
+	"github.com/simulot/aspiratv/media"
 	"github.com/simulot/aspiratv/metadata/nfo"
 	"github.com/simulot/aspiratv/net/myhttp/httptest"
-	"github.com/simulot/aspiratv/providers"
 	"github.com/simulot/aspiratv/providers/francetv/query"
-	"github.com/simulot/aspiratv/providers/matcher"
 )
 
 const homeFranceTV = "https://www.france.tv"
@@ -35,8 +36,8 @@ type Options struct {
 	Types           string `json:"types"`
 }
 
-func (p *FranceTV) search(ctx context.Context, mr *matcher.MatchRequest) chan *providers.Media {
-	mm := make(chan *providers.Media)
+func (p *FranceTV) search(ctx context.Context, mr *matcher.MatchRequest) chan *media.Media {
+	mm := make(chan *media.Media)
 
 	go func() {
 		var err error
@@ -149,7 +150,7 @@ func (p *FranceTV) search(ctx context.Context, mr *matcher.MatchRequest) chan *p
 					continue
 				}
 
-				media := &providers.Media{
+				media := &media.Media{
 					ID:    h.SiID.String(),
 					Match: mr,
 				}
@@ -158,14 +159,14 @@ func (p *FranceTV) search(ctx context.Context, mr *matcher.MatchRequest) chan *p
 				if h.SeasonNumber != 0 || h.Class == "program" || h.Program.Class == "program" {
 					meta := nfo.EpisodeDetails{}
 					info = &meta.MediaInfo
+					info.MediaType = nfo.TypeSeries
 					media.SetMetaData(&meta)
-					media.ShowType = providers.Series
 
 				} else {
 					meta := nfo.Movie{}
 					info = &meta.MediaInfo
 					media.SetMetaData(&meta)
-					media.ShowType = providers.Movie
+					info.MediaType = nfo.TypeMovie
 				}
 
 				*info = nfo.MediaInfo{
@@ -253,7 +254,7 @@ func (p *FranceTV) search(ctx context.Context, mr *matcher.MatchRequest) chan *p
 					}
 				}
 
-				if media.ShowType == providers.Series {
+				if info.MediaType == nfo.TypeSeries {
 					if info.Season == 0 {
 						info.Season = info.Aired.Time().Year()
 					}
@@ -267,8 +268,9 @@ func (p *FranceTV) search(ctx context.Context, mr *matcher.MatchRequest) chan *p
 
 var reID = regexp.MustCompile(`\/(\d+)-[^\/]+\.html$`)
 var reAnalyseTitle = regexp.MustCompile(`^\s?S(\d+)?\s+E(\d+)\s+-\s+(.*)$`)
+var reAired = regexp.MustCompile(`(\d{2})\/(\d{2})`)
 
-func (p *FranceTV) visitPageSerie(ctx context.Context, mr *matcher.MatchRequest, mm chan *providers.Media, url string) error {
+func (p *FranceTV) visitPageSerie(ctx context.Context, mr *matcher.MatchRequest, mm chan *media.Media, url string) error {
 	// https://www.france.tv/series-et-fictions/series-policieres-thrillers/district-31
 	// https://www.france.tv/recherche/lancer/query=district+31\u0026hitsPerPage=20\u0026page=0\u0026filters=(class%3Aprogram%20OR%20class%3Aevent)%20AND%20(counters.web.integral_counter%20%3E%200%20OR%20counters.web.extract_counter%20%3E%200)%20AND%20NOT%20type%3Asaison%20AND%20NOT%20type%3Acomposite\u0026restrictSearchableAttributes=%5B%22label%22%2C%22title%22%2C%22description%22%2C%22seo%22%5D
 
@@ -307,13 +309,29 @@ func (p *FranceTV) visitPageSerie(ctx context.Context, mr *matcher.MatchRequest,
 		}
 
 		subtitle := e.ChildText("span.c-card-video__textarea-subtitle")
-		if match = reAnalyseTitle.FindStringSubmatch(subtitle); len(match) == 4 {
+		if match = reAired.FindStringSubmatch(e.Text); len(match) == 4 {
 			info.Season, _ = strconv.Atoi(match[1])
 			info.Episode, _ = strconv.Atoi(match[2])
 			info.Title = strings.TrimSpace(match[3])
+			info.MediaType = nfo.TypeSeries
+
 		} else {
 			info.Title = subtitle
+			info.MediaType = nfo.TypeShow
 		}
+
+		e.ForEach("span.c-metadata", func(n int, e *colly.HTMLElement) {
+			if match = reAired.FindStringSubmatch(e.Text); len(match) == 3 {
+				day, _ := strconv.Atoi(match[1])
+				month, _ := strconv.Atoi(match[2])
+				year := time.Now().Year()
+				d := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.Local)
+				if d.After(time.Now()) {
+					d = time.Date(year-1, time.Month(month), day, 0, 0, 0, 0, time.Local)
+				}
+				info.Aired = nfo.Aired(d)
+			}
+		})
 
 		switch e.ChildText("span.c-label") {
 		case "extrait":
@@ -325,7 +343,7 @@ func (p *FranceTV) visitPageSerie(ctx context.Context, mr *matcher.MatchRequest,
 		}
 		p.config.Log.Trace().Printf("[%s] Found %q", p.Name(), info.Title)
 
-		media := &providers.Media{
+		media := &media.Media{
 			ID:    id,
 			Match: mr,
 			Metadata: &nfo.EpisodeDetails{

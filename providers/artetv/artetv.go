@@ -10,19 +10,16 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/simulot/aspiratv/metadata/nfo"
-	"github.com/simulot/aspiratv/providers"
-	"github.com/simulot/aspiratv/providers/matcher"
-
-	"github.com/simulot/aspiratv/net/myhttp/httptest"
-
 	"github.com/gocolly/colly"
-
+	"github.com/simulot/aspiratv/matcher"
+	"github.com/simulot/aspiratv/media"
+	"github.com/simulot/aspiratv/metadata/nfo"
 	"github.com/simulot/aspiratv/net/myhttp"
+	"github.com/simulot/aspiratv/net/myhttp/httptest"
 	"github.com/simulot/aspiratv/parsers/htmlparser"
+	"github.com/simulot/aspiratv/providers"
 )
 
 // init registers ArteTV provider
@@ -59,6 +56,7 @@ type ArteTV struct {
 	htmlParserFactory *htmlparser.Factory
 	seenPrograms      map[string]bool
 	deadline          time.Duration
+	throttler         *throttler
 }
 
 // WithGetter inject a getter in FranceTV object instead of normal one
@@ -76,20 +74,15 @@ type throttler struct {
 	burst    int
 	rate     time.Duration
 	stop     chan struct{}
-	once     sync.Once
 }
 
 func newThrottler(g getter, rate int, burst int) *throttler {
-	// lazy initialisation
-	return &throttler{
-		g:     g,                                 // The orriginal getter
+	t := &throttler{
+		g:     g,                                 // The original getter
 		burst: burst,                             // allow a burst of queries
 		rate:  time.Second / time.Duration(rate), // Query
 		stop:  make(chan struct{}),               // Stop me if you can
 	}
-}
-
-func (t *throttler) init() {
 	t.throttle = make(chan struct{}, t.burst)
 	t.ticker = time.NewTicker(t.rate)
 	for i := 0; i < t.burst; i++ {
@@ -108,6 +101,7 @@ func (t *throttler) init() {
 		}
 
 	}()
+	return t
 }
 
 func (t *throttler) Stop() {
@@ -115,7 +109,6 @@ func (t *throttler) Stop() {
 }
 
 func (t *throttler) Get(ctx context.Context, uri string) (io.ReadCloser, error) {
-	t.once.Do(t.init)
 	<-t.throttle
 	return t.g.Get(ctx, uri)
 }
@@ -132,6 +125,7 @@ func New() (*ArteTV, error) {
 		htmlParserFactory: htmlparser.NewFactory(),
 		seenPrograms:      map[string]bool{},
 		deadline:          30 * time.Second,
+		throttler:         throttler,
 	}
 	return p, nil
 }
@@ -155,8 +149,8 @@ func withGetter(g getter) func(p *ArteTV) {
 func (p ArteTV) Name() string { return "artetv" }
 
 // Shows download the shows catalog from the web site.
-func (p *ArteTV) MediaList(ctx context.Context, mm []*matcher.MatchRequest) chan *providers.Media {
-	shows := make(chan *providers.Media)
+func (p *ArteTV) MediaList(ctx context.Context, mm []*matcher.MatchRequest) chan *media.Media {
+	shows := make(chan *media.Media)
 
 	go func() {
 		defer close(shows)
@@ -175,8 +169,8 @@ func (p *ArteTV) MediaList(ctx context.Context, mm []*matcher.MatchRequest) chan
 	return shows
 }
 
-func (p *ArteTV) getShowList(ctx context.Context, mr *matcher.MatchRequest) chan *providers.Media {
-	shows := make(chan *providers.Media)
+func (p *ArteTV) getShowList(ctx context.Context, mr *matcher.MatchRequest) chan *media.Media {
+	shows := make(chan *media.Media)
 
 	go func() {
 		defer func() {
@@ -202,7 +196,7 @@ func (p *ArteTV) getShowList(ctx context.Context, mr *matcher.MatchRequest) chan
 		v.Set("query", mr.Show)
 		v.Set("mainZonePage", "1")
 		v.Set("page", strconv.Itoa(page))
-		v.Set("limit", "100")
+		v.Set("limit", "10")
 		for {
 			u.RawQuery = v.Encode()
 
@@ -237,8 +231,10 @@ func (p *ArteTV) getShowList(ctx context.Context, mr *matcher.MatchRequest) chan
 
 			doneLocal()
 
+			hits := 0
 			for _, d := range result.Data {
 				if strings.Contains(strings.ToLower(d.Title), mr.Show) {
+					hits++
 					if d.Kind.IsCollection {
 						matchedSeries = append(matchedSeries, d)
 					}
@@ -247,11 +243,12 @@ func (p *ArteTV) getShowList(ctx context.Context, mr *matcher.MatchRequest) chan
 					}
 					if strings.ToLower(d.Title) == mr.Show {
 						matchedShows = append(matchedShows, d)
+
 					}
 				}
 			}
 
-			if len(result.NextPage) == 0 {
+			if len(result.NextPage) == 0 || hits == 0 {
 				break
 			}
 			page++
@@ -268,7 +265,6 @@ func (p *ArteTV) getShowList(ctx context.Context, mr *matcher.MatchRequest) chan
 		}
 		if len(matchedShows) > 0 {
 			for s := range p.getShows(ctx, mr, matchedShows) {
-				s.Match = mr
 				shows <- s
 			}
 		}
@@ -276,16 +272,15 @@ func (p *ArteTV) getShowList(ctx context.Context, mr *matcher.MatchRequest) chan
 	return shows
 }
 
-func (p *ArteTV) getShows(ctx context.Context, mr *matcher.MatchRequest, data []Data) chan *providers.Media {
-	shows := make(chan *providers.Media)
+func (p *ArteTV) getShows(ctx context.Context, mr *matcher.MatchRequest, data []Data) chan *media.Media {
+	shows := make(chan *media.Media)
 	go func() {
 		defer close(shows)
 		// Emit media found in the current collection/season
 		for _, ep := range data {
-			media := &providers.Media{
-				ID:       ep.ProgramID,
-				ShowType: providers.Movie,
-				Match:    mr,
+			media := &media.Media{
+				ID:    ep.ProgramID,
+				Match: mr,
 			}
 
 			info := nfo.Movie{
@@ -296,10 +291,11 @@ func (p *ArteTV) getShows(ctx context.Context, mr *matcher.MatchRequest, data []
 							Type: "ARTETV",
 						},
 					},
-					Title:   ep.Title,
-					Plot:    ep.ShortDescription,
-					Thumb:   getThumbs(ep.Images),
-					PageURL: ep.URL,
+					Title:     ep.Title,
+					Plot:      ep.ShortDescription,
+					Thumb:     getThumbs(ep.Images),
+					PageURL:   ep.URL,
+					MediaType: nfo.TypeMovie,
 					// TVShow:    &tvshow,
 					Tag: []string{"Arte"},
 				},
@@ -311,6 +307,7 @@ func (p *ArteTV) getShows(ctx context.Context, mr *matcher.MatchRequest, data []
 
 			// TODO Actors
 			media.SetMetaData(&info)
+			media.Match = mr
 			shows <- media
 		}
 	}()
@@ -331,9 +328,9 @@ var (
 
 var parseShowSeason = regexp.MustCompile(`^(.+) - Saison (\d+)$`)
 
-func (p *ArteTV) getSerie(ctx context.Context, mr *matcher.MatchRequest, d Data) chan *providers.Media {
+func (p *ArteTV) getSerie(ctx context.Context, mr *matcher.MatchRequest, d Data) chan *media.Media {
 	ctx, done := context.WithTimeout(ctx, p.deadline)
-	shows := make(chan *providers.Media)
+	shows := make(chan *media.Media)
 
 	go func() {
 		defer func() {
@@ -344,8 +341,15 @@ func (p *ArteTV) getSerie(ctx context.Context, mr *matcher.MatchRequest, d Data)
 		// TODO: use user's preferred language
 		// Refactoring. The collection's page contains a script with the full serie split per seasons, no need to call the api
 
+		<-p.throttler.throttle
+
 		parser := p.htmlParserFactory.New()
 		pgm := InitialProgram{}
+		parser.Limit(&colly.LimitRule{
+			DomainGlob:  "*",
+			RandomDelay: 200 * time.Millisecond,
+			Delay:       500 * time.Microsecond,
+		})
 
 		parser.OnHTML("body > script", func(e *colly.HTMLElement) {
 			if strings.Index(e.Text, "__INITIAL_STATE__") < 0 {
@@ -361,7 +365,7 @@ func (p *ArteTV) getSerie(ctx context.Context, mr *matcher.MatchRequest, d Data)
 			js := e.Text[:end+1][start:]
 			err := json.NewDecoder(strings.NewReader(js)).Decode(&pgm)
 			if err != nil {
-				p.config.Log.Error().Printf("[%s] Can't parse JSON collection: %w", p.Name(), err)
+				p.config.Log.Error().Printf("[%s] Can't parse JSON collection: %s", p.Name(), err)
 				return
 			}
 
@@ -369,7 +373,7 @@ func (p *ArteTV) getSerie(ctx context.Context, mr *matcher.MatchRequest, d Data)
 
 		err := parser.Visit(d.URL)
 		if err != nil {
-			p.config.Log.Error().Printf("[%s] Can't visit URL %q: %w", p.Name(), err)
+			p.config.Log.Error().Printf("[%s] Can't visit URL %q: %s", p.Name(), err)
 			return
 		}
 
@@ -397,17 +401,21 @@ func (p *ArteTV) getSerie(ctx context.Context, mr *matcher.MatchRequest, d Data)
 					}
 
 					for _, ep := range zone.Data {
+						// Emit media found in the current collection/season
+						media := &media.Media{
+							ID:    ep.ProgramID,
+							Match: mr,
+						}
+
 						episode := 0
+						mediaType := nfo.TypeShow
 						m := parseEpisode.FindAllStringSubmatch(ep.Title, -1)
 						if len(m) > 0 {
 							episode, _ = strconv.Atoi(m[0][1])
-						}
-
-						// Emit media found in the current collection/season
-						media := &providers.Media{
-							ID:       ep.ProgramID,
-							ShowType: providers.Series,
-							Match:    mr,
+							mediaType = nfo.TypeSeries
+							if season == 0 {
+								season = 1
+							}
 						}
 
 						info := nfo.EpisodeDetails{
@@ -428,6 +436,7 @@ func (p *ArteTV) getSerie(ctx context.Context, mr *matcher.MatchRequest, d Data)
 								Episode:   episode,
 								Aired:     nfo.Aired(ep.Availability.Start),
 								PageURL:   ep.URL,
+								MediaType: mediaType,
 							},
 						}
 
@@ -515,13 +524,19 @@ func getBestImage(image Image) string {
 const arteDetails = "https://api.arte.tv/api/player/v1/config/fr/%s?autostart=1&lifeCycle=1" // Player to get Video streams ProgID
 
 // GetMediaDetails return the media's URL, a mp4 file
-func (p *ArteTV) GetMediaDetails(ctx context.Context, m *providers.Media) error {
+func (p *ArteTV) GetMediaDetails(ctx context.Context, m *media.Media) error {
 	info := m.Metadata.GetMediaInfo()
 
 	player_url := fmt.Sprintf(arteDetails, info.UniqueID[0].ID) // TODO search for ARTE ID
 
 	if !info.IsDetailed {
 		parser := p.htmlParserFactory.New()
+		parser.Limit(&colly.LimitRule{
+			DomainGlob:  "*",
+			RandomDelay: 200 * time.Millisecond,
+			Delay:       500 * time.Microsecond,
+		})
+
 		pgm := InitialProgram{}
 		js := ""
 
@@ -542,12 +557,12 @@ func (p *ArteTV) GetMediaDetails(ctx context.Context, m *providers.Media) error 
 
 		err := parser.Visit(info.PageURL)
 		if err != nil {
-			p.config.Log.Error().Printf("[%s] Can't visit URL %q: %w", p.Name(), err)
+			p.config.Log.Error().Printf("[%s] Can't visit URL %q: %s", p.Name(), err)
 			return err
 		}
 		err = json.NewDecoder(strings.NewReader(js)).Decode(&pgm)
 		if err != nil {
-			p.config.Log.Error().Printf("[%s] Can't parse JSON collection: %w", p.Name(), err)
+			p.config.Log.Error().Printf("[%s] Can't parse JSON collection: %s", p.Name(), err)
 			return err
 		}
 		for _, page := range pgm.Pages.List {

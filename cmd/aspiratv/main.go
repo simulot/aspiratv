@@ -18,6 +18,8 @@ import (
 
 	flag "github.com/spf13/pflag"
 
+	"github.com/simulot/aspiratv/download"
+	"github.com/simulot/aspiratv/media"
 	"github.com/simulot/aspiratv/metadata/nfo"
 	"github.com/simulot/aspiratv/mylog"
 	"github.com/simulot/aspiratv/net/myhttp"
@@ -26,10 +28,10 @@ import (
 	"github.com/vbauerster/mpb/v4"
 	"github.com/vbauerster/mpb/v4/decor"
 
+	"github.com/simulot/aspiratv/matcher"
 	_ "github.com/simulot/aspiratv/providers/artetv"
 	_ "github.com/simulot/aspiratv/providers/francetv"
 	_ "github.com/simulot/aspiratv/providers/gulli"
-	"github.com/simulot/aspiratv/providers/matcher"
 )
 
 var (
@@ -40,24 +42,27 @@ var (
 
 // Config holds settings from configuration file
 type config struct {
-	Providers       map[string]ProviderConfig // Registered providers
-	Force           bool                      // True to force reload medias
-	Destinations    map[string]string         // Mapping of destination path
-	ConfigFile      string                    // Name of configuration file
-	WatchList       []*matcher.MatchRequest   // Slice of show matchers
-	Headless        bool                      // When true, no progression bar
-	ConcurrentTasks int                       // Number of concurrent downloads
-	Provider        string                    // Provider for dowload command
-	Destination     string                    // Destination folder for dowload command
-	ShowPath        string                    // Imposed show's path
-	LogFile         string                    // Log file
-	WriteNFO        bool                      // True when NFO files to be written
-	MaxAgedDays     int                       // Retrieve media younger than MaxAgedDays when non zero
-	RetentionDays   int                       // Delete media from  series older than retention days.
-	KeepBonus       bool                      // True to keep bonus
-	LogLevel        string                    // ERROR,WARN,INFO,TRACE,DEBUG
-	TitleFilter     string                    // ShowTitle or Episode title must match this regexp to be downloaded
-	TitleExclude    string                    // ShowTitle and Episode title must not match this regexp to be downloaded
+	Providers          map[string]ProviderConfig // Registered providers
+	Force              bool                      // True to force reload medias
+	Destinations       map[string]string         // Mapping of destination path
+	ConfigFile         string                    // Name of configuration file
+	WatchList          []*matcher.MatchRequest   // Slice of show matchers
+	Headless           bool                      // When true, no progression bar
+	ConcurrentTasks    int                       // Number of concurrent downloads
+	Provider           string                    // Provider for dowload command
+	Destination        string                    // Destination folder for dowload command
+	ShowPath           string                    // Imposed show's path
+	LogFile            string                    // Log file
+	WriteNFO           bool                      // True when NFO files to be written
+	MaxAgedDays        int                       // Retrieve media younger than MaxAgedDays when non zero
+	RetentionDays      int                       // Delete media from  series older than retention days.
+	KeepBonus          bool                      // True to keep bonus
+	LogLevel           string                    // ERROR,WARN,INFO,TRACE,DEBUG
+	TitleFilter        string                    // ShowTitle or Episode title must match this regexp to be downloaded
+	TitleExclude       string                    // ShowTitle and Episode title must not match this regexp to be downloaded
+	SeasonPathTemplate matcher.TemplateString    // Template for season path, can be empty to skip season in path. When missing uses default naming
+	ShowNameTemplate   matcher.TemplateString    // Template for the name of mp4 file, can't be empty. When missing, uses default naming
+
 }
 
 type app struct {
@@ -101,11 +106,13 @@ func main() {
 	flag.StringVarP(&a.Config.ShowPath, "show-path", "s", "", "Force show's path.")
 	flag.StringVar(&a.Config.LogFile, "log", "", "Give the log file name.")
 	// flag.IntVar(&a.Config.RetentionDays, "retention", 0, "Delete media older than retention days for the downloaded show.")
-	flag.BoolVarP(&a.Config.WriteNFO, "write-nfo", "n", true, "Write NFO file for KODI,Emby,Plex...")
+	flag.BoolVarP(&a.Config.WriteNFO, "write-nfo", "n", true, "Write NFO file for Jellyfin, KODI, Emby, Plex...")
 	flag.BoolVarP(&a.Config.KeepBonus, "keep-bonuses", "b", false, "Download bonuses when true")
 	flag.IntVarP(&a.Config.MaxAgedDays, "max-aged", "a", 0, "Retrieve media younger than MaxAgedDays.")
 	flag.StringVarP(&a.Config.TitleFilter, "title-filter", "f", "", "Showtitle or Episode title must satisfy regexp filter")
 	flag.StringVarP(&a.Config.TitleExclude, "title-exclude", "e", "", "Showtitle and Episode title must not satisfy regexp filter")
+	flag.Var(&a.Config.ShowNameTemplate, "name-template", "Show name file template")
+	flag.Var(&a.Config.SeasonPathTemplate, "season-template", "Season directory template")
 	flag.Parse()
 
 	consoleLogger := log.New(os.Stderr, "", log.LstdFlags)
@@ -245,15 +252,17 @@ func (a *app) Download(ctx context.Context) {
 
 	for dl := 1; dl < flag.NArg(); dl++ {
 		mr := matcher.MatchRequest{
-			Destination:   "DL",
-			Show:          strings.ToLower(flag.Arg(dl)),
-			Provider:      a.Config.Provider,
-			MaxAgedDays:   a.Config.MaxAgedDays,
-			RetentionDays: a.Config.RetentionDays,
-			TitleFilter:   filter,
-			TitleExclude:  exclude,
-			ShowRootPath:  a.Config.ShowPath,
-			KeepBonus:     a.Config.KeepBonus,
+			Destination:        "DL",
+			Show:               strings.ToLower(flag.Arg(dl)),
+			Provider:           a.Config.Provider,
+			MaxAgedDays:        a.Config.MaxAgedDays,
+			RetentionDays:      a.Config.RetentionDays,
+			TitleFilter:        filter,
+			TitleExclude:       exclude,
+			ShowRootPath:       a.Config.ShowPath,
+			KeepBonus:          a.Config.KeepBonus,
+			SeasonPathTemplate: &a.Config.SeasonPathTemplate,
+			ShowNameTemplate:   &a.Config.ShowNameTemplate,
 		}
 		a.Config.WatchList = append(a.Config.WatchList, &mr)
 
@@ -406,16 +415,21 @@ showLoop:
 			m.ShowPath = os.ExpandEnv(m.Match.ShowRootPath)
 		}
 
-		mediaBaseName := filepath.Base(m.Metadata.GetMediaPath(m.ShowPath))
+		showPath, err := download.MediaPath(m.ShowPath, m.Match, m.Metadata.GetMediaInfo())
+		if err != nil {
+			a.logger.Fatal().Printf("[%s] Can't determine file name.", p.Name(), err)
+		}
+
+		mediaBaseName := filepath.Base(showPath)
 
 		select {
 		case <-ctx.Done():
 			a.logger.Trace().Printf("[%s] Context done, received %s", p.Name(), ctx.Err())
 			break showLoop
 		default:
-			if !m.Metadata.Accepted(m.Match) {
+			if !m.Match.Accepted(m.Metadata.GetMediaInfo()) {
 				a.logger.Trace().Printf("[%s] %s is filtered out.", p.Name(), mediaBaseName)
-			} else if a.Config.Force || a.MustDownload(ctx, p, m) {
+			} else if a.Config.Force || a.MustDownload(ctx, p, showPath) {
 				a.logger.Trace().Printf("[%s] Download of %q submitted", p.Name(), mediaBaseName)
 				showCount++
 				if !a.Config.Headless {
@@ -446,19 +460,17 @@ showLoop:
 }
 
 // MustDownload check if the show isn't yet downloaded.
-func (a *app) MustDownload(ctx context.Context, p providers.Provider, m *providers.Media) bool {
-	mediaPath := m.Metadata.GetMediaPath(m.ShowPath)
+func (a *app) MustDownload(ctx context.Context, p providers.Provider, mediaPath string) bool {
 	mediaExists, err := fileExists(mediaPath)
-	if mediaExists {
+	if err != nil {
+		a.logger.Fatal().Printf("Can't check if file exists: %s", err)
 		return false
 	}
-
-	mediaPath = m.Metadata.GetMediaPathMatcher(m.ShowPath)
-	files, err := filepath.Glob(mediaPath)
-	if err != nil {
-		log.Fatalf("Can't glob %s: %v", mediaPath, err)
+	if mediaExists {
+		a.logger.Trace().Printf("File %q already exists. Skipped", mediaPath)
+		return false
 	}
-	return len(files) == 0
+	return true
 }
 
 func fileExists(p string) (bool, error) {
@@ -472,7 +484,7 @@ func fileExists(p string) (bool, error) {
 	return true, nil
 }
 
-func (a *app) SubmitDownload(ctx context.Context, wg *sync.WaitGroup, p providers.Provider, m *providers.Media, pc *mpb.Progress, bar *mpb.Bar) {
+func (a *app) SubmitDownload(ctx context.Context, wg *sync.WaitGroup, p providers.Provider, m *media.Media, pc *mpb.Progress, bar *mpb.Bar) {
 	wg.Add(1)
 	go a.worker.Submit(func() {
 		a.DownloadShow(ctx, p, m, pc)

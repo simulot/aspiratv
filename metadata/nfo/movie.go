@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-
-	"github.com/simulot/aspiratv/providers/matcher"
 )
 
 // Movie holds metadata for movies
@@ -15,41 +13,9 @@ type Movie struct {
 	MediaInfo
 }
 
-// Accepted check if Title matches the filter
-func (n Movie) Accepted(m *matcher.MatchRequest) bool {
-	if m.TitleExclude.Regexp != nil {
-		if m.TitleExclude.Regexp.MatchString(n.Title) {
-			return false
-		}
-	}
-	if m.TitleFilter.Regexp != nil {
-		if m.TitleFilter.Regexp.MatchString(n.Title) {
-			return true
-		}
-		return false
-	}
-	return true
-}
-
 // GetMediaInfo return a pointer to MediaInfo struct
 func (n *Movie) GetMediaInfo() *MediaInfo {
 	return &n.MediaInfo
-}
-
-// GetNFOPath give the path where the episode's NFO should be
-func (n Movie) GetNFOPath(destination string) string {
-	cleanTitle := FileNameCleaner(n.Title)
-	return filepath.Join(destination, FileNameCleaner(n.Title), cleanTitle+".nfo")
-}
-
-// GetMediaPath returns the media path
-func (n Movie) GetMediaPath(destination string) string {
-	cleanTitle := FileNameCleaner(n.Title)
-	return filepath.Join(destination, cleanTitle, cleanTitle+".mp4")
-}
-
-func (n Movie) GetMediaPathMatcher(destination string) string {
-	return n.GetMediaPath(destination)
 }
 
 // WriteNFO file at expected place
