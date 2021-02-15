@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/gocolly/colly"
 	"github.com/simulot/aspiratv/media"
@@ -68,9 +67,10 @@ func (p *FranceTV) GetMediaDetails(ctx context.Context, m *media.Media) error {
 			for _, a := range strings.Split(e.Attr("content"), ",") {
 				info.Director = append(info.Director, a)
 			}
-		case "video:release_date":
-			t, _ := time.Parse("2006-01-02T15:04:05-07:00", e.Attr("content"))
-			info.Aired = nfo.Aired(t)
+			// TODO: get exact aired time see https://github.com/simulot/aspiratv/issues/63#issuecomment-779027415
+			// case "video:release_date":
+			// 	t, _ := time.Parse("2006-01-02T15:04:05-07:00", e.Attr("content"))
+			// 	info.Aired = nfo.Aired(t)
 		}
 
 	})
