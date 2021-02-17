@@ -236,7 +236,7 @@ Le fichier config.json contient les paramètres et la liste des émissions que l
       "Enabled": false        
     },
     "gulli":{
-      "Enabled": true,
+      "Enabled": true
     },
     "francetv":{
         "Enabled": true
