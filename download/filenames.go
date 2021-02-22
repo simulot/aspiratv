@@ -36,10 +36,13 @@ func Format2Digits(d string) string {
 	return d
 }
 
+// Plex naming convention
+//    https://support.plex.tv/articles/naming-and-organizing-your-tv-show-files/
+
 var (
 	seasonTemplates = map[nfo.ShowType]*template.Template{
-		nfo.TypeShow:   template.Must(template.New("serieTVShow").Parse(`Season {{.Aired.Time.Year | printf "%04d" }}`)),
-		nfo.TypeSeries: template.Must(template.New("serieSeason").Parse(`Season {{.Season | printf "%02d" }}`)),
+		nfo.TypeShow:   template.Must(template.New("serieTVShow").Parse(`{{if not .IsBonus}}Season {{.Aired.Time.Year | printf "%04d" }}{{else}}Specials{{end}}`)),
+		nfo.TypeSeries: template.Must(template.New("serieSeason").Parse(`{{if not .IsBonus}}Season {{.Season | printf "%02d" }}{{else}}Specials{{end}}`)),
 		nfo.TypeMovie:  nil,
 	}
 	showNameTemplates = map[nfo.ShowType]*template.Template{
@@ -49,12 +52,11 @@ var (
 	}
 )
 
-// MediaPath returns the full path for an episode using filename template when present
-func MediaPath(showPath string, m *matcher.MatchRequest, info *nfo.MediaInfo) (string, error) {
+// SeasonPath returns the full path for the episode's season according the template
+func SeasonPath(showPath string, m *matcher.MatchRequest, info *nfo.MediaInfo) (string, error) {
 	var err error
-	seasonPart := &strings.Builder{}
-	showPart := &strings.Builder{}
 
+	seasonPart := &strings.Builder{}
 	t := info.MediaType
 	if t == nfo.TypeNotSpecified {
 		t = nfo.TypeSeries
@@ -71,7 +73,20 @@ func MediaPath(showPath string, m *matcher.MatchRequest, info *nfo.MediaInfo) (s
 			return "", fmt.Errorf("Can't use this season template: %w", err)
 		}
 	}
+	return filepath.Join(showPath, seasonPart.String()), nil
+}
 
+// MediaPath returns the full path for an episode using filename template when present
+func MediaPath(showPath string, m *matcher.MatchRequest, info *nfo.MediaInfo) (string, error) {
+	var err error
+
+	seasonPart, err := SeasonPath(showPath, m, info)
+	if err != nil {
+		return "", err
+	}
+
+	t := info.MediaType
+	showPart := &strings.Builder{}
 	showTmpl := showNameTemplates[t]
 	if m.ShowNameTemplate != nil && m.ShowNameTemplate.T != nil {
 		showTmpl = m.ShowNameTemplate.T
@@ -82,28 +97,5 @@ func MediaPath(showPath string, m *matcher.MatchRequest, info *nfo.MediaInfo) (s
 		return "", fmt.Errorf("Can't use this name template: %w", err)
 	}
 
-	return filepath.Join(showPath, PathNameCleaner(seasonPart.String()), FileNameCleaner(showPart.String())), nil
-}
-
-// SeasonPath returns the full path for the season
-func SeasonPath(showPath string, m *matcher.MatchRequest, info *nfo.MediaInfo) (string, error) {
-	var err error
-	seasonPart := &strings.Builder{}
-
-	t := info.MediaType
-	if t == nfo.TypeNotSpecified {
-		t = nfo.TypeSeries
-	}
-	seasonTmpl := seasonTemplates[t]
-	if m.SeasonPathTemplate != nil && m.SeasonPathTemplate.T != nil {
-		seasonTmpl = m.SeasonPathTemplate.T
-	}
-
-	if seasonTmpl != nil {
-		err = seasonTmpl.Execute(seasonPart, info)
-		if err != nil {
-			return "", fmt.Errorf("Can't use this season template: %w", err)
-		}
-	}
-	return filepath.Join(showPath, PathNameCleaner(seasonPart.String())), nil
+	return filepath.Join(seasonPart, FileNameCleaner(showPart.String())), nil
 }

@@ -55,7 +55,8 @@ func (p *FranceTV) GetMediaDetails(ctx context.Context, m *media.Media) error {
 		switch e.Attr("property") {
 		case "og:image":
 			info.Thumb = append(info.Thumb, nfo.Thumb{
-				URL: e.Attr("content"),
+				Aspect: "thumb",
+				URL:    e.Attr("content"),
 			})
 		case "og:description":
 			info.Plot = e.Attr("content")
@@ -75,7 +76,7 @@ func (p *FranceTV) GetMediaDetails(ctx context.Context, m *media.Media) error {
 
 	})
 
-	if info.Season == 0 && info.Episode == 0 {
+	if info.Season == 0 && info.Episode == 0 && !info.IsBonus {
 		info.Season = info.Aired.Time().Year()
 	}
 
@@ -165,6 +166,5 @@ func (p *FranceTV) getMediaURL(ctx context.Context, info *nfo.MediaInfo, videoID
 		info.MediaURL = pl.URL
 
 	}
-	p.config.Log.Trace().Printf("[%s] Player URL for '%s' is %q ", p.Name(), info.Title, info.MediaURL)
 	return nil
 }

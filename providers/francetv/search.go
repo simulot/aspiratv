@@ -279,8 +279,11 @@ func (p *FranceTV) visitPageSerie(ctx context.Context, mr *matcher.MatchRequest,
 	hits := 0
 	lastPageWithHits := 0
 
+	isSeries := map[string]bool{}
+	shows := []*media.Media{}
+
 	parser.OnHTML("a.c-card-video", func(e *colly.HTMLElement) {
-		if strings.Contains(e.Attr("class"), "unavailable") {
+		if strings.Contains(e.Attr("class"), "c-card-video--unavailable") {
 			return
 		}
 
@@ -308,16 +311,24 @@ func (p *FranceTV) visitPageSerie(ctx context.Context, mr *matcher.MatchRequest,
 			Showtitle: showTitle,
 		}
 
+		switch e.ChildText("span.c-label") {
+		case "extrait", "bande-annonce":
+			info.IsBonus = true
+		}
+
+		if !mr.KeepBonus && info.IsBonus {
+			return
+		}
 		subtitle := e.ChildText("span.c-card-video__textarea-subtitle")
 		if match = reAnalyseTitle.FindStringSubmatch(subtitle); len(match) == 4 {
 			info.Season, _ = strconv.Atoi(match[1])
 			info.Episode, _ = strconv.Atoi(match[2])
 			info.Title = strings.TrimSpace(match[3])
 			info.MediaType = nfo.TypeSeries
+			isSeries[info.Showtitle] = true
 
 		} else {
 			info.Title = subtitle
-			info.MediaType = nfo.TypeShow
 		}
 
 		e.ForEach("span.c-metadata", func(n int, e *colly.HTMLElement) {
@@ -333,14 +344,6 @@ func (p *FranceTV) visitPageSerie(ctx context.Context, mr *matcher.MatchRequest,
 			}
 		})
 
-		switch e.ChildText("span.c-label") {
-		case "extrait":
-			info.IsBonus = true
-		}
-
-		if !mr.KeepBonus && info.IsBonus {
-			return
-		}
 		p.config.Log.Trace().Printf("[%s] Found %q", p.Name(), info.Title)
 
 		media := &media.Media{
@@ -352,7 +355,7 @@ func (p *FranceTV) visitPageSerie(ctx context.Context, mr *matcher.MatchRequest,
 		}
 		hits++
 		lastPageWithHits = page
-		mm <- media
+		shows = append(shows, media)
 	})
 
 	url = "https://www.france.tv/" + url + "/toutes-les-videos/"
@@ -370,6 +373,21 @@ func (p *FranceTV) visitPageSerie(ctx context.Context, mr *matcher.MatchRequest,
 		}
 		page++
 		hits = 0
+	}
+
+	// Set MediaType to Series whenever one SxxExx has be encountered for the show
+	for _, media := range shows {
+		info := media.Metadata.GetMediaInfo()
+		if isSeries[info.Showtitle] {
+			info.MediaType = nfo.TypeSeries
+			if info.Season == 0 && info.Episode == 0 {
+				info.IsBonus = true
+			}
+		} else {
+			info.MediaType = nfo.TypeShow
+
+		}
+		mm <- media
 	}
 	return nil
 }
