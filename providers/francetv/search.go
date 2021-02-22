@@ -309,7 +309,7 @@ func (p *FranceTV) visitPageSerie(ctx context.Context, mr *matcher.MatchRequest,
 		}
 
 		subtitle := e.ChildText("span.c-card-video__textarea-subtitle")
-		if match = reAired.FindStringSubmatch(e.Text); len(match) == 4 {
+		if match = reAnalyseTitle.FindStringSubmatch(subtitle); len(match) == 4 {
 			info.Season, _ = strconv.Atoi(match[1])
 			info.Episode, _ = strconv.Atoi(match[2])
 			info.Title = strings.TrimSpace(match[3])
