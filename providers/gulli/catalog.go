@@ -16,12 +16,9 @@ type ShowEntry struct {
 var catalogURL = "https://replay.gulli.fr/"
 
 func (p *Gulli) downloadCatalog(ctx context.Context) ([]ShowEntry, error) {
-	ctx, done := context.WithTimeout(ctx, p.deadline)
 	cat := []ShowEntry{}
-	defer done()
 
-	parser := p.htmlParserFactory.New()
-
+	parser := colly.NewCollector()
 	parser.OnHTML("div.bloc_linkmore ul.multicolumn>li>a", func(e *colly.HTMLElement) {
 
 		entry := ShowEntry{

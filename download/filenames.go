@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	fileNameReplacer = strings.NewReplacer("/", "-", "\\", "-", "!", "", "?", "", ":", "-", ",", "", "*", "-", "|", "-", "\"", "", ">", "", "<", "")
-	pathNameReplacer = strings.NewReplacer("!", "", "?", "", ":", " ", ",", " ", "*", "", "|", " ", "\"", "", ">", "", "<", "", " - ", " ")
+	fileNameReplacer = strings.NewReplacer("/", "-", "\\", "-", "!", "", "?", "", ":", "-", ",", "", "*", "-", "|", "-", "\"", "", ">", "", "<", "", " .", ".", "  ", " ")
+	pathNameReplacer = strings.NewReplacer("!", "", "?", "", ":", " ", ",", " ", "*", "", "|", " ", "\"", "", ">", "", "<", "", " - ", " ", "  ", " ", " .", ".")
 )
 
 // FileNameCleaner return a safe file name from a given show name.
@@ -46,7 +46,7 @@ var (
 		nfo.TypeMovie:  nil,
 	}
 	showNameTemplates = map[nfo.ShowType]*template.Template{
-		nfo.TypeShow:   template.Must(template.New("serieTVShow").Parse(`{{.Showtitle}} - {{.Aired.Time.Format "2006-01-02"}}.mp4`)),
+		nfo.TypeShow:   template.Must(template.New("serieTVShow").Parse(`{{.Showtitle}} - {{.Aired.Time.Format "2006-01-02"}} - {{.Title}}.mp4`)),
 		nfo.TypeSeries: template.Must(template.New("serieShowName").Parse(`{{.Showtitle}} - s{{.Season | printf "%02d" }}e{{.Episode | printf "%02d" }} - {{.Title}}.mp4`)),
 		nfo.TypeMovie:  template.Must(template.New("movieName").Parse(`{{.Title}}.mp4`)),
 	}
@@ -61,9 +61,8 @@ func SeasonPath(showPath string, m *matcher.MatchRequest, info *nfo.MediaInfo) (
 	if t == nfo.TypeNotSpecified {
 		t = nfo.TypeSeries
 	}
-
 	seasonTmpl := seasonTemplates[t]
-	if m.SeasonPathTemplate != nil && m.SeasonPathTemplate.T != nil {
+	if m.SeasonPathTemplate.T != nil {
 		seasonTmpl = m.SeasonPathTemplate.T
 	}
 
@@ -78,6 +77,7 @@ func SeasonPath(showPath string, m *matcher.MatchRequest, info *nfo.MediaInfo) (
 
 // MediaPath returns the full path for an episode using filename template when present
 func MediaPath(showPath string, m *matcher.MatchRequest, info *nfo.MediaInfo) (string, error) {
+
 	var err error
 
 	seasonPart, err := SeasonPath(showPath, m, info)
@@ -86,9 +86,12 @@ func MediaPath(showPath string, m *matcher.MatchRequest, info *nfo.MediaInfo) (s
 	}
 
 	t := info.MediaType
+	if t == nfo.TypeNotSpecified {
+		t = nfo.TypeSeries
+	}
 	showPart := &strings.Builder{}
 	showTmpl := showNameTemplates[t]
-	if m.ShowNameTemplate != nil && m.ShowNameTemplate.T != nil {
+	if m.ShowNameTemplate.T != nil {
 		showTmpl = m.ShowNameTemplate.T
 	}
 

@@ -2,7 +2,6 @@ package workers
 
 import (
 	"context"
-	"log"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -13,89 +12,68 @@ import (
 // WorkItem is an interface to work item used b the Workers
 type WorkItem func()
 
-// WorkerPool is a pool of workers.
-type WorkerPool struct {
-	stop     chan bool      // Close this channel to stop all workers
-	submit   chan WorkItem  // Send work items to this channel, one of workers will run it
-	wg       sync.WaitGroup // To wait completion of all workers
-	nbWorker int            // The number of concurrent workers
-	logger   *mylog.MyLog   // True to enable logs
-	ctx      context.Context
+// Worker is a pool of workers.
+type Worker struct {
+	stop   chan bool // Close this channel to stop all workers
+	tokens chan int
+	wg     sync.WaitGroup // To wait completion of all workers
+	logger *mylog.MyLog   // True to enable logs
 }
 
 // New creates a new worker pool with NumCPU runing workers
-func New(ctx context.Context, workers int, logger *mylog.MyLog) *WorkerPool {
+func New(ctx context.Context, workers int, logger *mylog.MyLog) *Worker {
 	if workers < 1 {
 		workers = runtime.NumCPU()
 	}
-	w := &WorkerPool{
-		stop:     make(chan bool),
-		submit:   make(chan WorkItem),
-		nbWorker: workers,
-		logger:   logger,
-		ctx:      ctx,
+	w := &Worker{
+		stop:   make(chan bool),
+		tokens: make(chan int, workers),
+		logger: logger,
 	}
+
+	w.logger.Debug().Printf("[WORKER] Starting %d workers", workers)
 	for i := 0; i < workers; i++ {
-		go w.run(ctx, i)
+		w.tokens <- i + 1
 	}
+
 	return w
 }
 
-// init creates a goroutine for worker
-func (w *WorkerPool) run(ctx context.Context, index int) {
-	defer func() {
-		w.logger.Debug().Printf("Worker goroutine %d is shutted down.", index)
-	}()
-	for {
-		select {
-		case <-ctx.Done():
-			w.logger.Debug().Printf("Worker %d has received a %q", index, ctx.Err())
-			return
-		case wi := <-w.submit:
-			wi()
-			w.wg.Done()
-		case <-w.stop:
-			w.logger.Debug().Printf("Worker %d has received a stop request.", index)
-			return
-		}
-	}
-}
-
 // Stop stops all runing workers and wait them to finish and then leave the workerpool.
-func (w *WorkerPool) Stop() {
-	// wait the end of all job
-	w.wg.Wait()
-	w.logger.Debug().Printf("Waiting for worker to end")
+func (w *Worker) Stop(ctx context.Context) {
+	w.logger.Debug().Printf("[WORKER] Stoping...")
+
 	// Makes all goroutine ending
 	close(w.stop)
 
-	w.logger.Debug().Printf("Worker pool is ended")
+	// wait the end of all job
+	w.logger.Debug().Printf("[WORKER] Waiting for worker to end")
+	w.wg.Wait()
+	w.logger.Debug().Printf("[WORKER] Worker pool is ended")
 }
 
 var jobID = int64(0)
 
 // Submit a work item to the worker pool
-func (w *WorkerPool) Submit(wi WorkItem, wg *sync.WaitGroup) {
-
+func (w *Worker) Submit(ctx context.Context, wi func(wid, jid int)) {
 	id := atomic.AddInt64(&jobID, 1)
+	w.logger.Debug().Printf("[WORKER] Job %d is waiting...", id)
 	select {
-	case w.submit <- func() {
-		defer wg.Done()
-		if w.ctx.Err() != nil {
-			log.Printf("Job %d is discarded", id)
-			return
-		}
-		w.logger.Debug().Printf("Job %d is started", id)
+	case <-w.stop:
+		w.logger.Debug().Printf("[WORKER] Stopped, job %d discared", id)
+		return
+	case <-ctx.Done():
+		w.logger.Debug().Printf("[WORKER] Cancled, job %d discared", id)
+		return
+	case wid := <-w.tokens:
 		w.wg.Add(1)
-		wi()
-		w.logger.Debug().Printf("Job %d is done", id)
-
-	}:
-		w.logger.Debug().Printf("Job %d is queued", id)
-		return
-	case <-w.ctx.Done():
-		w.logger.Debug().Printf("Job %d cancelled", id)
-		wg.Done()
-		return
+		fn := func(wid, id int) {
+			w.logger.Debug().Printf("[WORKER %d] Job %d is started", wid, id)
+			wi(wid, id)
+			w.logger.Debug().Printf("[WORKER %d] Job %d is done", wid, id)
+			w.tokens <- wid
+			w.wg.Done()
+		}
+		go fn(wid, int(id))
 	}
 }

@@ -30,7 +30,7 @@ func TestFFMepg(t *testing.T) {
 		in            string
 		out           string
 		info          *nfo.MediaInfo
-		configurators []ConfigurationFunction
+		configurators []configurationFunction
 	}
 	tests := []struct {
 		name    string
@@ -45,14 +45,14 @@ func TestFFMepg(t *testing.T) {
 				in:            "https://file-examples.com/wp-content/uploads/2017/04/file_example_MP4_640_3MG.mp4",
 				out:           os.DevNull,
 				info:          &nfo.MediaInfo{},
-				configurators: []ConfigurationFunction{},
+				configurators: []configurationFunction{},
 			},
 			false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := FFMpeg(tt.args.ctx, nil, tt.args.in, tt.args.out, tt.args.info, tt.args.configurators...); (err != nil) != tt.wantErr {
+			if err := ffmpeg(tt.args.ctx, tt.args.in, tt.args.out, tt.args.info, tt.args.configurators...); (err != nil) != tt.wantErr {
 				t.Errorf("FFMepg() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

@@ -1,0 +1,22 @@
+{
+  "Destinations": {
+    "Documentaires": "${HOME}/Videos/Documentaires",
+    "Jeunesse": "${HOME}/Videos/Jeunesse",
+    "Séries": "${HOME}/Videos/Series",
+    "News": "${HOME}/Videos/News"
+  },
+  "Providers": {
+    "artetv": {
+      "Enabled": true,
+      "HitsRate": 5
+    }
+  },
+  "WatchList": [
+    {
+      "Show": "Géométrie de la mort",
+      "Provider": "artetv",
+      "Destination": "Séries",
+      "KeepBonus": true
+    }
+  ]
+}

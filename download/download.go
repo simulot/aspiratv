@@ -12,27 +12,31 @@ import (
 	"github.com/simulot/aspiratv/mylog"
 )
 
-type Progresser interface {
-	Init(size int64)
-	Update(count int64, size int64)
+// FeedBacker is an iterface for providing feed back on concurrent tasks
+// like a progression bar on the console
+type FeedBacker interface {
+	Stage(stage string) // Indicate current stage
+	Total(total int)    // Indicate the total number (could be bytes, percent )
+	Update(current int) // Indicate the current position
+	Done()              // Call when the task is done
 }
 
-type DownloadConfiguration struct {
-	pgr    Progresser
+type downloadConfiguration struct {
+	fb     FeedBacker
 	logger *mylog.MyLog
 	// params map[string]string
 }
 
-func NewDownloadConfiguration() *DownloadConfiguration {
-	return &DownloadConfiguration{
+func newDownloadConfiguration() *downloadConfiguration {
+	return &downloadConfiguration{
 		// params: map[string]string{},
 	}
 }
 
-type ConfigurationFunction func(*DownloadConfiguration)
+type configurationFunction func(*downloadConfiguration)
 
 // Download determine the type of media at given url and launch the appropriate download method
-func Download(ctx context.Context, log *mylog.MyLog, in, out string, info *nfo.MediaInfo, configfn ...ConfigurationFunction) error {
+func Download(ctx context.Context, log *mylog.MyLog, in, out string, info *nfo.MediaInfo, configfn ...configurationFunction) error {
 	req, err := http.NewRequest("HEAD", in, nil)
 	if err != nil {
 		return fmt.Errorf("Download: can't get HEAD, %w", err)
@@ -83,10 +87,10 @@ func Download(ctx context.Context, log *mylog.MyLog, in, out string, info *nfo.M
 
 	switch downloader {
 	case "DASH":
-		return DASH(ctx, log, in, out, info, configfn...)
+		return DASH(ctx, in, out, info, configfn...)
 
 	case "FFMPEG":
-		return FFMpeg(ctx, log, in, out, info, configfn...)
+		return ffmpeg(ctx, in, out, info, configfn...)
 	}
 	if downloader == "" {
 		return fmt.Errorf("How to download this:%s", in)
@@ -94,26 +98,16 @@ func Download(ctx context.Context, log *mylog.MyLog, in, out string, info *nfo.M
 	return nil
 }
 
-func WithProgress(pgr Progresser) ConfigurationFunction {
-	return func(c *DownloadConfiguration) {
-		c.pgr = pgr
+// WithProgress add a feedbacker to the configuration
+func WithProgress(fb FeedBacker) configurationFunction {
+	return func(c *downloadConfiguration) {
+		c.fb = fb
 	}
 }
 
-func WithLogger(logger *mylog.MyLog) ConfigurationFunction {
-	return func(c *DownloadConfiguration) {
+// WithLogger add a logger to the configuration
+func WithLogger(logger *mylog.MyLog) configurationFunction {
+	return func(c *downloadConfiguration) {
 		c.logger = logger
 	}
 }
-
-// func WithDebug(debug bool) ConfigurationFunction {
-// 	return func(c *DownloadConfiguration) {
-// 		c.debug = debug
-// 	}
-// }
-
-// func WithParams(params map[string]string) ConfigurationFunction {
-// 	return func(c *DownloadConfiguration) {
-// 		c.params = params
-// 	}
-// }

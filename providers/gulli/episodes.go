@@ -8,11 +8,9 @@ import (
 )
 
 func (p *Gulli) getFirstEpisodeID(ctx context.Context, entry ShowEntry) (string, error) {
-	ctx, done := context.WithTimeout(ctx, p.deadline)
-	defer done()
-	parser := p.htmlParserFactory.New()
-	var playerURL string
 
+	parser := colly.NewCollector()
+	playerURL := ""
 	parser.OnHTML("div.bloc.bloc_listing ul li:first-child a", func(e *colly.HTMLElement) {
 		playerURL = e.Attr("href")
 	})

@@ -5,9 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
@@ -17,7 +14,7 @@ import (
 	"github.com/simulot/aspiratv/matcher"
 	"github.com/simulot/aspiratv/media"
 	"github.com/simulot/aspiratv/metadata/nfo"
-	"github.com/simulot/aspiratv/net/myhttp/httptest"
+	"github.com/simulot/aspiratv/providers"
 	"github.com/simulot/aspiratv/providers/francetv/query"
 )
 
@@ -51,8 +48,8 @@ func (p *FranceTV) search(ctx context.Context, mr *matcher.MatchRequest) chan *m
 			}
 			close(mm)
 		}()
-		// ctx, done := context.WithTimeout(ctx, p.deadline)
-		// defer done()
+
+		client := providers.NewHTTPClient(p.config)
 
 		rq := RequestPayLoad{
 			Term: mr.Show,
@@ -63,39 +60,14 @@ func (p *FranceTV) search(ctx context.Context, mr *matcher.MatchRequest) chan *m
 			},
 		}
 
-		var resp []byte
-		resp, err = json.Marshal(rq)
+		var body []byte
+		body, err = json.Marshal(rq)
 		if err != nil {
 			p.config.Log.Error().Printf("[%s] Can't encode request: %s", p.Name(), err)
 			return
 		}
 
-		h := make(http.Header)
-
-		if p.config.Log.IsDebug() {
-			p.config.Log.Debug().Printf("[%s] Request headers", p.Name())
-			for k, s := range h {
-				p.config.Log.Debug().Printf("[%s] %q %s", p.Name(), k, strings.Join(s, ","))
-			}
-			p.config.Log.Debug().Printf(string(resp))
-		}
-
-		var r io.ReadCloser
-		r, err = p.getter.DoWithContext(ctx, "POST", "https://www.france.tv/recherche/lancer/", h, bytes.NewBuffer(resp))
-		if err != nil {
-			p.config.Log.Error().Printf("[%s] Can't call search API: %s", p.Name(), err)
-			return
-		}
-		if p.config.Log.IsDebug() {
-			r = httptest.DumpReaderToFile(p.config.Log, r, "francetv-recherche-")
-		}
-
-		resp, err = ioutil.ReadAll(r)
-		r.Close()
-		if err != nil {
-			p.config.Log.Error().Printf("[%s] Can't get API result: %s", p.Name(), err)
-			return
-		}
+		resp, err := client.Post(ctx, "https://www.france.tv/recherche/lancer/", nil, bytes.NewBuffer(body))
 
 		// resp is an encoded string containing a json object.
 		decResp := ""
@@ -104,19 +76,15 @@ func (p *FranceTV) search(ctx context.Context, mr *matcher.MatchRequest) chan *m
 			p.config.Log.Error().Printf("[%s] Can't decode search response: %s", p.Name(), err)
 			return
 		}
+		if p.config.Log.IsDebug() {
+			p.config.Log.Debug().Printf("[%s] Decoded result\n%s", p.Name(), decResp)
+		}
 
 		results := map[string]query.Result{}
 		err = json.Unmarshal([]byte(decResp), &results)
 		if err != nil {
 			p.config.Log.Error().Printf("[%s] Can't decode API result: %s", p.Name(), err)
 			return
-		}
-		if p.config.Log.IsDebug() {
-			reEncode, err := json.MarshalIndent(results, "", "  ")
-			if err != nil {
-				p.config.Log.Error().Printf("Can't encode json response: %s", err)
-			}
-			p.config.Log.Debug().Printf("[%s] Decoded result\n%s", p.Name(), string(reEncode))
 		}
 
 		// Search for series first
@@ -274,7 +242,7 @@ func (p *FranceTV) visitPageSerie(ctx context.Context, mr *matcher.MatchRequest,
 	// https://www.france.tv/series-et-fictions/series-policieres-thrillers/district-31
 	// https://www.france.tv/recherche/lancer/query=district+31\u0026hitsPerPage=20\u0026page=0\u0026filters=(class%3Aprogram%20OR%20class%3Aevent)%20AND%20(counters.web.integral_counter%20%3E%200%20OR%20counters.web.extract_counter%20%3E%200)%20AND%20NOT%20type%3Asaison%20AND%20NOT%20type%3Acomposite\u0026restrictSearchableAttributes=%5B%22label%22%2C%22title%22%2C%22description%22%2C%22seo%22%5D
 
-	parser := p.htmlParserFactory.New()
+	parser := colly.NewCollector()
 	page := 0
 	hits := 0
 	lastPageWithHits := 0
@@ -361,6 +329,7 @@ func (p *FranceTV) visitPageSerie(ctx context.Context, mr *matcher.MatchRequest,
 	url = "https://www.france.tv/" + url + "/toutes-les-videos/"
 
 	for {
+		p.config.HitsLimiter.Wait(ctx)
 		u := url + "?page=" + strconv.Itoa(page)
 
 		p.config.Log.Trace().Printf("[%s] Visiting page %q", p.Name(), u)

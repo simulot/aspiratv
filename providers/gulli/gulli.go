@@ -2,35 +2,20 @@ package gulli
 
 import (
 	"context"
-	"io"
-	"net/http"
-	"os"
-	"path"
 	"strings"
-	"time"
 
 	"github.com/simulot/aspiratv/matcher"
 	"github.com/simulot/aspiratv/media"
 	"github.com/simulot/aspiratv/metadata/nfo"
-	"github.com/simulot/aspiratv/net/myhttp"
-	"github.com/simulot/aspiratv/parsers/htmlparser"
 	"github.com/simulot/aspiratv/providers"
 )
 
-type getter interface {
-	Get(ctx context.Context, uri string) (io.ReadCloser, error)
-}
-
 // Gulli provider gives access to Gulli catchup tv
 type Gulli struct {
-	config            providers.Config
-	getter            getter
-	htmlParserFactory *htmlparser.Factory
-	seenShows         map[string]bool
-	cacheFile         string
-	deadline          time.Duration
-	cartoonList       []ShowEntry
-	tvshows           map[string]*nfo.TVShow
+	config      providers.ProviderConfig
+	seenShows   map[string]bool
+	cartoonList []ShowEntry
+	tvshows     map[string]*nfo.TVShow
 }
 
 // init registers Gulli provider
@@ -46,39 +31,18 @@ func init() {
 func New() (*Gulli, error) {
 
 	p := &Gulli{
-		getter:            myhttp.DefaultClient,
-		htmlParserFactory: nil,
-		seenShows:         map[string]bool{},
-		deadline:          30 * time.Second,
-		tvshows:           map[string]*nfo.TVShow{},
+		seenShows: map[string]bool{},
+		tvshows:   map[string]*nfo.TVShow{},
 	}
-	if rt, ok := p.getter.(http.RoundTripper); ok {
-		p.htmlParserFactory = htmlparser.NewFactory(htmlparser.SetTransport(rt))
-	} else {
-		p.htmlParserFactory = htmlparser.NewFactory()
-	}
-
-	cacheDir, err := os.UserCacheDir()
-	if err != nil {
-		return nil, err
-	}
-
-	p.cacheFile = path.Join(cacheDir, "aspiratv", "gulli-catalog.json")
 	return p, nil
 }
 
-func (p *Gulli) Configure(c providers.Config) {
+func (p *Gulli) Configure(fns ...providers.ProviderConfigFn) {
+	c := p.config
+	for _, f := range fns {
+		c = f(c)
+	}
 	p.config = c
-	if p.config.Log.IsDebug() {
-		p.deadline = time.Hour
-	}
-}
-
-// withGetter set a getter for Gulli
-func withGetter(g getter) func(p *Gulli) {
-	return func(p *Gulli) {
-		p.getter = g
-	}
 }
 
 // Name return the name of the provider
@@ -92,7 +56,7 @@ func (p *Gulli) MediaList(ctx context.Context, mm []*matcher.MatchRequest) chan 
 		defer close(shows)
 		cat, err := p.downloadCatalog(ctx)
 		if err != nil {
-			p.config.Log.Error().Printf("[%s] Can't call replay catalog: %q", p.Name(), err)
+			p.config.Log.Error().Printf("[%s] Can't get replay catalog: %q", p.Name(), err)
 			return
 		}
 
@@ -106,7 +70,11 @@ func (p *Gulli) MediaList(ctx context.Context, mm []*matcher.MatchRequest) chan 
 						return
 					}
 					for _, s := range showTitles {
-						shows <- s
+						select {
+						case shows <- s:
+						case <-ctx.Done():
+							return
+						}
 					}
 				}
 			}
@@ -117,6 +85,5 @@ func (p *Gulli) MediaList(ctx context.Context, mm []*matcher.MatchRequest) chan 
 
 // GetMediaDetails gather show information from dedicated web page.
 func (p *Gulli) GetMediaDetails(ctx context.Context, m *media.Media) error {
-
 	return nil
 }

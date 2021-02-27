@@ -5,21 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gocolly/colly"
 	"github.com/simulot/aspiratv/matcher"
 	"github.com/simulot/aspiratv/media"
 	"github.com/simulot/aspiratv/metadata/nfo"
-	"github.com/simulot/aspiratv/net/myhttp"
-	"github.com/simulot/aspiratv/net/myhttp/httptest"
-	"github.com/simulot/aspiratv/parsers/htmlparser"
 	"github.com/simulot/aspiratv/providers"
+	"golang.org/x/time/rate"
 )
 
 // init registers ArteTV provider
@@ -42,107 +38,34 @@ const (
 // Track when this is the first time the Show is invoked
 var runCounter = 0
 
-type getter interface {
-	Get(ctx context.Context, uri string) (io.ReadCloser, error)
-}
-
 // ArteTV structure handles arte  catalog of shows
 type ArteTV struct {
-	config            providers.Config
-	getter            getter
+	config            providers.ProviderConfig
 	preferredVersions []string // versionCode List of version in order of preference VF,VA...
 	preferredQuality  []string
 	preferredMedia    string // mediaType mp4,hls
-	htmlParserFactory *htmlparser.Factory
 	seenPrograms      map[string]bool
-	deadline          time.Duration
-	throttler         *throttler
-}
-
-// WithGetter inject a getter in FranceTV object instead of normal one
-func WithGetter(g getter) func(p *ArteTV) {
-	return func(p *ArteTV) {
-		p.getter = g
-
-	}
-}
-
-type throttler struct {
-	g        getter
-	ticker   *time.Ticker
-	throttle chan struct{}
-	burst    int
-	rate     time.Duration
-	stop     chan struct{}
-}
-
-func newThrottler(g getter, rate int, burst int) *throttler {
-	t := &throttler{
-		g:     g,                                 // The original getter
-		burst: burst,                             // allow a burst of queries
-		rate:  time.Second / time.Duration(rate), // Query
-		stop:  make(chan struct{}),               // Stop me if you can
-	}
-	t.throttle = make(chan struct{}, t.burst)
-	t.ticker = time.NewTicker(t.rate)
-	for i := 0; i < t.burst; i++ {
-		t.throttle <- struct{}{}
-	}
-	go func() {
-		defer t.ticker.Stop()
-		for {
-			select {
-			case <-t.stop:
-				return
-			case <-t.ticker.C:
-				t.throttle <- struct{}{}
-			default:
-			}
-		}
-
-	}()
-	return t
-}
-
-func (t *throttler) Stop() {
-	<-t.stop
-}
-
-func (t *throttler) Get(ctx context.Context, uri string) (io.ReadCloser, error) {
-	<-t.throttle
-	return t.g.Get(ctx, uri)
+	limiter           *rate.Limiter
 }
 
 // New setup a Show provider for Arte
 func New() (*ArteTV, error) {
-	throttler := newThrottler(myhttp.DefaultClient, 2, 5)
 	p := &ArteTV{
-		getter: throttler,
 		//TODO: get preferences from config file
 		preferredVersions: []string{"VF", "VOF", "VF-STF", "VOF-STF", "VO-STF", "VOF-STMF", "VO"}, // "VF-STMF" "VA", "VA-STA"
 		preferredMedia:    "mp4",
 		preferredQuality:  []string{"SQ", "XQ", "EQ", "HQ", "MQ"},
-		htmlParserFactory: htmlparser.NewFactory(),
 		seenPrograms:      map[string]bool{},
-		deadline:          30 * time.Second,
-		throttler:         throttler,
 	}
 	return p, nil
 }
 
-func (p *ArteTV) Configure(c providers.Config) {
+func (p *ArteTV) Configure(fns ...providers.ProviderConfigFn) {
+	c := p.config
+	for _, f := range fns {
+		c = f(c)
+	}
 	p.config = c
-	if p.config.Log.IsDebug() {
-		p.deadline = 1 * time.Hour
-	}
-
-}
-
-// withGetter set a getter for ArteTV
-func withGetter(g getter) func(p *ArteTV) {
-	return func(p *ArteTV) {
-		p.getter = g
-	}
 }
 
 // Name return the name of the provider
@@ -155,12 +78,15 @@ func (p *ArteTV) MediaList(ctx context.Context, mm []*matcher.MatchRequest) chan
 	go func() {
 		defer close(shows)
 		for _, m := range mm {
-			if ctx.Err() != nil {
-				return
-			}
 			if m.Provider == p.Name() {
 				for s := range p.getShowList(ctx, m) {
-					shows <- s
+					select {
+					case <-ctx.Done():
+						return
+					default:
+						shows <- s
+
+					}
 				}
 			}
 		}
@@ -185,51 +111,26 @@ func (p *ArteTV) getShowList(ctx context.Context, mr *matcher.MatchRequest) chan
 		//TODO: use user's preferred language
 		const apiSEARCH = "https://www.arte.tv/guide/api/emac/v3/fr/web/data/SEARCH_LISTING"
 
-		u, err := url.Parse(apiSEARCH)
-		if err != nil {
-			p.config.Log.Error().Printf("[%s] Can't call search API: %q", p.Name(), err)
-			return
-		}
-		v := u.Query()
-		// v.Set("imageFormats", "square,banner,landscape,poster")
-		v.Set("imageFormats", "*")
-		v.Set("query", mr.Show)
-		v.Set("mainZonePage", "1")
-		v.Set("page", strconv.Itoa(page))
-		v.Set("limit", "10")
+		client := providers.NewHTTPClient(p.config)
+
+		q := &url.Values{}
+		q.Add("imageFormats", "*")
+		q.Add("query", mr.Show)
+		q.Add("mainZonePage", "1")
+		q.Add("page", strconv.Itoa(page))
+		q.Add("limit", "10")
+
 		for {
-			u.RawQuery = v.Encode()
-
-			p.config.Log.Debug().Printf("[%s] Search url: %q", p.Name(), u.String())
-			var result APIResult
-			ctxLocal, doneLocal := context.WithTimeout(ctx, p.deadline)
-
-			r, err := p.getter.Get(ctxLocal, u.String())
+			r, err := client.Get(ctx, apiSEARCH, q, nil)
 			if err != nil {
-				p.config.Log.Error().Printf("[%s] Can't call search API: %q", p.Name(), err)
-				doneLocal()
 				return
 			}
-
-			defer r.Close()
-
-			if p.config.Log.IsDebug() {
-				r = httptest.DumpReaderToFile(p.config.Log, r, "artetv-search-")
-			}
-
-			err = json.NewDecoder(r).Decode(&result)
+			var result APIResult
+			err = json.Unmarshal(r, &result)
 			if err != nil {
 				p.config.Log.Error().Printf("[%s] Can't decode search API result: %q", p.Name(), err)
-				doneLocal()
 				return
 			}
-			if ctxLocal.Err() != nil {
-				p.config.Log.Error().Printf("%s", ctxLocal.Err())
-				doneLocal()
-				return
-			}
-
-			doneLocal()
 
 			hits := 0
 			for _, d := range result.Data {
@@ -238,7 +139,7 @@ func (p *ArteTV) getShowList(ctx context.Context, mr *matcher.MatchRequest) chan
 					if d.Kind.IsCollection {
 						matchedSeries = append(matchedSeries, d)
 					}
-					if !p.config.KeepBonus && (d.Kind.Code != "SHOW") {
+					if !mr.KeepBonus && (d.Kind.Code != "SHOW") {
 						continue
 					}
 					if strings.ToLower(d.Title) == mr.Show {
@@ -252,7 +153,7 @@ func (p *ArteTV) getShowList(ctx context.Context, mr *matcher.MatchRequest) chan
 				break
 			}
 			page++
-			v.Set("page", strconv.Itoa(page))
+			q.Set("page", strconv.Itoa(page))
 
 		}
 		if len(matchedSeries) > 0 {
@@ -265,7 +166,12 @@ func (p *ArteTV) getShowList(ctx context.Context, mr *matcher.MatchRequest) chan
 		}
 		if len(matchedShows) > 0 {
 			for s := range p.getShows(ctx, mr, matchedShows) {
-				shows <- s
+				select {
+				default:
+					shows <- s
+				case <-ctx.Done():
+					return
+				}
 			}
 		}
 	}()
@@ -307,8 +213,12 @@ func (p *ArteTV) getShows(ctx context.Context, mr *matcher.MatchRequest, data []
 
 			// TODO Actors
 			media.SetMetaData(&info)
-			media.Match = mr
-			shows <- media
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				shows <- media
+			}
 		}
 	}()
 
@@ -329,28 +239,19 @@ var (
 var parseShowSeason = regexp.MustCompile(`^(.+) - Saison (\d+)$`)
 
 func (p *ArteTV) getSerie(ctx context.Context, mr *matcher.MatchRequest, d Data) chan *media.Media {
-	ctx, done := context.WithTimeout(ctx, p.deadline)
 	shows := make(chan *media.Media)
 
 	go func() {
 		defer func() {
 			close(shows)
-			done()
 		}()
 
 		// TODO: use user's preferred language
 		// Refactoring. The collection's page contains a script with the full serie split per seasons, no need to call the api
 
-		<-p.throttler.throttle
+		parser := colly.NewCollector()
 
-		parser := p.htmlParserFactory.New()
 		pgm := InitialProgram{}
-		parser.Limit(&colly.LimitRule{
-			DomainGlob:  "*",
-			RandomDelay: 200 * time.Millisecond,
-			Delay:       500 * time.Microsecond,
-		})
-
 		parser.OnHTML("body > script", func(e *colly.HTMLElement) {
 			if strings.Index(e.Text, "__INITIAL_STATE__") < 0 {
 				return
@@ -370,10 +271,19 @@ func (p *ArteTV) getSerie(ctx context.Context, mr *matcher.MatchRequest, d Data)
 			}
 
 		})
+		p.config.HitsLimiter.Wait(ctx)
+		if ctx.Err() == context.Canceled {
+			return
+		}
 
 		err := parser.Visit(d.URL)
+
 		if err != nil {
 			p.config.Log.Error().Printf("[%s] Can't visit URL %q: %s", p.Name(), err)
+			return
+		}
+
+		if ctx.Err() == context.Canceled {
 			return
 		}
 
@@ -530,13 +440,7 @@ func (p *ArteTV) GetMediaDetails(ctx context.Context, m *media.Media) error {
 	player_url := fmt.Sprintf(arteDetails, info.UniqueID[0].ID) // TODO search for ARTE ID
 
 	if !info.IsDetailed {
-		parser := p.htmlParserFactory.New()
-		parser.Limit(&colly.LimitRule{
-			DomainGlob:  "*",
-			RandomDelay: 200 * time.Millisecond,
-			Delay:       500 * time.Microsecond,
-		})
-
+		parser := colly.NewCollector()
 		pgm := InitialProgram{}
 		js := ""
 
@@ -555,12 +459,17 @@ func (p *ArteTV) GetMediaDetails(ctx context.Context, m *media.Media) error {
 
 		})
 
+		p.config.HitsLimiter.Wait(ctx)
+		if ctx.Err() == context.Canceled {
+			return ctx.Err()
+		}
+
 		err := parser.Visit(info.PageURL)
 		if err != nil {
 			p.config.Log.Error().Printf("[%s] Can't visit URL %q: %s", p.Name(), err)
 			return err
 		}
-		err = json.NewDecoder(strings.NewReader(js)).Decode(&pgm)
+		err = json.Unmarshal([]byte(js), &pgm)
 		if err != nil {
 			p.config.Log.Error().Printf("[%s] Can't parse JSON collection: %s", p.Name(), err)
 			return err
@@ -613,16 +522,14 @@ func (p *ArteTV) GetMediaDetails(ctx context.Context, m *media.Media) error {
 
 	p.config.Log.Trace().Printf("[%s] Title '%s' player url: %q", p.Name(), info.Title, player_url)
 
-	r, err := p.getter.Get(ctx, player_url)
+	client := providers.NewHTTPClient(p.config)
+	buf, err := client.Get(ctx, player_url, nil, nil)
 	if err != nil {
 		return fmt.Errorf("Can't get player for %q: %w", info.Title, err)
 	}
-	if p.config.Log.IsDebug() {
-		r = httptest.DumpReaderToFile(p.config.Log, r, "artetv-info-"+m.ID+"-")
-	}
-	defer r.Close()
+
 	player := playerAPI{}
-	err = json.NewDecoder(r).Decode(&player)
+	err = json.Unmarshal(buf, &player)
 	if err != nil {
 		return fmt.Errorf("Can't decode show's detailled information: %w", err)
 	}

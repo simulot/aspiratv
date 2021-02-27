@@ -2,6 +2,9 @@ package matcher
 
 import (
 	"encoding/json"
+	"errors"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"text/template"
@@ -22,19 +25,48 @@ type MatchRequest struct {
 	MaxAgedDays int // Retrive media younger than MaxAgedDays when not zero
 
 	// Fields for managing download
-	Type               nfo.ShowType    // Determine the type of show for file layout and naming
-	Destination        string          // Download base destination code defined in config
-	ShowRootPath       string          `json:"ShowPath"` // Show/Movie path. Bypass destinations. For expisodes, actual season will append to the path
-	SeasonPathTemplate *TemplateString // Template for season path, can be empty to skip season in path. When missing uses default naming
-	ShowNameTemplate   *TemplateString // Template for the name of mp4 file, can't be empty. When missing, uses default naming
-	RetentionDays      int             // Media retention time, when not zero the system will delete old files
-	TitleFilter        Filter          // ShowTitle or Episode title must match this regexp to be downloaded
-	TitleExclude       Filter          // ShowTitle and Episode title must not match this regexp to be downloaded
-	KeepBonus          bool            // When trie bonuses and trailer are retrieved
+	Type               nfo.ShowType   // Determine the type of show for file layout and naming
+	Destination        string         // Download base destination code defined in config
+	ShowRootPath       string         `json:"ShowPath"` // Show/Movie path. Bypass destinations. For expisodes, actual season will append to the path
+	SeasonPathTemplate TemplateString // Template for season path, can be empty to skip season in path. When missing uses default naming
+	ShowNameTemplate   TemplateString // Template for the name of mp4 file, can't be empty. When missing, uses default naming
+	RetentionDays      int            // Media retention time, when not zero the system will delete old files
+	TitleFilter        Filter         // ShowTitle or Episode title must match this regexp to be downloaded
+	TitleExclude       Filter         // ShowTitle and Episode title must not match this regexp to be downloaded
+	KeepBonus          bool           // When trie bonuses and trailer are retrieved
+	Force              bool           // True to force  medias
 
 }
 
-// TODO implement IsTitleMatch for all providers
+func (m MatchRequest) Validate(destinations map[string]string) error {
+	if m.Show == "" {
+		return errors.New("Missing show name")
+	}
+
+	if m.Provider == "" {
+		return errors.New("Missing provider")
+	}
+
+	if m.ShowRootPath == "" && m.Destination == "" {
+		return errors.New("Missing show path or destination")
+	}
+
+	if m.ShowRootPath != "" {
+		p := os.ExpandEnv(m.ShowRootPath)
+		p, err := filepath.Abs(p)
+		if err != nil {
+			return err
+		}
+		err = os.MkdirAll(p, 0755)
+		if err != nil {
+			return err
+		}
+		m.ShowRootPath = p
+	}
+
+	return nil
+}
+
 func (m MatchRequest) IsTitleMatch(title string) bool {
 	if m.TitleExclude.Regexp != nil {
 		if m.TitleExclude.Regexp.MatchString(title) {
@@ -51,6 +83,7 @@ func (m MatchRequest) IsTitleMatch(title string) bool {
 }
 
 // Filter is a wrapper for regexp
+// Implement JSON and Value interfaces
 type Filter struct {
 	*regexp.Regexp
 }
@@ -68,14 +101,30 @@ func (t *Filter) UnmarshalJSON(b []byte) error {
 	}
 	t.Regexp = nil
 	if len(b) > 0 {
-		re, err := regexp.Compile(string(b))
-		if err != nil {
-			return err
-		}
-		t.Regexp = re
+		return t.Set(string(b))
 	}
 	return nil
 }
+
+// Set value
+func (t *Filter) Set(s string) error {
+	re, err := regexp.Compile(s)
+	if err != nil {
+		return err
+	}
+	t.Regexp = re
+	return nil
+}
+
+func (t Filter) String() string {
+	if t.Regexp != nil {
+		return t.Regexp.String()
+	}
+	return ""
+}
+
+// Type used in command line
+func (Filter) Type() string { return "regexp-filter" }
 
 type TemplateString struct {
 	S string
@@ -86,7 +135,7 @@ func (t TemplateString) String() string {
 	return t.S
 }
 func (t TemplateString) Type() string {
-	return "template"
+	return "name-template"
 }
 
 func (t *TemplateString) Set(s string) error {

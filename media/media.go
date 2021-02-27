@@ -17,10 +17,10 @@ type MetaDataHandler interface {
 
 // Media represents a media to be handled.
 type Media struct {
-	ID       string                // Show ID
-	Metadata MetaDataHandler       // Carry metadata scrapped online
-	Match    *matcher.MatchRequest // Matched request
-	ShowPath string                // Path of the show/media
+	ID           string                // Show ID
+	Metadata     MetaDataHandler       // Carry metadata scrapped online
+	Match        *matcher.MatchRequest // Matched request
+	ShowRootPath string                // Path of the show/media to be downloaded
 }
 
 func (m *Media) SetMetaData(info MetaDataHandler) {

@@ -2,6 +2,8 @@
 
 Ce programme interroge les serveurs de télévision de rattrapage et télécharge les émissions souhaitées et les enregistre sur un disque selon une organisation reconnue par des programmes comme [PLEX](https://www.plex.tv/) ou [EMBY](https://emby.media/). Les métadonnées (titre des émissions, desciption, vignettes) sont placées de façon à être directement reconnues par Emby (à tester dans Plex).
 
+⚠️ La ligne de commande change avec la version 0.16
+
 
 ## Télécharger un programme, une série
 <p align="center">
@@ -50,37 +52,59 @@ Les binaires pour Windows, Linux et FreeBSD sont directement disponibles sur la 
 - Télécharger les binaires correspondant à votre système sur la page de la dernière release de le répertoire de votre choix.
 - Puis décompresser l'archive
 ```
-tar -czvf aspiratv_0.8.0_Linux_x86_64.tar.gz
+tar -czvf aspiratv_0.15.0_Linux_x86_64.tar.gz
 ```
 
 
 # Ligne de commande
 
 ```
-Usage of aspiratv:
-      --config string              Configuration file name. (default "config.json")
-  -d, --destination string         Destination path for all shows.
-      --force                      Force media download.
-      --headless                   Headless mode. Progression bars are not displayed.
-  -b, --keep-bonuses               Download bonuses when true
-      --log string                 Give the log file name.
-  -l, --log-level string           Log level (INFO,TRACE,ERROR,DEBUG) (default "ERROR")
-  -a, --max-aged int               Retrieve media younger than MaxAgedDays.
-  -m, --max-tasks int              Maximum concurrent downloads at a time. (default 12)
-      --name-template template     Show name file template
-  -p, --provider string            Provider to be used with download command. Possible values : artetv, francetv, gulli
-      --season-template template   Season directory template
-  -s, --show-path string           Force show's path.
-  -e, --title-exclude string       Showtitle and Episode title must not satisfy regexp filter
-  -f, --title-filter string        Showtitle or Episode title must satisfy regexp filter
-  -n, --write-nfo                  Write NFO file for Jellyfin, KODI, Emby, Plex... (default true)
+Usage of ./aspiratv:
+
+Command run: download new shows listed into configuration file in the watchlist
+
+aspiratv  run [ options... ]
+aspiratv  [ options... ]
+
+  example:   aspiratv run --log aspiratv.log
+
+  options:
+      --config string      Configuration file name. (default "config.json")
+      --headless           Headless mode. Progression bars are not displayed.
+      --log string         Give the log file name.
+  -l, --log-level string   Log level (INFO,TRACE,ERROR,DEBUG) (default "ERROR")
+  -m, --max-tasks int      Maximum concurrent downloads at a time. (default 12)
+
+Command download: download show with given options
+
+aspiratv  download --provider PROVIDER --show-path PATH [ options... ] "show name"
+
+  example:   aspiratv  download --provider francetv --show-path {$HOME}/Videos/Animes/  "lapins crétins"
+
+  options:
+      --force                           Force media download even when present on the show-path.
+      --headless                        Headless mode. Progression bars are not displayed.
+  -b, --keep-bonuses                    Download bonuses when true
+      --log string                      Give the log file name.
+  -l, --log-level string                Log level (INFO,TRACE,ERROR,DEBUG) (default "ERROR")
+  -a, --max-aged int                    Retrieve media younger than MaxAgedDays.
+  -m, --max-tasks int                   Maximum concurrent downloads at a time. (default 12)
+      --name-template name-template     Show name file template
+  -p, --provider string                 Provider to be used with download command. Possible values : artetv, francetv, gulli (mandatory).
+      --retention int                   Delete media older than retention days for the downloaded show.
+      --season-template name-template   Season directory template
+  -s, --show-path string                Show's path (mandatory).
+  -e, --title-exclude regexp-filter     Showtitle and Episode title must not satisfy regexp filter
+  -f, --title-filter regexp-filter      Showtitle or Episode title must satisfy regexp filter
  ``` 
 
 Le programme fonctionne selon deux modilités :
 ## Pour surveiller la mise à disposition de nouveaux épisodes d'une émission
-Dans ce mode, le fichiers de configuration `config.json` placé dans le même répertoire que le programe est lu pour pour interroger les différents serveur.
+``` sh
+./aspiratv run
+```
 
-Note: L'option -server a été supprimée. Pour interroger automatiquement les serveur, ajouter une ligne dans crontab, ou une tâche planifiée dans windows.
+Dans ce mode, le fichiers de configuration `config.json` placé dans le même répertoire que le programe est lu pour pour interroger les différents serveur. Pour interroger automatiquement les serveur, ajouter une ligne dans crontab, ou une tâche planifiée dans windows.
 
 ### --config votreconfig.json
 
@@ -88,9 +112,26 @@ L'option `--config` indique le fichier de configuration à utiliser.
 
 ## Pour télécharger une émission, ou une série
 ```sh
-./aspiratv --provider=francetv --destination=$HOME/Videos/DL download "Les Dalton"
+aspiratv  download --provider francetv --show-path {$HOME}/Videos/Animes/  "Les Dalton"
 ```
 Cette commande cherchera les épisodes de la série "Les Dalton" sur france télévisions, et les téléchargera dans le répertoire ~/Video/DL
+
+Les paramètres `--provider` et  `--show-path` sont obligatoires
+
+### --provider (obligatoire)
+
+Ce paramètre précise quel fournisseur de contenu sera intérrogé pour la recherche. Les valeurs possibles sont :
+- francetv
+- artetv
+- guilli
+
+### --show-path (obligatoire)
+Cette option force le chemin dans lequel la saison ou le film sera téléchargé. 
+
+Exemple, les épisodes seront téléchargés dans le répertoire `~/Videos/MaisonF5/Season ...`
+```sh
+./aspiratv --provider=francetv --show-path = ~/Videos/MaisonF5 download "La maison France 5"
+```
 
 ### --title-filter
 Utiliser l'option `--title-filter` pour télécharger un épisode précis. Le filtre est une expression régulière GO. Voir la syntaxe précise (https://golang.org/pkg/regexp/syntax/). Le site (https://regex101.com/) permet de construire et tester les expressons régulières. 
@@ -99,31 +140,22 @@ Utiliser l'option `--title-filter` pour télécharger un épisode précis. Le fi
 Par exemple, pour télécharger les émissions spéciales de "La maison France 5"
 
 ```sh
-./aspiratv --provider=francetv --destination=$HOME/Videos/DL --title-filter "spéciale" download "La maison France 5"
+./aspiratv download --provider=francetv --show-path=$HOME/Videos/DL/Replay --title-filter "spéciale" "La maison France 5"
 ```
 
 ### --title-exclude
-Utiliser l'option `--title-exclude` pour exclure du téléchargment certains épisodes. Le filtre est une expression régulière GO. 
+Utiliser l'option `--title-exclude` pour exclure du téléchargement certains épisodes. Le filtre est une expression régulière GO. 
 
 
-Pour télécharger tous les épisodes de "La Maison France 5" sauf les émissions sépciale
+Pour télécharger tous les épisodes de "La Maison France 5" sauf les émissions spéciales
 ```sh
-./aspiratv --provider=francetv --destination=$HOME/Videos/DL --title-exclude "spéciale" download "La maison France 5"
+./aspiratv download --provider=francetv --show-path=$HOME/Videos/DL/Replay  --title-exclude "spéciale" "La maison France 5"
 ``` 
 La combinaison des deux filtres est possible.
 
-### --destination
-Cette option indique le répertoire de base des téléachargements. 
-```sh
-./aspiratv --provider=francetv --destination ~/Videos/FranceTV download "C à vous" "C dans l'air"
-```
-### --show-path
-Cette option force le chemin dans lequel la saison ou le film sera téléchargé. 
+### --destination (SUPPRIMÉE)
 
-Exemple, les épisodes seront téléchagés dans le répertoire `~/Videos/MaisonF5/Season ...`
-```sh
-./aspiratv --provider=francetv --show-path = ~/Videos/MaisonF5 download "La maison France 5"
-```
+Cette option est remplacée par `--show-path`
 
 ### --name-template
 
@@ -137,7 +169,7 @@ Il est possible d'utiliser les champs suivants:
 |    .Season         | Numéro de saison ou année de diffusion
 |    .Episode        | Episode
 |    .UniqueID       | Identifion de l'émission chez le diffuseur (voir exemple)
-|    .Aired          | Date de difusion (voir exemple)
+|    .Aired          | Date de diffusion (voir exemple)
 
 
 #### Modèle par défaut pour les séries:
@@ -157,7 +189,7 @@ Exemple:
 > 28 minutes - 2021-02-11.mp4
 #### Autres Exemples
 
-Plusieurs émissions peuvent être diffusées le même jour, à la même date et avec le même titre. Sans précaution, le fichier de la deuximème diffusion écrase le premier. Pour garder toutes les diffusions, on peut rajouter l'identifiant unique donné par le diffuseur: 
+Plusieurs émissions peuvent être diffusées le même jour, à la même date et avec le même titre. Sans précaution, le fichier de la deuxième diffusion écrase le premier. Pour garder toutes les diffusions, on peut rajouter l'identifiant unique donné par le diffuseur: 
 
 `{{ .Showtitle}} - {{ .Aired.Time.Format \"2006-01-02\" }} - {{(index .UniqueID 0).ID}}.mp4`
 
@@ -167,24 +199,20 @@ Plusieurs émissions peuvent être diffusées le même jour, à la même date et
 Il est possible d'adapter le nom du répertoire correspondant à la saison. Les mêmes champs sont possibles. 
 
 #### Modèle par défaut pour les séries:
-`Season {{.Season | printf "%02d" }}`
+`{{if not .IsBonus}}Season {{.Season | printf "%02d" }}{{else}}Specials{{end}}`
 
 Exemple: 
 > Season 03
 
+> Speicals
+
 #### Modèle par défaut pour les émissions régulières:
-`Season {{.Aired.Time.Year | printf "%04d" }}`
+`{{if not .IsBonus}}Season {{.Aired.Time.Year | printf "%04d" }}{{else}}Specials{{end}}`
 
 Exemple:
 > Season 2021
 
-
-## --title-filter string 
-Permet de télécharger que les épisodes dont le titre correspond à l'expression régulière.
-
-### --title-exclude string 
-Permet d'exclure les épisodes dont le titre correspond à l'expression régulière.
-Il est possible de combiner les deux filtres.
+> Specials
 
 ## Les options communes aux deux modes :
 

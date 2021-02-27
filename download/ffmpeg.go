@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/simulot/aspiratv/metadata/nfo"
-	"github.com/simulot/aspiratv/mylog"
 )
 
 func dropCR(data []byte) []byte {
@@ -40,7 +39,7 @@ func scanLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	return 0, nil, nil
 }
 
-func (c *ffmpegConfig) watchProgress(r io.ReadCloser, prg Progresser) {
+func (c *ffmpegConfig) watchProgress(r io.ReadCloser, fb FeedBacker) {
 	sc := bufio.NewScanner(r)
 	sc.Split(scanLines)
 	go func() {
@@ -98,8 +97,9 @@ func (c *ffmpegConfig) watchProgress(r io.ReadCloser, prg Progresser) {
 						estimatedSize = size + 1024
 					}
 				}
-				if prg != nil {
-					prg.Update(size, estimatedSize)
+				if fb != nil {
+					fb.Total(int(estimatedSize))
+					fb.Update(int(size))
 				}
 				continue
 			}
@@ -111,8 +111,8 @@ func (c *ffmpegConfig) watchProgress(r io.ReadCloser, prg Progresser) {
 					continue
 				}
 				total = float64(h*int64(time.Hour) + m*int64(time.Minute) + s*int64(time.Second) + c*int64(time.Millisecond)/10)
-				if prg != nil {
-					prg.Init(int64(1 * 1024 * 1024))
+				if fb != nil {
+					fb.Total(int(1 * 1024 * 1024))
 				}
 			}
 
@@ -122,19 +122,24 @@ func (c *ffmpegConfig) watchProgress(r io.ReadCloser, prg Progresser) {
 }
 
 type ffmpegConfig struct {
-	conf     *DownloadConfiguration
+	conf     *downloadConfiguration
 	lastLine string
 	cmd      *exec.Cmd
 }
 
-func FFMpeg(ctx context.Context, log *mylog.MyLog, in, out string, info *nfo.MediaInfo, configurations ...ConfigurationFunction) error {
+func ffmpeg(ctx context.Context, in, out string, info *nfo.MediaInfo, configurations ...configurationFunction) error {
 	cfg := ffmpegConfig{
-		conf: NewDownloadConfiguration(),
+		conf: newDownloadConfiguration(),
 	}
 	for _, c := range configurations {
 		c(cfg.conf)
 	}
-
+	defer func() {
+		if cfg.conf.fb != nil {
+			cfg.conf.fb.Done()
+		}
+		cfg.conf.logger.Trace().Printf("[FFMPEG] Exit, %s,%s", out, ctx.Err())
+	}()
 	params := []string{
 		"-loglevel", "info", // Give me feedback
 		"-hide_banner", // I don't want banner
@@ -143,15 +148,15 @@ func FFMpeg(ctx context.Context, log *mylog.MyLog, in, out string, info *nfo.Med
 		"-vcodec", "copy", // copy video
 		"-acodec", "copy", // copy audio
 		"-bsf:a", "aac_adtstoasc", // I don't know
-		"-metadata", "title=" + info.Title, // Force title
-		"-metadata", "comment=" + info.Plot, // Force comment
-		"-metadata", "show=" + info.Showtitle, //Force show
-		"-metadata", "channel=" + info.Studio, // Force channel
+		// "-metadata", "title=" + info.Title, // Force title
+		// "-metadata", "comment=" + info.Plot, // Force comment
+		// "-metadata", "show=" + info.Showtitle, //Force show
+		// "-metadata", "channel=" + info.Studio, // Force channel
 		"-y",        // Override output file
 		"-f", "mp4", // Be sure that output
 		out, // output file
 	}
-	log.Trace().Printf("[FFMPEG] running ffmpeg %v", params)
+	cfg.conf.logger.Trace().Printf("[FFMPEG] running ffmpeg %v", params)
 
 	cfg.cmd = exec.CommandContext(ctx, "ffmpeg", params...)
 	stdOut, err := cfg.cmd.StderrPipe()
@@ -159,7 +164,7 @@ func FFMpeg(ctx context.Context, log *mylog.MyLog, in, out string, info *nfo.Med
 		return fmt.Errorf("[FFMPEG] %w", err)
 	}
 
-	cfg.watchProgress(stdOut, cfg.conf.pgr)
+	cfg.watchProgress(stdOut, cfg.conf.fb)
 	err = cfg.cmd.Start()
 	if err != nil {
 		return err

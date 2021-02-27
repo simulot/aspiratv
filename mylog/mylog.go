@@ -39,12 +39,12 @@ var prefixes = map[Level]string{
 }
 
 type MyLog struct {
-	logLevel                  Level
-	consoleLogger, fileLogger Logger
+	logLevel Level
+	logger   Logger
 }
 
 // NewLog return a MyLog structure
-func NewLog(lvl string, consoleLogger, fileLogger Logger) (*MyLog, error) {
+func NewLog(lvl string, logger Logger) (*MyLog, error) {
 	var (
 		level Level
 		ok    bool
@@ -58,9 +58,8 @@ func NewLog(lvl string, consoleLogger, fileLogger Logger) (*MyLog, error) {
 	log.SetOutput(ioutil.Discard)
 
 	return &MyLog{
-		logLevel:      level,
-		consoleLogger: consoleLogger,
-		fileLogger:    fileLogger,
+		logLevel: level,
+		logger:   logger,
 	}, nil
 }
 
@@ -118,16 +117,12 @@ func (c logcontext) Printf(fmt string, args ...interface{}) {
 		}
 		return
 	}
-	if c.lvl <= LevelError && c.mylog.consoleLogger != nil {
-		c.mylog.consoleLogger.Printf(prefixes[c.lvl]+fmt, args...)
-	}
-	if c.mylog.fileLogger != nil && c.lvl <= c.mylog.logLevel {
-		c.mylog.fileLogger.Printf(prefixes[c.lvl]+fmt, args...)
+	if c.lvl <= c.mylog.logLevel {
+		if c.mylog.logger != nil {
+			c.mylog.logger.Printf(prefixes[c.lvl]+fmt, args...)
+		}
 	}
 	if c.lvl == LevelFatal {
-		if c.mylog.consoleLogger == nil {
-			log.Printf(prefixes[c.lvl]+fmt, args...)
-		}
 		os.Exit(1)
 	}
 }

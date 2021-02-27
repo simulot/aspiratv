@@ -3,7 +3,6 @@ package gulli
 import (
 	"context"
 	"html"
-	"io/ioutil"
 	"regexp"
 	"strconv"
 	"strings"
@@ -11,7 +10,7 @@ import (
 	"github.com/simulot/aspiratv/matcher"
 	"github.com/simulot/aspiratv/media"
 	"github.com/simulot/aspiratv/metadata/nfo"
-	"github.com/simulot/aspiratv/net/myhttp/httptest"
+	"github.com/simulot/aspiratv/providers"
 )
 
 const gullyPlayer = "http://replay.gulli.fr/jwplayer/embed/" // + VOD ID
@@ -26,23 +25,14 @@ var reVars = regexp.MustCompile(
 		`|(?:description:\s*(?U:"(?P<description>[^"]*)"))`)
 
 func (p *Gulli) getPlayer(ctx context.Context, mr *matcher.MatchRequest, ID string) ([]*media.Media, error) {
-	ctx, done := context.WithTimeout(ctx, p.deadline)
-	defer done()
 
 	p.config.Log.Debug().Printf("[%s] Player URL: %q", p.Name(), gullyPlayer+ID)
-	r, err := p.getter.Get(ctx, gullyPlayer+ID)
-	if err != nil {
-		return nil, err
-	}
-	if p.config.Log.IsDebug() {
-		r = httptest.DumpReaderToFile(p.config.Log, r, "gulli-player-")
-	}
-	defer r.Close()
-	b, err := ioutil.ReadAll(r)
-	if err != nil {
-		return nil, err
-	}
 
+	client := providers.NewHTTPClient(p.config)
+	b, err := client.Get(ctx, gullyPlayer+ID, nil, nil)
+	if err != nil {
+		return nil, err
+	}
 	match := reVars.FindAllStringSubmatch(string(b), -1)
 
 	shows := []*media.Media{}
@@ -67,7 +57,9 @@ func (p *Gulli) getPlayer(ctx context.Context, mr *matcher.MatchRequest, ID stri
 						}
 						p.seenShows[info.UniqueID[0].ID] = true
 					}
-					info = &nfo.MediaInfo{}
+					info = &nfo.MediaInfo{
+						MediaType: nfo.TypeSeries,
+					}
 				case "file":
 					if strings.HasSuffix(strings.ToLower(s), ".m3u8") {
 						info.MediaURL = s

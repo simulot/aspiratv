@@ -10,7 +10,7 @@ import (
 	"github.com/gocolly/colly"
 	"github.com/simulot/aspiratv/media"
 	"github.com/simulot/aspiratv/metadata/nfo"
-	"github.com/simulot/aspiratv/net/myhttp/httptest"
+	"github.com/simulot/aspiratv/providers"
 )
 
 type FTVPlayerVideo struct {
@@ -48,7 +48,7 @@ type FTVPlayerVideo struct {
 
 func (p *FranceTV) GetMediaDetails(ctx context.Context, m *media.Media) error {
 	info := m.Metadata.GetMediaInfo()
-	parser := p.htmlParserFactory.New() // TODO withContext
+	parser := colly.NewCollector()
 	videoID := ""
 
 	parser.OnHTML("meta", func(e *colly.HTMLElement) {
@@ -91,7 +91,6 @@ func (p *FranceTV) GetMediaDetails(ctx context.Context, m *media.Media) error {
 		}
 
 		s := e.Text[:end+1][start:]
-		// videos := []FTVPlayerVideos{}
 		var videos []FTVPlayerVideo
 
 		err := json.Unmarshal([]byte(s), &videos)
@@ -101,6 +100,7 @@ func (p *FranceTV) GetMediaDetails(ctx context.Context, m *media.Media) error {
 		}
 		videoID = videos[0].VideoID
 	})
+	p.config.HitsLimiter.Wait(ctx)
 	err := parser.Visit(info.PageURL)
 	if err != nil {
 		return err
@@ -111,7 +111,7 @@ func (p *FranceTV) GetMediaDetails(ctx context.Context, m *media.Media) error {
 }
 
 func (p *FranceTV) getMediaURL(ctx context.Context, info *nfo.MediaInfo, videoID string) error {
-	v := url.Values{}
+	v := &url.Values{}
 	v.Set("country_code", "FR")
 	v.Set("w", "1920")
 	v.Set("h", "1080")
@@ -126,17 +126,14 @@ func (p *FranceTV) getMediaURL(ctx context.Context, info *nfo.MediaInfo, videoID
 	u := "https://player.webservices.francetelevisions.fr/v1/videos/" + videoID + "?" + v.Encode()
 	p.config.Log.Debug().Printf("[%s] Player URL for title '%s' is %q.", p.Name(), info.Title, u)
 
-	r, err := p.getter.Get(ctx, u)
+	client := providers.NewHTTPClient(p.config)
+	resp, err := client.Get(ctx, u, v, nil)
 	if err != nil {
 		return fmt.Errorf("Can't get player: %w", err)
 	}
-	if p.config.Log.IsDebug() {
-		r = httptest.DumpReaderToFile(p.config.Log, r, "francetv-player-"+videoID+"-")
-	}
-	defer r.Close()
 
 	pl := player{}
-	err = json.NewDecoder(r).Decode(&pl)
+	err = json.Unmarshal(resp, &pl)
 	if err != nil {
 		return fmt.Errorf("Can't decode player: %w", err)
 	}
@@ -144,19 +141,14 @@ func (p *FranceTV) getMediaURL(ctx context.Context, info *nfo.MediaInfo, videoID
 	// Get Token
 	if len(pl.Video.Token) > 0 {
 		p.config.Log.Debug().Printf("[%s] Player token for '%s' is %q ", p.Name(), info.Title, pl.Video.Token)
-
-		r2, err := p.getter.Get(ctx, pl.Video.Token)
+		r2, err := client.Get(ctx, pl.Video.Token, nil, nil)
 		if err != nil {
 			return fmt.Errorf("Can't get token %s: %w", pl.Video.Token, err)
 		}
-		if p.config.Log.IsDebug() {
-			r2 = httptest.DumpReaderToFile(p.config.Log, r2, "francetv-token-"+videoID+"-")
-		}
-		defer r2.Close()
 		pl := struct {
 			URL string `json:"url"`
 		}{}
-		err = json.NewDecoder(r2).Decode(&pl)
+		err = json.Unmarshal(r2, &pl)
 		if err != nil {
 			return fmt.Errorf("Can't decode token's url : %w", err)
 		}

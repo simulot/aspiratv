@@ -1,4 +1,45 @@
+# version 0.16.0
+## 🛠️ Major code refactoring 🛠️
+This work is done to prepare a web interface for Aspiratv.  
 
+## ⚠️ BREAKING CHANGE: ⚠️
+  Command line has changed. Read documentation page
+
+## Changelog
+- decouple user interface from pulling and download tasks. This will ease the realization of a web front end.
+- fix clunky code 
+    - concurency management
+    - logs
+- Change command line flag management. (breaking change)
+    - now use pflag library to provide a set of options for each sub-commands
+        - command `run` (default) for dowloading show according config.json file
+        - command `download` for downloading a show according options on the command line
+- Remove over complicated code
+    - http client
+    - html parsing
+- Remove unused code
+- Update dependencies
+    - multiple progress bars
+- Fix go lint warnings
+- Fix FFMPEG errors not sent to the log file
+- Improve ^C handling
+    - remove dirs created by interupted download
+    - Faster exit
+
+
+
+# version 0.15.0
+
+- Fix case in Show path
+- Rewriting Download functions to avoid path error for nfo
+- Change path for show specials
+    -francetv:
+        - fix missing thumbnail
+        - skip non available episodes
+        - download extras, teasers and bonnuses
+- Fix #71 francetv regression on episode and season
+- Fix a error in config.json file conaintned in readme.
+- francetv: don't grab aired time on detail page
 
 # version 0.14.0
 

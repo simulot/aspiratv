@@ -12,14 +12,13 @@ import (
 	"sync/atomic"
 
 	"github.com/simulot/aspiratv/metadata/nfo"
-	"github.com/simulot/aspiratv/mylog"
 	"github.com/simulot/aspiratv/parsers/mpdparser"
 	"github.com/simulot/aspiratv/parsers/ttml"
 )
 
-type DASHConfig struct {
+type dashConfig struct {
 	getTokens     chan bool
-	conf          *DownloadConfiguration
+	conf          *downloadConfiguration
 	mpd           *mpdparser.MPDParser
 	bytesRead     int64
 	lastFFMPGLine string
@@ -29,15 +28,15 @@ type DASHConfig struct {
 // DASH download mp4 file at media's url.
 // Open DSH manifest to get best audio and video streams.
 // Then download both streams and combine them using FFMPEG
-func DASH(ctx context.Context, log *mylog.MyLog, in, out string, info *nfo.MediaInfo, conf ...ConfigurationFunction) error {
+func DASH(ctx context.Context, in, out string, info *nfo.MediaInfo, conf ...configurationFunction) error {
 	ctx, cancel := context.WithCancel(ctx)
 
 	const concurentDownloads = 2
 
 	defer cancel()
 
-	d := &DASHConfig{
-		conf:      NewDownloadConfiguration(),
+	d := &dashConfig{
+		conf:      newDownloadConfiguration(),
 		getTokens: make(chan bool, concurentDownloads), // concurentDownloads chunks at a time
 	}
 
@@ -51,6 +50,11 @@ func DASH(ctx context.Context, log *mylog.MyLog, in, out string, info *nfo.Media
 		c(d.conf)
 	}
 
+	defer func() {
+		if d.conf.fb != nil {
+			d.conf.fb.Done()
+		}
+	}()
 	d.mpd = mpdparser.NewMPDParser()
 	d.conf.logger.Trace().Printf("[DASH] Get manifest at %q", in)
 	err := d.mpd.Get(ctx, in)
@@ -81,9 +85,9 @@ func DASH(ctx context.Context, log *mylog.MyLog, in, out string, info *nfo.Media
 
 	defer func() {
 		if returnedErr != nil {
-			log.Error().Printf("[DASH] %v", returnedErr)
+			d.conf.logger.Error().Printf("[DASH] %v", returnedErr)
 		} else {
-			log.Trace().Printf("[DASH] successful download of %s", out)
+			d.conf.logger.Trace().Printf("[DASH] successful download of %s", out)
 		}
 		for _, k := range segmentFileName {
 			os.Remove(k)
@@ -198,7 +202,7 @@ func DASH(ctx context.Context, log *mylog.MyLog, in, out string, info *nfo.Media
 	return returnedErr
 }
 
-func (d *DASHConfig) watchFFMPG(r io.Reader) {
+func (d *dashConfig) watchFFMPG(r io.Reader) {
 
 	sc := bufio.NewScanner(r)
 	sc.Split(scanLines)
@@ -217,7 +221,7 @@ func (d *DASHConfig) watchFFMPG(r io.Reader) {
 	}()
 }
 
-func (d *DASHConfig) getSegments(manifest, mime string) (mpdparser.SegmentIterator, error) {
+func (d *dashConfig) getSegments(manifest, mime string) (mpdparser.SegmentIterator, error) {
 
 	as := d.mpd.Period[0].GetAdaptationSetByMimeType(mime)
 	if as == nil {
@@ -237,11 +241,11 @@ func (d *DASHConfig) getSegments(manifest, mime string) (mpdparser.SegmentIterat
 }
 
 type progressionIterator struct {
-	d  *DASHConfig
+	d  *dashConfig
 	it mpdparser.SegmentIterator
 }
 
-func (d *DASHConfig) progression(it mpdparser.SegmentIterator) mpdparser.SegmentIterator {
+func (d *dashConfig) progression(it mpdparser.SegmentIterator) mpdparser.SegmentIterator {
 	return &progressionIterator{
 		d:  d,
 		it: it,
@@ -263,20 +267,23 @@ func (p *progressionIterator) Next() <-chan mpdparser.SegmentItem {
 	c := make(chan mpdparser.SegmentItem)
 	go func() {
 		for s := range p.it.Next() {
-			if p.d.conf.pgr != nil {
+			if p.d.conf.fb != nil {
 				if s.Position.Duration > 0 && s.Position.Time > 0 {
-					read := atomic.LoadInt64(&p.d.bytesRead)
+					read := int(atomic.LoadInt64(&p.d.bytesRead))
 					percent := float64(s.Position.Time) / float64(s.Position.Duration)
-					estimated := int64(float64(read) / percent)
+					estimated := int(float64(read) / percent)
 					if estimated < read {
 						estimated = read + 1024
 					}
-					p.d.conf.pgr.Update(read, estimated)
+					p.d.conf.fb.Total(estimated)
+					p.d.conf.fb.Update(int(read))
 				}
 			}
 			c <- s
 		}
-		p.d.conf.pgr.Update(p.d.bytesRead, p.d.bytesRead)
+		if p.d.conf.fb != nil {
+			p.d.conf.fb.Done()
+		}
 		close(c)
 	}()
 	return c
@@ -292,8 +299,10 @@ func straitCopy(dst io.Writer, src io.Reader) (written int64, err error) {
 	return io.CopyBuffer(dst, src, nil)
 }
 
-func (d *DASHConfig) downloadSegments(ctx context.Context, filename string, it mpdparser.SegmentIterator, filter tFilter) error {
+func (d *dashConfig) downloadSegments(ctx context.Context, filename string, it mpdparser.SegmentIterator, filter tFilter) error {
 	ctx, cancel := context.WithCancel(ctx)
+
+	defer cancel()
 
 	cancelled := false
 	f, err := os.Create(filename)
@@ -306,7 +315,6 @@ func (d *DASHConfig) downloadSegments(ctx context.Context, filename string, it m
 		if cancelled {
 			os.Remove(filename)
 		}
-		cancel()
 	}()
 
 	for s := range it.Next() {
