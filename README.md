@@ -1,3 +1,4 @@
+[![Go Reference](https://pkg.go.dev/badge/github.com/simulot/aspiratv.svg)](https://pkg.go.dev/github.com/simulot/aspiratv)
 # aspiratv
 
 Ce programme interroge les serveurs de télévision de rattrapage et télécharge les émissions souhaitées et les enregistre sur un disque selon une organisation reconnue par des programmes comme [PLEX](https://www.plex.tv/) ou [EMBY](https://emby.media/). Les métadonnées (titre des émissions, desciption, vignettes) sont placées de façon à être directement reconnues par Emby (à tester dans Plex).
