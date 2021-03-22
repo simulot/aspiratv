@@ -7,18 +7,12 @@ Ce programme interroge les serveurs de télévision de rattrapage et télécharg
 
 
 ## Télécharger un programme, une série
-<p align="center">
-  <img src="_images/aspiratv.svg" width="800" alt="aspiratv command line">
-</p>
 
 ``` sh
-./aspiratv --provider=artetv --destination=$HOME/Videos/DL download "La minute vieille"
+./aspiratv  download --provider francetv --show-path {$HOME}/Videos/DL/ "La minute vieille"
 ```
 
 ## Télécharger les dernières diffusions à partir d'une liste
-<p align="center">
-  <img src="_images/download.svg" width="800" alt="aspiratv command line">
-</p>
 
 ``` sh
 ./aspiratv
