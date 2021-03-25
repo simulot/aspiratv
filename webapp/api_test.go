@@ -2,11 +2,13 @@ package webapp
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/simulot/aspiratv/store"
 )
@@ -185,5 +187,94 @@ func TestProviders(t *testing.T) {
 			t.Errorf("got %q; want %q", got, want)
 		}
 
+	})
+}
+
+type cancelableProvider struct {
+	store.InMemoryStore
+	cancelled bool
+}
+
+func (s *cancelableProvider) GetProvider(ctx context.Context, name string) (store.Provider, error) {
+	type result struct {
+		p   store.Provider
+		err error
+	}
+
+	data := make(chan result, 1)
+	go func() {
+		var r result
+
+		time.Sleep(10 * time.Millisecond)
+		r.p, r.err = s.InMemoryStore.GetProvider(ctx, name)
+		data <- r
+	}()
+
+	select {
+	case r := <-data:
+		return r.p, r.err
+
+	case <-ctx.Done():
+		s.cancelled = true
+		return store.Provider{}, ctx.Err()
+	}
+}
+
+func TestCancel(t *testing.T) {
+	t.Run("Tell store to cancel work when request is cancelled", func(t *testing.T) {
+		st := cancelableProvider{
+			store.InMemoryStore{
+				Providers: []store.Provider{
+					{
+						Name: "tv",
+					},
+				},
+			},
+			false,
+		}
+		s := NewAPIServer(&st)
+
+		request, _ := http.NewRequest(http.MethodGet, "/api/providers/tv", nil)
+
+		cancellingCtx, cancel := context.WithCancel(request.Context())
+		defer cancel()
+		time.AfterFunc(5*time.Millisecond, cancel)
+
+		request = request.WithContext(cancellingCtx)
+
+		response := httptest.NewRecorder()
+		s.ServeHTTP(response, request)
+
+		if !st.cancelled {
+			t.Errorf("Store was not told to cancel")
+		}
+	})
+	t.Run("Server must return 503 Service Unavailable when the client cancels the requestest", func(t *testing.T) {
+		st := cancelableProvider{
+			store.InMemoryStore{
+				Providers: []store.Provider{
+					{
+						Name: "tv",
+					},
+				},
+			},
+			false,
+		}
+		s := NewAPIServer(&st)
+
+		request, _ := http.NewRequest(http.MethodGet, "/api/providers/tv", nil)
+
+		cancellingCtx, cancel := context.WithCancel(request.Context())
+		defer cancel()
+		time.AfterFunc(5*time.Millisecond, cancel)
+
+		request = request.WithContext(cancellingCtx)
+
+		response := httptest.NewRecorder()
+		s.ServeHTTP(response, request)
+
+		if response.Code != http.StatusServiceUnavailable {
+			t.Errorf("get status %v, want %v", response.Code, http.StatusServiceUnavailable)
+		}
 	})
 }

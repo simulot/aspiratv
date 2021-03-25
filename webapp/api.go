@@ -2,6 +2,7 @@ package webapp
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -37,21 +38,21 @@ func (s *APIServer) providersHandler(w http.ResponseWriter, r *http.Request) {
 		providerName := strings.TrimPrefix(r.URL.Path, providerUrl)
 		switch {
 		case providerName != "":
-			s.getProvider(w, providerName)
+			s.getProvider(r.Context(), w, providerName)
 			return
 		default:
-			s.getProviderList(w)
+			s.getProviderList(r.Context(), w)
 		}
 	case http.MethodPost:
-		s.postProvider(w, r)
+		s.postProvider(r.Context(), w, r)
 		return
 
 	}
 	s.sendError(w, APIError{nil, http.StatusBadRequest, ""})
 }
 
-func (s *APIServer) getProvider(w http.ResponseWriter, providerName string) {
-	p, err := s.store.GetProvider(providerName)
+func (s *APIServer) getProvider(ctx context.Context, w http.ResponseWriter, providerName string) {
+	p, err := s.store.GetProvider(ctx, providerName)
 	if err != nil {
 		s.sendError(w, &APIError{err, 0, ""})
 		return
@@ -59,8 +60,8 @@ func (s *APIServer) getProvider(w http.ResponseWriter, providerName string) {
 	s.writeJsonResponse(w, p, http.StatusFound)
 }
 
-func (s *APIServer) getProviderList(w http.ResponseWriter) {
-	p, err := s.store.GetProviderList()
+func (s *APIServer) getProviderList(ctx context.Context, w http.ResponseWriter) {
+	p, err := s.store.GetProviderList(ctx)
 	if err != nil {
 		s.sendError(w, &APIError{err, 0, ""})
 		return
@@ -68,7 +69,7 @@ func (s *APIServer) getProviderList(w http.ResponseWriter) {
 	s.writeJsonResponse(w, p, http.StatusFound)
 }
 
-func (s *APIServer) postProvider(w http.ResponseWriter, r *http.Request) {
+func (s *APIServer) postProvider(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	provider := store.Provider{}
 	err := s.decodeRequest(r, &provider)
 	if err != nil {
@@ -76,7 +77,7 @@ func (s *APIServer) postProvider(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p, err := s.store.SetProvider(provider)
+	p, err := s.store.SetProvider(ctx, provider)
 	if err != nil {
 		s.sendError(w, err)
 		return
@@ -120,8 +121,15 @@ func (e APIError) Error() string {
 
 func (s *APIServer) sendError(w http.ResponseWriter, err error) {
 	if apiError, ok := err.(*APIError); ok {
-		if apiError.err == store.ErrorNotFound {
+		switch apiError.err {
+		case store.ErrorNotFound:
 			apiError.code = http.StatusNotFound
+		case context.Canceled:
+			apiError.code = http.StatusServiceUnavailable
+			apiError.message = "Cancelled by client"
+		case context.DeadlineExceeded:
+			apiError.code = http.StatusRequestTimeout
+			apiError.message = "Server's timeout exceeded"
 		}
 		if apiError.code == 0 {
 			apiError.code = http.StatusInternalServerError

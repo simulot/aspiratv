@@ -1,10 +1,12 @@
 package store
 
+import "context"
+
 type InMemoryStore struct {
 	Providers []Provider
 }
 
-func (s InMemoryStore) GetProvider(name string) (Provider, error) {
+func (s InMemoryStore) GetProvider(ctx context.Context, name string) (Provider, error) {
 	for i := range s.Providers {
 		if s.Providers[i].Name == name {
 			return s.Providers[i], nil
@@ -13,7 +15,7 @@ func (s InMemoryStore) GetProvider(name string) (Provider, error) {
 	return Provider{Name: name}, ErrorNotFound
 }
 
-func (s *InMemoryStore) SetProvider(p Provider) (Provider, error) {
+func (s *InMemoryStore) SetProvider(ctx context.Context, p Provider) (Provider, error) {
 	for i := range s.Providers {
 		if s.Providers[i].Name == p.Name {
 			s.Providers[i] = p
@@ -24,7 +26,7 @@ func (s *InMemoryStore) SetProvider(p Provider) (Provider, error) {
 	return p, nil
 }
 
-func (s InMemoryStore) GetProviderList() ([]Provider, error) {
+func (s InMemoryStore) GetProviderList(ctx context.Context) ([]Provider, error) {
 	l := make([]Provider, len(s.Providers))
 	copy(l, s.Providers)
 	return l, nil

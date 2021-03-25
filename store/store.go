@@ -1,15 +1,18 @@
 package store
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 type Store interface {
 	ProviderInterface
 }
 
 type ProviderInterface interface {
-	GetProvider(name string) (Provider, error)
-	SetProvider(p Provider) (Provider, error)
-	GetProviderList() ([]Provider, error)
+	GetProvider(ctx context.Context, name string) (Provider, error)
+	SetProvider(ctx context.Context, p Provider) (Provider, error)
+	GetProviderList(ctx context.Context) ([]Provider, error)
 }
 
 // Provider structure used by the API
