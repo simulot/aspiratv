@@ -13,11 +13,18 @@ type ProviderInterface interface {
 	GetProvider(ctx context.Context, name string) (Provider, error)
 	SetProvider(ctx context.Context, p Provider) (Provider, error)
 	GetProviderList(ctx context.Context) ([]Provider, error)
+
+	Search(ctx context.Context) (<-chan SearchResult, error)
 }
 
 // Provider structure used by the API
 type Provider struct {
 	Name string // Provider handle name
+}
+
+type SearchResult struct {
+	Num     int
+	Ballast string
 }
 
 /*

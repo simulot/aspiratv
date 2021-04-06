@@ -1,0 +1,44 @@
+{
+  "Destinations": {
+    "Séries": "${HOME}/Videos/DL/Séries",
+    "Documentaires": "${HOME}/Videos/DL/Documentaires",
+    "Jeunesse": "${HOME}/Videos/DL/Jeunesse",
+    "Courts": "${HOME}/Videos/Courts",
+    "News": "${HOME}/Videos/DL/News"
+  },
+  "Providers": {
+    "francetv": {
+      "enabled": true
+    },
+    "gulli": {
+      "enabled": true
+    },
+    "artetv": {
+      "enabled": true
+    }
+  },
+  "WatchList": [
+    {
+      "Show": "Tout le monde a son mot à dire",
+      "Provider": "francetv",
+      "ShowPath": "${HOME}/Videos/DL/TEST/TLMASMAD",
+      "SeasonPathTemplate": "Season {{.Aired.Time.Year | printf \"%04d\"}}",
+      "ShowNameTemplate": "{{ .Showtitle}} - {{ .Aired.Time.Format \"2006-01-02\" }} - {{(index .UniqueID 0).ID}}.mp4"
+    },
+    {
+      "Show": "Chasseurs de troll",
+      "Provider": "gulli",
+      "Destination": "Jeunesse"
+    },
+    {
+      "Show": "Pokémon",
+      "Provider": "gulli",
+      "Destination": "Jeunesse"
+    },
+    {
+      "Show": "Les aventures de tintin",
+      "Provider": "gulli",
+      "Destination": "Jeunesse"
+    }
+  ]
+}

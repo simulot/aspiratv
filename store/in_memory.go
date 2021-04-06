@@ -31,3 +31,9 @@ func (s InMemoryStore) GetProviderList(ctx context.Context) ([]Provider, error) 
 	copy(l, s.Providers)
 	return l, nil
 }
+
+func (s InMemoryStore) Search(ctx context.Context) (<-chan SearchResult, error) {
+	c := make(chan SearchResult, 1)
+	go close(c)
+	return c, nil
+}

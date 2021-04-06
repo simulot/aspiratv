@@ -1,0 +1,39 @@
+{
+    "Destinations": {
+      "Documentaires": "${HOME}/Videos/Documentaires",
+      "Jeunesse": "${HOME}/Videos/Jeunesse",
+      "Séries": "${HOME}/Videos/Series",
+      "News": "${HOME}/Videos/News"
+    },
+    "Providers": {
+      "artetv": {
+        "Enabled": false        
+      },
+      "gulli":{
+        "Enabled": true
+      },
+      "francetv":{
+          "Enabled": true
+      }
+    },
+    "WatchList": [
+      {
+        "Show": "Doctor Who", 
+        "Provider": "francetv",
+        "Destination": "Séries"
+      },
+      {
+        "Show": "Oggy et les cafards",
+        "Provider": "gulli",
+        "Destination": "Jeunesse",
+        "TitleFilter": "(?i)Oggy"
+      },
+      {
+        "Show": "Tout le monde a son mot à dire",
+        "Provider": "francetv",
+        "ShowPath": "${HOME}/Videos/TV/TLMASMAD",
+        "SeasonPathTemplate": "Season {{.Aired.Time.Year | printf \"%04d\"}}",
+        "ShowNameTemplate": "{{ .Showtitle}} - {{ .Aired.Time.Format \"2006-01-02\" }} - {{(index .UniqueID 0).ID}}.mp4"
+      }
+    ]
+  }
