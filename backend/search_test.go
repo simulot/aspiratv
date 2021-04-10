@@ -3,8 +3,8 @@ package backend
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -41,12 +41,11 @@ func newSearchSpyStore(t *testing.T, providers []store.Provider) *searchSpyStore
 // }
 
 func (s *searchSpyStore) makeFakeResults(howMany int) {
-	ballast := strings.Repeat("*", 512)
 	num := 0
 	for ; howMany > 0; howMany-- {
 		s.results = append(s.results, store.SearchResult{
-			Num:     num,
-			Ballast: ballast})
+			Num:   num,
+			Title: fmt.Sprintf("Result #%d", num)})
 		num++
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"time"
@@ -22,7 +23,8 @@ const (
 	searchURL   = APIURL + "search/"
 )
 
-// RestClient implements a store using RestAPI
+// RestClient implements a store using RestAPI.
+// It implements store.Store interface
 type RestClient struct {
 	endPoint   string
 	httpClient http.Client
@@ -84,11 +86,15 @@ func (s *RestClient) GetProviderList(ctx context.Context) ([]store.Provider, err
 func (s *RestClient) Search(ctx context.Context) (<-chan store.SearchResult, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 
+	log.Printf("Search Dial: %s", s.endPoint+"search/")
 	c, _, err := websocket.Dial(ctx, s.endPoint+"search/", nil)
 	if err != nil {
+		log.Printf("Search Dial errpr:%s", err)
+		cancel()
 		return nil, err
 	}
 
+	log.Printf("Search Write")
 	err = wsjson.Write(ctx, c, "place your search query here")
 	if err != nil {
 		c.Close(websocket.StatusInternalError, "the sky is falling to the rest client")

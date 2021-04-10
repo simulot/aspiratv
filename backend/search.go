@@ -2,6 +2,7 @@ package backend
 
 import (
 	"context"
+	"log"
 	"net/http"
 
 	"github.com/simulot/aspiratv/store"
@@ -10,7 +11,7 @@ import (
 )
 
 func (s *APIServer) searchHandler(w http.ResponseWriter, r *http.Request) {
-
+	log.Printf("Search API called")
 	switch r.Method {
 	case http.MethodGet:
 		err := s.getSearch(w, r)

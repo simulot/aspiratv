@@ -15,6 +15,11 @@ debug
 # Exclude dist folder
 dist
 
+# exclude node
+node_modules
+
+
+# Application 
 launch.json
 settings.json
 cmd/aspiratv/aspiratv

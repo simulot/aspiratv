@@ -14,6 +14,7 @@ See https://quii.gitbook.io/learn-go-with-tests/
         - "to old for starting js now"
     -
 - Deployability
+    - limit items to be deployed, ideally only the server executable
     - prepare a docker image / docker-compose script
 
 - side goals

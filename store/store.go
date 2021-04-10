@@ -23,8 +23,8 @@ type Provider struct {
 }
 
 type SearchResult struct {
-	Num     int
-	Ballast string
+	Num   int
+	Title string
 }
 
 /*
