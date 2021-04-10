@@ -83,7 +83,7 @@ func (s *RestClient) GetProviderList(ctx context.Context) ([]store.Provider, err
 	return list, nil
 }
 
-func (s *RestClient) Search(ctx context.Context) (<-chan store.SearchResult, error) {
+func (s *RestClient) Search(ctx context.Context, q store.SearchQuery) (<-chan store.SearchResult, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 
 	log.Printf("Search Dial: %s", s.endPoint+"search/")

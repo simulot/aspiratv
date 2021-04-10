@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/maxence-charriere/go-app/v8/pkg/app"
+	"github.com/simulot/aspiratv/store"
 )
 
 type SearchOnline struct {
@@ -43,7 +44,11 @@ func (c *SearchOnline) Render() app.UI {
 
 func (c *SearchOnline) ClickOnSearch(ctx app.Context, e app.Event) {
 	c.Results = nil
-	results, err := MyAppState.s.Search(ctx)
+
+	q := store.SearchQuery{
+		Title: c.search,
+	}
+	results, err := MyAppState.s.Search(ctx, q)
 	if err != nil {
 		log.Printf("Search API returns error: %s", err)
 		c.Results = []string{"Error " + err.Error()}

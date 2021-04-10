@@ -11,6 +11,7 @@ import (
 )
 
 func (s *APIServer) searchHandler(w http.ResponseWriter, r *http.Request) {
+
 	log.Printf("Search API called")
 	switch r.Method {
 	case http.MethodGet:
@@ -38,17 +39,22 @@ func (s *APIServer) getSearch(w http.ResponseWriter, r *http.Request) (err error
 			c.Close(websocket.StatusInternalError, "the sky is falling")
 		}
 	}()
-	results, err = s.store.Search(ctx)
-	if err != nil {
-		return err
-	}
+
 	c, err = websocket.Accept(w, r, nil)
 	if err != nil {
 		return err
 	}
 
-	var query string
+	var query store.SearchQuery
 	err = wsjson.Read(ctx, c, &query)
+	if err != nil {
+		return err
+	}
+
+	results, err = s.store.Search(ctx, query)
+	if err != nil {
+		return err
+	}
 
 	err = s.sendSearchResults(ctx, c, results)
 	if err != nil {

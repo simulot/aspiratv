@@ -1,6 +1,8 @@
 package store
 
-import "context"
+import (
+	"context"
+)
 
 type InMemoryStore struct {
 	Providers []Provider
@@ -32,7 +34,7 @@ func (s InMemoryStore) GetProviderList(ctx context.Context) ([]Provider, error) 
 	return l, nil
 }
 
-func (s InMemoryStore) Search(ctx context.Context) (<-chan SearchResult, error) {
+func (s InMemoryStore) Search(ctx context.Context, q SearchQuery) (<-chan SearchResult, error) {
 	c := make(chan SearchResult, 1)
 	go close(c)
 	return c, nil

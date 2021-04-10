@@ -14,7 +14,7 @@ type ProviderInterface interface {
 	SetProvider(ctx context.Context, p Provider) (Provider, error)
 	GetProviderList(ctx context.Context) ([]Provider, error)
 
-	Search(ctx context.Context) (<-chan SearchResult, error)
+	Search(ctx context.Context, q SearchQuery) (<-chan SearchResult, error)
 }
 
 // Provider structure used by the API
@@ -24,6 +24,10 @@ type Provider struct {
 
 type SearchResult struct {
 	Num   int
+	Title string
+}
+
+type SearchQuery struct {
 	Title string
 }
 

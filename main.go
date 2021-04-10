@@ -57,7 +57,7 @@ type dummyStore struct {
 	store.InMemoryStore
 }
 
-func (s *dummyStore) Search(ctx context.Context) (<-chan store.SearchResult, error) {
+func (s *dummyStore) Search(ctx context.Context, q store.SearchQuery) (<-chan store.SearchResult, error) {
 	c := make(chan store.SearchResult, 1)
 	go func() {
 		defer close(c)
@@ -73,7 +73,7 @@ func (s *dummyStore) Search(ctx context.Context) (<-chan store.SearchResult, err
 				time.Sleep(time.Duration(rand.Intn(10)) * 100 * time.Millisecond)
 				c <- store.SearchResult{
 					Num:   i,
-					Title: fmt.Sprintf("Item %d at %s", i, time.Since(start)),
+					Title: fmt.Sprintf("Item %s(%d) at %s", q.Title, i, time.Since(start)),
 				}
 			}
 		}

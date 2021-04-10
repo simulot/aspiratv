@@ -2,7 +2,10 @@ package frontend
 
 import (
 	"context"
+	"errors"
+	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
@@ -11,137 +14,136 @@ import (
 )
 
 func TestRestStore(t *testing.T) {
-	/*
-			t.Run("Call the rest api with empty store, no error expected", func(t *testing.T) {
-				spy := newSpyStore(t, nil)
-				s, tearDownSrv := setupApiServer(t, spy)
-				defer tearDownSrv()
-				ctx := context.Background()
 
-				restStore := NewRestStore(s.URL + "/api/")
-				_, err := restStore.GetProviderList(ctx)
+	t.Run("Call the rest api with empty store, no error expected", func(t *testing.T) {
+		spy := newSpyStore(t, nil)
+		s, tearDownSrv := setupApiServer(t, spy)
+		defer tearDownSrv()
+		ctx := context.Background()
 
-				if spy.GetProviderListCalled == 0 {
-					t.Error("GetProviderList must be called")
-				}
-				if err != nil {
-					t.Errorf("Unexpected error %s", err)
-				}
-			})
-			t.Run("Call rest.GetProvider, should find it", func(t *testing.T) {
-				spy := newSpyStore(t, []store.Provider{
-					{
-						Name: "tv-1",
-					},
-					{
-						Name: "tv-2",
-					},
-				})
-				s, tearDownSrv := setupApiServer(t, spy)
-				defer tearDownSrv()
-				ctx := context.Background()
+		restStore := NewRestStore(s.URL + "/api/")
+		_, err := restStore.GetProviderList(ctx)
 
-				restStore := NewRestStore(s.URL + "/api/")
-				got, err := restStore.GetProvider(ctx, "tv-2")
-
-				if spy.GetProviderCalled == 0 {
-					t.Error("GetProvider must be called")
-				}
-				if err != nil {
-					t.Errorf("Unexpected error %s", err)
-				}
-
-				want := spy.InMemoryStore.Providers[1]
-
-				if got != want {
-					t.Errorf("Want %+v, got %+v", want, got)
-				}
-			})
-
-		t.Run("Call rest.GetProvider, should not find it", func(t *testing.T) {
-			spy := newSpyStore(t, []store.Provider{
-				{
-					Name: "tv-1",
-				},
-				{
-					Name: "tv-2",
-				},
-			})
-			s, tearDownSrv := setupApiServer(t, spy)
-			defer tearDownSrv()
-			ctx := context.Background()
-
-			restStore := NewRestStore(s.URL + "/api/")
-			got, err := restStore.GetProvider(ctx, "tv-3")
-
-			if spy.GetProviderCalled == 0 {
-				t.Error("GetProvider must be called")
-			}
-			if err == nil {
-				t.Errorf("Expecting an error, but got no error")
-			}
-			var hErr httpError
-			if !errors.As(err, &hErr) {
-				t.Errorf("Expecting href error, but got something else: %s", err)
-			} else {
-				got := hErr.StatusCode
-				want := http.StatusNotFound
-				if got != want {
-					t.Errorf("Exprecting status code %d, got %d", want, got)
-				}
-			}
-			want := store.Provider{}
-
-			if got != want {
-				t.Errorf("Want %+v, got %+v", want, got)
-			}
+		if spy.GetProviderListCalled == 0 {
+			t.Error("GetProviderList must be called")
+		}
+		if err != nil {
+			t.Errorf("Unexpected error %s", err)
+		}
+	})
+	t.Run("Call rest.GetProvider, should find it", func(t *testing.T) {
+		spy := newSpyStore(t, []store.Provider{
+			{
+				Name: "tv-1",
+			},
+			{
+				Name: "tv-2",
+			},
 		})
+		s, tearDownSrv := setupApiServer(t, spy)
+		defer tearDownSrv()
+		ctx := context.Background()
 
-		t.Run("Call rest.SetProvider, should store it", func(t *testing.T) {
-			spy := newSpyStore(t, []store.Provider{
-				{
-					Name: "tv-1",
-				},
-				{
-					Name: "tv-2",
-				},
-			})
-			s, tearDownSrv := setupApiServer(t, spy)
-			defer tearDownSrv()
-			ctx := context.Background()
+		restStore := NewRestStore(s.URL + "/api/")
+		got, err := restStore.GetProvider(ctx, "tv-2")
 
-			newP := store.Provider{
-				Name: "tv-3",
-			}
+		if spy.GetProviderCalled == 0 {
+			t.Error("GetProvider must be called")
+		}
+		if err != nil {
+			t.Errorf("Unexpected error %s", err)
+		}
 
-			restStore := NewRestStore(s.URL + "/api/")
-			got, err := restStore.SetProvider(ctx, newP)
+		want := spy.InMemoryStore.Providers[1]
 
-			if spy.SetProviderCalled == 0 {
-				t.Error("SetProvider must be called")
-			}
-			if err != nil {
-				t.Errorf("Expecting no error, but got error: %s", err)
-			}
-			want := store.Provider{Name: "tv-3"}
+		if got != want {
+			t.Errorf("Want %+v, got %+v", want, got)
+		}
+	})
 
-			if got != want {
-				t.Errorf("Want %+v, got %+v", want, got)
-			}
-
-			found := false
-			for i := range spy.Providers {
-				if spy.Providers[i].Name == "tv-3" {
-					found = true
-				}
-			}
-
-			if !found {
-				t.Errorf("Newly set provider is not found in store")
-			}
-
+	t.Run("Call rest.GetProvider, should not find it", func(t *testing.T) {
+		spy := newSpyStore(t, []store.Provider{
+			{
+				Name: "tv-1",
+			},
+			{
+				Name: "tv-2",
+			},
 		})
-	*/
+		s, tearDownSrv := setupApiServer(t, spy)
+		defer tearDownSrv()
+		ctx := context.Background()
+
+		restStore := NewRestStore(s.URL + "/api/")
+		got, err := restStore.GetProvider(ctx, "tv-3")
+
+		if spy.GetProviderCalled == 0 {
+			t.Error("GetProvider must be called")
+		}
+		if err == nil {
+			t.Errorf("Expecting an error, but got no error")
+		}
+		var hErr httpError
+		if !errors.As(err, &hErr) {
+			t.Errorf("Expecting href error, but got something else: %s", err)
+		} else {
+			got := hErr.StatusCode
+			want := http.StatusNotFound
+			if got != want {
+				t.Errorf("Exprecting status code %d, got %d", want, got)
+			}
+		}
+		want := store.Provider{}
+
+		if got != want {
+			t.Errorf("Want %+v, got %+v", want, got)
+		}
+	})
+
+	t.Run("Call rest.SetProvider, should store it", func(t *testing.T) {
+		spy := newSpyStore(t, []store.Provider{
+			{
+				Name: "tv-1",
+			},
+			{
+				Name: "tv-2",
+			},
+		})
+		s, tearDownSrv := setupApiServer(t, spy)
+		defer tearDownSrv()
+		ctx := context.Background()
+
+		newP := store.Provider{
+			Name: "tv-3",
+		}
+
+		restStore := NewRestStore(s.URL + "/api/")
+		got, err := restStore.SetProvider(ctx, newP)
+
+		if spy.SetProviderCalled == 0 {
+			t.Error("SetProvider must be called")
+		}
+		if err != nil {
+			t.Errorf("Expecting no error, but got error: %s", err)
+		}
+		want := store.Provider{Name: "tv-3"}
+
+		if got != want {
+			t.Errorf("Want %+v, got %+v", want, got)
+		}
+
+		found := false
+		for i := range spy.Providers {
+			if spy.Providers[i].Name == "tv-3" {
+				found = true
+			}
+		}
+
+		if !found {
+			t.Errorf("Newly set provider is not found in store")
+		}
+
+	})
 
 	t.Run("Call rest.Search and get results", func(t *testing.T) {
 		spy := newSpyStore(t, []store.Provider{
@@ -153,9 +155,9 @@ func TestRestStore(t *testing.T) {
 		s, tearDownSrv := setupApiServer(t, spy)
 		defer tearDownSrv()
 		ctx := context.Background()
-		restStore := NewRestStore(s.URL + "/api/")
+		restStore := NewRestStore(wsURL(t, s.URL) + "/api/")
 
-		results, err := restStore.Search(ctx)
+		results, err := restStore.Search(ctx, store.SearchQuery{Title: "Hello"})
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
 			return
@@ -172,6 +174,17 @@ func TestRestStore(t *testing.T) {
 	})
 }
 
+func wsURL(t *testing.T, s string) string {
+	t.Helper()
+	u, err := url.Parse(s)
+	if err != nil {
+		t.Errorf("Can't parse url: %s", err)
+		return ""
+	}
+	u.Scheme = "ws"
+	return u.String()
+}
+
 type spyStore struct {
 	store.InMemoryStore
 
@@ -184,6 +197,7 @@ type spyStore struct {
 	SetProviderCalled     int
 	SearchCalled          int
 	start                 time.Time
+	searchQuery           store.SearchQuery
 
 	t *testing.T
 }
@@ -213,8 +227,9 @@ func (s *spyStore) SetProvider(ctx context.Context, p store.Provider) (store.Pro
 	return s.InMemoryStore.SetProvider(ctx, p)
 }
 
-func (s *spyStore) Search(ctx context.Context) (<-chan store.SearchResult, error) {
+func (s *spyStore) Search(ctx context.Context, q store.SearchQuery) (<-chan store.SearchResult, error) {
 	s.SearchCalled++
+	s.searchQuery = q
 	c := make(chan store.SearchResult, 1)
 	go func() {
 		defer close(c)
@@ -225,7 +240,6 @@ func (s *spyStore) Search(ctx context.Context) (<-chan store.SearchResult, error
 				return
 			default:
 				time.Sleep(s.delay)
-				s.t.Logf("Send r")
 				c <- r
 				s.recordSent++
 			}
