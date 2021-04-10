@@ -86,16 +86,14 @@ func (s *RestClient) GetProviderList(ctx context.Context) ([]store.Provider, err
 func (s *RestClient) Search(ctx context.Context, q store.SearchQuery) (<-chan store.SearchResult, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 
-	log.Printf("Search Dial: %s", s.endPoint+"search/")
 	c, _, err := websocket.Dial(ctx, s.endPoint+"search/", nil)
 	if err != nil {
-		log.Printf("Search Dial errpr:%s", err)
+		log.Printf("Search Dial error:%s", err)
 		cancel()
 		return nil, err
 	}
 
-	log.Printf("Search Write")
-	err = wsjson.Write(ctx, c, "place your search query here")
+	err = wsjson.Write(ctx, c, q)
 	if err != nil {
 		c.Close(websocket.StatusInternalError, "the sky is falling to the rest client")
 		cancel()
@@ -110,6 +108,7 @@ func (s *RestClient) Search(ctx context.Context, q store.SearchQuery) (<-chan st
 		for {
 			select {
 			case <-ctx.Done():
+				log.Printf("Receive cancellation while writing WS")
 				return
 			default:
 				r := store.SearchResult{}
@@ -120,6 +119,7 @@ func (s *RestClient) Search(ctx context.Context, q store.SearchQuery) (<-chan st
 						return
 					}
 					// TODO log errors
+					log.Printf("Can't read WS:%s", err)
 					return
 				}
 				results <- r

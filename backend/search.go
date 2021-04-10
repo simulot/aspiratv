@@ -46,8 +46,10 @@ func (s *APIServer) getSearch(w http.ResponseWriter, r *http.Request) (err error
 	}
 
 	var query store.SearchQuery
+
 	err = wsjson.Read(ctx, c, &query)
 	if err != nil {
+		log.Printf("Can't decode query: %s", err)
 		return err
 	}
 
@@ -69,6 +71,7 @@ func (s *APIServer) sendSearchResults(ctx context.Context, c *websocket.Conn, re
 		select {
 		case <-ctx.Done():
 			err = ctx.Err()
+			log.Println("Search cancelled")
 			return err
 
 		case r, ok := <-results:

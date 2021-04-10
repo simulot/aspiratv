@@ -1,6 +1,7 @@
 package frontend
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -11,8 +12,11 @@ import (
 type SearchOnline struct {
 	app.Compo
 
-	search  string
-	Results []string
+	search       string
+	Results      []string
+	IsRunning    bool
+	cancelChanel chan struct{}
+	num          int
 }
 
 func (c *SearchOnline) Render() app.UI {
@@ -28,13 +32,16 @@ func (c *SearchOnline) Render() app.UI {
 			app.If(len(c.Results) > 0,
 				app.Section().Class("section").Body(
 					app.H1().Class("subtitle").Text(fmt.Sprintf("%d résultat(s)", len(c.Results))),
+					app.If(c.IsRunning, app.Button().Text("Arrêter").OnClick(c.ClickOnCancel)),
 					// app.Button().Text("Effacer").OnClick()
-					app.Range(c.Results).Slice(func(i int) app.UI {
-						return app.Div().Body(
-							app.Text(c.Results[i]),
-							app.Br(),
-						)
-					}),
+					app.Div().Class("columns is-multiline").Body(
+						app.Range(c.Results).Slice(func(i int) app.UI {
+							return app.Div().Class("column is-6 box").Body(
+								app.P().Class("title").Text(c.Results[i]),
+								app.P().Text("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam semper diam at erat pulvinar, at pulvinar felis blandit. Vestibulum volutpat tellus diam, consequat gravida libero rhoncus ut. Morbi maximus, leo sit amet vehicula eleifend, nunc dui porta orci, quis semper odio felis ut quam."),
+							)
+						}),
+					),
 				),
 			),
 		),
@@ -42,23 +49,67 @@ func (c *SearchOnline) Render() app.UI {
 	)
 }
 
+func (c *SearchOnline) ClickOnCancel(ctx app.Context, e app.Event) {
+	if c.IsRunning {
+		close(c.cancelChanel)
+	}
+}
+
 func (c *SearchOnline) ClickOnSearch(ctx app.Context, e app.Event) {
+	if c.IsRunning {
+		return
+	}
 	c.Results = nil
+	c.num++
+
+	c.IsRunning = true
+	c.cancelChanel = make(chan struct{})
 
 	q := store.SearchQuery{
 		Title: c.search,
 	}
-	results, err := MyAppState.s.Search(ctx, q)
+
+	cancellableCtx, cancel := context.WithCancel(ctx)
+
+	go func() {
+		// Wait click on Cancel button
+		select {
+		case <-c.cancelChanel:
+			log.Print("Cancel button hit")
+			cancel()
+			return
+		case <-cancellableCtx.Done():
+			return
+		}
+	}()
+
+	results, err := MyAppState.s.Search(cancellableCtx, q)
 	if err != nil {
 		log.Printf("Search API returns error: %s", err)
 		c.Results = []string{"Error " + err.Error()}
 		return
 	}
 
+	c.Update()
+
 	ctx.Async(func() {
-		for r := range results {
-			c.Results = append(c.Results, r.Title)
+		defer func() {
+			c.IsRunning = false
 			c.Update()
+			cancel()
+			log.Printf("Exit Async %d", c.num)
+		}()
+		for {
+			select {
+			case <-cancellableCtx.Done():
+				return
+			case r, ok := <-results:
+				if !ok {
+					return
+				}
+				c.Results = append(c.Results, r.Title)
+				c.Update()
+			}
 		}
 	})
 }

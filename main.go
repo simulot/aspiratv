@@ -63,7 +63,7 @@ func (s *dummyStore) Search(ctx context.Context, q store.SearchQuery) (<-chan st
 		defer close(c)
 		start := time.Now()
 		rand.Seed(time.Now().Unix())
-		itemsNubmer := rand.Intn(20)
+		itemsNubmer := rand.Intn(19) + 1
 		log.Printf("Search gets %d records", itemsNubmer)
 		for i := 1; i <= itemsNubmer; i++ {
 			select {

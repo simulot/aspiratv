@@ -144,17 +144,53 @@ func TestRestStore(t *testing.T) {
 		}
 
 	})
+}
 
-	t.Run("Call rest.Search and get results", func(t *testing.T) {
+func TestRestSearch(t *testing.T) {
+	/*
+		t.Run("Call rest.Search and get results", func(t *testing.T) {
+			spy := newSpyStore(t, []store.Provider{
+				{
+					Name: "tv-1",
+				},
+			})
+			spy.searchResults = make([]store.SearchResult, 5)
+			s, tearDownSrv := setupApiServer(t, spy)
+			defer tearDownSrv()
+			ctx := context.Background()
+			restStore := NewRestStore(wsURL(t, s.URL) + "/api/")
+
+			results, err := restStore.Search(ctx, store.SearchQuery{Title: "Hello"})
+			if err != nil {
+				t.Errorf("Unexpected error: %s", err)
+				return
+			}
+
+			got := 0
+			for range results {
+				got++
+			}
+			want := len(spy.searchResults)
+			if got != want {
+				t.Errorf("Expecting %d result, got %d", want, got)
+			}
+		})
+	*/
+
+	t.Run("Call rest.Search and cancel it", func(t *testing.T) {
 		spy := newSpyStore(t, []store.Provider{
 			{
 				Name: "tv-1",
 			},
 		})
-		spy.searchResults = make([]store.SearchResult, 5)
+		spy.searchResults = make([]store.SearchResult, 100)
+		spy.delay = 10 * time.Millisecond
 		s, tearDownSrv := setupApiServer(t, spy)
 		defer tearDownSrv()
-		ctx := context.Background()
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
 		restStore := NewRestStore(wsURL(t, s.URL) + "/api/")
 
 		results, err := restStore.Search(ctx, store.SearchQuery{Title: "Hello"})
@@ -163,13 +199,39 @@ func TestRestStore(t *testing.T) {
 			return
 		}
 
+		imDone := make(chan struct{})
+		time.AfterFunc(50*time.Millisecond, func() {
+			t.Log("Cancel at", spy.at())
+			cancel()
+		})
+
 		got := 0
-		for range results {
-			got++
-		}
+		go func() {
+			defer close(imDone)
+			for {
+				select {
+				case <-ctx.Done():
+					t.Log("Done", spy.at())
+					return
+				case _, ok := <-results:
+					if !ok {
+						t.Log("All read at", spy.at())
+						return
+					}
+					got++
+				}
+			}
+		}()
+
+		<-imDone
+		t.Log("Sortie GR, got ", got, "at", spy.at())
+
 		want := len(spy.searchResults)
-		if got != want {
-			t.Errorf("Expecting %d result, got %d", want, got)
+		if got == 0 {
+			t.Errorf("Expecting more than %d result", got)
+		}
+		if got == want {
+			t.Errorf("Expecting less then %d result, got %d", want, got)
 		}
 	})
 }
@@ -212,6 +274,7 @@ func newSpyStore(t *testing.T, providers []store.Provider) *spyStore {
 	}
 }
 
+func (s spyStore) at() string { return time.Since(s.start).String() }
 func (s *spyStore) GetProviderList(ctx context.Context) ([]store.Provider, error) {
 	s.GetProviderListCalled++
 	return s.InMemoryStore.GetProviderList(ctx)
