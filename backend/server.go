@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/simulot/aspiratv/providers"
 	"github.com/simulot/aspiratv/store"
 )
 
@@ -19,30 +20,32 @@ type logger interface {
 	Logf(f string, args ...interface{})
 }
 
-type APIServer struct {
+type Server struct {
 	http.Handler
-	store store.Store
-	log   logger
+	store     store.Store
+	providers []providers.Provider
+	log       logger
 }
 
-func NewAPIServer(store store.Store) *APIServer {
+func NewServer(store store.Store, p []providers.Provider) *Server {
 
-	s := &APIServer{
-		store: store,
+	s := &Server{
+		store:     store,
+		providers: p,
 	}
 	router := http.NewServeMux()
-	router.Handle(providerURL, http.HandlerFunc(s.providersHandler))
+	router.Handle(providerURL, http.HandlerFunc(s.providersDescribleHandler))
 	router.Handle(searchURL, http.HandlerFunc(s.searchHandler))
 	s.Handler = router
 	return s
 }
 
-func (s *APIServer) SetLogger(log logger) *APIServer {
+func (s *Server) SetLogger(log logger) *Server {
 	s.log = log
 	return s
 }
 
-func (s *APIServer) decodeRequest(r *http.Request, body interface{}) error {
+func (s *Server) decodeRequest(r *http.Request, body interface{}) error {
 	if r.Header.Get("content-type") != "application/json" {
 		return &APIError{nil, http.StatusBadRequest, ""}
 	}
@@ -54,7 +57,7 @@ func (s *APIServer) decodeRequest(r *http.Request, body interface{}) error {
 	return nil
 }
 
-func (s *APIServer) writeJsonResponse(w http.ResponseWriter, respBody interface{}, status int) {
+func (s *Server) writeJsonResponse(w http.ResponseWriter, respBody interface{}, status int) {
 	b := bytes.NewBuffer(nil)
 	err := json.NewEncoder(b).Encode(respBody)
 	if err != nil {
@@ -79,13 +82,13 @@ func (e APIError) Error() string {
 	return e.err.Error()
 }
 
-func (s *APIServer) logError(err error) {
+func (s *Server) logError(err error) {
 	if s.log != nil {
 		s.log.Logf("APIServer:", err)
 	}
 }
 
-func (s *APIServer) sendError(w http.ResponseWriter, err error) {
+func (s *Server) sendError(w http.ResponseWriter, err error) {
 	if apiError, ok := err.(*APIError); ok {
 		switch apiError.err {
 		case store.ErrorNotFound:

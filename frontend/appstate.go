@@ -2,7 +2,6 @@ package frontend
 
 import (
 	"github.com/maxence-charriere/go-app/v8/pkg/app"
-	"github.com/simulot/aspiratv/store"
 )
 
 type PageID int
@@ -16,7 +15,7 @@ const (
 
 // AppState hold the state of the application
 type AppState struct {
-	s           store.Store //access to the backend store using RESP API
+	s           *RestClient //access to the backend store using RESP API
 	currentPage PageID
 	menuItems   []Menuitem
 }
@@ -33,7 +32,7 @@ func InitializeWebApp() *AppState {
 	return MyAppState
 }
 
-func NewAppState(s store.Store) *AppState {
+func NewAppState(s *RestClient) *AppState {
 	return &AppState{
 		s:           s,
 		currentPage: PageSearchOnLine,

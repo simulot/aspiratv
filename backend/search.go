@@ -4,15 +4,15 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"sync"
 
-	"github.com/simulot/aspiratv/store"
+	"github.com/simulot/aspiratv/models"
+	"github.com/simulot/aspiratv/providers"
 	"nhooyr.io/websocket"
 	"nhooyr.io/websocket/wsjson"
 )
 
-func (s *APIServer) searchHandler(w http.ResponseWriter, r *http.Request) {
-
-	log.Printf("Search API called")
+func (s *Server) searchHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		err := s.getSearch(w, r)
@@ -25,10 +25,9 @@ func (s *APIServer) searchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *APIServer) getSearch(w http.ResponseWriter, r *http.Request) (err error) {
+func (s *Server) getSearch(w http.ResponseWriter, r *http.Request) (err error) {
 	ctx, cancel := context.WithCancel(r.Context())
 
-	var results <-chan store.SearchResult
 	var c *websocket.Conn
 	defer func() {
 		cancel()
@@ -45,44 +44,53 @@ func (s *APIServer) getSearch(w http.ResponseWriter, r *http.Request) (err error
 		return err
 	}
 
-	var query store.SearchQuery
+	var query models.SearchQuery
 
 	err = wsjson.Read(ctx, c, &query)
 	if err != nil {
 		log.Printf("Can't decode query: %s", err)
+		wsjson.Write(ctx, c, "Error: invalid query")
 		return err
 	}
 
-	results, err = s.store.Search(ctx, query)
+	err = wsjson.Write(ctx, c, "OK")
 	if err != nil {
+		log.Printf("Can't acknowledge query: %s", err)
 		return err
 	}
 
-	err = s.sendSearchResults(ctx, c, results)
-	if err != nil {
-		return err
-	}
-	return c.Close(websocket.StatusNormalClosure, "no more result")
-}
+	wg := sync.WaitGroup{}
 
-func (s *APIServer) sendSearchResults(ctx context.Context, c *websocket.Conn, results <-chan store.SearchResult) error {
-	var err error
-	for {
-		select {
-		case <-ctx.Done():
-			err = ctx.Err()
-			log.Println("Search cancelled")
-			return err
-
-		case r, ok := <-results:
-			if !ok {
-				return nil
-			}
-			err = wsjson.Write(ctx, c, r)
+	for _, p := range s.providers {
+		wg.Add(1)
+		go func(p providers.Provider) {
+			defer wg.Done()
+			cResults, err := p.Search(ctx, query)
 			if err != nil {
 				// TODO log error
-				return err
+				return
 			}
-		}
+			for {
+				select {
+				case <-ctx.Done():
+					log.Println("Search cancelled")
+					return
+				case r, ok := <-cResults:
+					if !ok {
+						return
+					}
+					err = wsjson.Write(ctx, c, r)
+					if err != nil {
+						// TODO log error
+						return
+					}
+
+				}
+			}
+
+		}(p)
+
 	}
+	wg.Wait()
+	return c.Close(websocket.StatusNormalClosure, "no more result")
 }

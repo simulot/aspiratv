@@ -1,15 +1,13 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/simulot/aspiratv/frontend"
+	"github.com/simulot/aspiratv/providers"
+	"github.com/simulot/aspiratv/providers/artetv"
 
 	"github.com/maxence-charriere/go-app/v8/pkg/app"
 	"github.com/simulot/aspiratv/backend"
@@ -29,14 +27,10 @@ func main() {
 
 	// Starting here, the server side
 
-	st := &dummyStore{
-		InMemoryStore: store.InMemoryStore{
-			Providers: []store.Provider{
-				{Name: "TV1"},
-				{Name: "TV2"},
-			},
-		},
+	providers := []providers.Provider{
+		artetv.NewArte(),
 	}
+	st := store.InMemoryStore{}
 
 	mux := http.NewServeMux()
 	mux.Handle("/", &app.Handler{
@@ -47,18 +41,19 @@ func main() {
 		},
 	})
 
-	mux.Handle(backend.APIURL, backend.NewAPIServer(st))
+	mux.Handle(backend.APIURL, backend.NewServer(&st, providers))
 	if err := http.ListenAndServe(":8000", mux); err != nil {
 		log.Fatal(err)
 	}
 }
 
+/*
 type dummyStore struct {
 	store.InMemoryStore
 }
 
-func (s *dummyStore) Search(ctx context.Context, q store.SearchQuery) (<-chan store.SearchResult, error) {
-	c := make(chan store.SearchResult, 1)
+func (s *dummyStore) Search(ctx context.Context, q models.SearchQuery) (<-chan models.SearchResult, error) {
+	c := make(chan models.SearchResult, 1)
 	go func() {
 		defer close(c)
 		start := time.Now()
@@ -71,8 +66,7 @@ func (s *dummyStore) Search(ctx context.Context, q store.SearchQuery) (<-chan st
 				return
 			default:
 				time.Sleep(time.Duration(rand.Intn(10)) * 100 * time.Millisecond)
-				c <- store.SearchResult{
-					Num:   i,
+				c <- models.SearchResult{
 					Title: fmt.Sprintf("Item %s(%d) at %s", q.Title, i, time.Since(start)),
 				}
 			}
@@ -81,3 +75,4 @@ func (s *dummyStore) Search(ctx context.Context, q store.SearchQuery) (<-chan st
 
 	return c, nil
 }
+*/
