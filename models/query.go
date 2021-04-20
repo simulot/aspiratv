@@ -10,24 +10,48 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
+var MediaTypeLabel = []string{
+	"--?--",      // TypeUnknown
+	"Collection", // TypeCollection           // We don't know yet the actual type, but this is a collection, Arte?
+	"Série",      // TypeSeries               // Series with seasons and episodes
+	"Magazine",   // TypeTVShow               // TV Show or magazine
+	"Média",      // TypeMovie                // Movie
+}
+
 type SearchResult struct {
 	Err         error     // When not nil, the rest of the structure is invalid
 	ID          string    // To disambiguate detail search
+	Rank        int       // Result rank
 	Type        MediaType // Collection / Series / TV Show / Movie or media
-	Title       string    // Title
+	Show        string    // Show name
+	Title       string    // Media Title
 	Plot        string    // Plot
 	PageURL     string    // Page on the web site
 	ThumbURL    string    // Image
+	Aired       time.Time // When it has been broadcasted
 	AvailableOn time.Time // O when available, or date of availability
 	Chanel      string    // TV Chanel
 	Provider    string    // Provider
 	IsPlayable  bool      // True when available for free streaming from TV site
 	IsTeaser    bool      // True when only a teaser is available
+	Season      int
+	Episode     int
+	Tags        []string
+}
+
+func (sr *SearchResult) AddTag(t string) {
+	for _, s := range sr.Tags {
+		if s == t {
+			return
+		}
+	}
+	sr.Tags = append(sr.Tags, t)
 }
 
 type SearchQuery struct {
 	Title           string // Title to be searched on line
 	normalizedTitle string // Normalized title to ease comparisons with diacritics
+	OnlyExactTitle  bool   // When true, the result title must match the searched title
 
 	// Future Use
 	// MustTitle       *regexp.Regexp // When given, the title must be recognized by this regexp

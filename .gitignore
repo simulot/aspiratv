@@ -26,5 +26,6 @@ aspiratv
 cmd/aspiratv/aspiratv
 cmd/aspiratv/test*.json
 errors.log
-web/app.wasm
+web/*
 mystyles.*
+tmp/*

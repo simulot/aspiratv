@@ -79,9 +79,14 @@ func (s *Server) getSearch(w http.ResponseWriter, r *http.Request) (err error) {
 					if !ok {
 						return
 					}
+					if r.Err != nil {
+						log.Printf("Can't send search result: %s", r.Err)
+						return
+					}
+
 					err = wsjson.Write(ctx, c, r)
 					if err != nil {
-						// TODO log error
+						log.Printf("Can't send search result: %s", err)
 						return
 					}
 

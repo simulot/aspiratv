@@ -17,7 +17,7 @@ func (s *Server) providersDescribleHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (s *Server) decribeProviders(w http.ResponseWriter, r *http.Request) {
-	d := []providers.ProviderDescription{}
+	d := []providers.Description{}
 	for _, p := range s.providers {
 		d = append(d, p.ProviderDescribe(r.Context()))
 	}

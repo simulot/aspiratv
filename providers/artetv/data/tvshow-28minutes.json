@@ -1,0 +1,1622 @@
+{
+    "id": "SEARCH_fr_web",
+    "page": "SEARCH",
+    "language": "fr",
+    "support": "web",
+    "level": 0,
+    "parent": null,
+    "alternativeLanguages": [{
+            "code": "fr",
+            "label": "Français",
+            "page": "SEARCH",
+            "url": "https://www.arte.tv/fr/search/?q=28%20minutes",
+            "title": "Recherche"
+        },
+        {
+            "code": "de",
+            "label": "Deutsch",
+            "page": "SEARCH",
+            "url": "https://www.arte.tv/de/search/?q=28%20minutes",
+            "title": "Suche"
+        },
+        {
+            "code": "en",
+            "label": "English",
+            "page": "SEARCH",
+            "url": "https://www.arte.tv/en/search/?q=28%20minutes",
+            "title": "Search"
+        },
+        {
+            "code": "es",
+            "label": "Español",
+            "page": "SEARCH",
+            "url": "https://www.arte.tv/es/search/?q=28%20minutes",
+            "title": "Búsqueda"
+        },
+        {
+            "code": "pl",
+            "label": "Polski",
+            "page": "SEARCH",
+            "url": "https://www.arte.tv/pl/search/?q=28%20minutes",
+            "title": "Wyszukiwanie"
+        },
+        {
+            "code": "it",
+            "label": "Italiano",
+            "page": "SEARCH",
+            "url": "https://www.arte.tv/it/search/?q=28%20minutes",
+            "title": "Search"
+        }
+    ],
+    "url": "https://www.arte.tv/fr/search/?q=28%20minutes",
+    "deeplink": "arte://search?query=28 minutes",
+    "title": "28 minutes",
+    "description": "Découvrez toutes les vidéos ARTE relatives à votre recherche sur 28 minutes...",
+    "slug": "recherche",
+    "zones": [{
+            "id": "167d478a-b668-42a3-b88a-f01a436c7394_null",
+            "code": {
+                "name": "listing_SEARCH",
+                "id": null
+            },
+            "title": "Search Listing",
+            "description": null,
+            "displayOptions": {
+                "zoneLayout": "vertical",
+                "itemTemplate": "landscape",
+                "theme": null,
+                "showZoneTitle": true,
+                "showItemTitle": true
+            },
+            "link": null,
+            "pageNumber": 1,
+            "nextPage": "https://api-internal.arte.tv/api/emac/v3/fr/web/data/SEARCH_LISTING/?imageFormats=landscape&authorizedAreas=DE_FR%2CEUR_DE_FR%2CSAT%2CALL&mainZonePage=1&query=28%20minutes&page=2&limit=20",
+            "authenticatedContent": null,
+            "data": [{
+                    "title": "28 Minutes",
+                    "id": "RC-014077_fr",
+                    "type": "teaser",
+                    "kind": {
+                        "code": "MAGAZINE",
+                        "label": "Émission",
+                        "isCollection": true
+                    },
+                    "programId": "RC-014077",
+                    "url": "https://www.arte.tv/fr/videos/RC-014077/28-minutes/",
+                    "deeplink": "arte://collection/RC-014077",
+                    "subtitle": "Le magazine d’actualité",
+                    "teaserText": "Présenté par Élisabeth Quin, le rendez-vous quotidien consacré à l’actualité et au débat.",
+                    "shortDescription": "28’ est le magazine d’actualité d’ARTE, présenté par Elisabeth Quin du lundi au vendredi à 20h05. Renaud Dély est aux commandes de l'émission le samedi. ",
+                    "callToAction": "Regarder",
+                    "images": {
+                        "landscape": {
+                            "caption": "28 minutes 16/9",
+                            "resolutions": [{
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/RC-014077/200x113?ts=1618580505",
+                                    "w": 200,
+                                    "h": 113
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/RC-014077/400x225?ts=1618580505",
+                                    "w": 400,
+                                    "h": 225
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/RC-014077/720x406?ts=1618580505",
+                                    "w": 720,
+                                    "h": 406
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/RC-014077/940x530?ts=1618580505",
+                                    "w": 940,
+                                    "h": 530
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/RC-014077/1920x1080?ts=1618580505",
+                                    "w": 1920,
+                                    "h": 1080
+                                }
+                            ],
+                            "blurUrl": "https://api-cdn.arte.tv/api/mami/v1/program/fr/RC-014077/80x45?ts=1618580505"
+                        },
+                        "banner": null,
+                        "square": null,
+                        "portrait": null
+                    },
+                    "stickers": [{
+                        "code": "COLLECTION",
+                        "label": "COLLECTION"
+                    }],
+                    "duration": null,
+                    "childrenCount": null,
+                    "geoblocking": null,
+                    "availability": null,
+                    "ageRating": 0,
+                    "trackingPixel": "https://www.arte.tv/ct/?language=fr&pageid=SEARCH&support=web&zonename=Search%20Listing&zoneid=listing_SEARCH&position=1&teaserid=RC-014077_fr&teasertitle=28%20Minutes&em=RC-014077"
+                },
+                {
+                    "title": "28 minutes",
+                    "id": "097407-164-A_fr",
+                    "type": "teaser",
+                    "kind": {
+                        "code": "SHOW",
+                        "label": "Programme",
+                        "isCollection": false
+                    },
+                    "programId": "097407-164-A",
+                    "url": "https://www.arte.tv/fr/videos/097407-164-A/28-minutes/",
+                    "deeplink": "arte://program/097407-164-A",
+                    "subtitle": "Linda Bortoletto / L'OTAN face à Vladimir Poutine (14/04/2021)",
+                    "teaserText": "Linda Bortoletto : partir loin pour se reconstruire vite / L’OTAN peut-elle se permettre d’affronter Poutine sur le dossier ukrainien ?\n\n ",
+                    "shortDescription": "Entre aventure extrême et thérapie par le voyage, rencontre avec Linda Bortoletto, auteure de \"Le souffle des Andes\" / Ukraine : l’OTAN demande à la Russie de mettre un terme à son renforcement militaire. Sommes-nous prêts à affronter Vladimir Poutine ? Débat.",
+                    "callToAction": "Regarder",
+                    "images": {
+                        "landscape": {
+                            "caption": " ",
+                            "resolutions": [{
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-164-A/200x113?ts=1618657422",
+                                    "w": 200,
+                                    "h": 113
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-164-A/400x225?ts=1618657422",
+                                    "w": 400,
+                                    "h": 225
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-164-A/720x406?ts=1618657422",
+                                    "w": 720,
+                                    "h": 406
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-164-A/940x530?ts=1618657422",
+                                    "w": 940,
+                                    "h": 530
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-164-A/1920x1080?ts=1618657422",
+                                    "w": 1920,
+                                    "h": 1080
+                                }
+                            ],
+                            "blurUrl": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-164-A/80x45?ts=1618657422"
+                        },
+                        "banner": null,
+                        "square": null,
+                        "portrait": null
+                    },
+                    "stickers": [{
+                            "code": "PLAYABLE",
+                            "label": "PLAYABLE"
+                        },
+                        {
+                            "code": "FULL_VIDEO",
+                            "label": "Voir le programme"
+                        }
+                    ],
+                    "duration": 2692,
+                    "childrenCount": null,
+                    "geoblocking": {
+                        "code": "SAT",
+                        "label": ""
+                    },
+                    "availability": {
+                        "type": "VOD",
+                        "start": "2021-04-14T18:05:00Z",
+                        "end": "2021-06-13T18:05:00Z",
+                        "upcomingDate": "2021-04-14T18:05:00Z",
+                        "label": "Disponible du 14/04/2021 au 13/06/2021"
+                    },
+                    "ageRating": 0,
+                    "trackingPixel": "https://www.arte.tv/ct/?language=fr&pageid=SEARCH&support=web&zonename=Search%20Listing&zoneid=listing_SEARCH&position=2&teaserid=097407-164-A_fr&teasertitle=28%20minutes&em=097407-164-A"
+                },
+                {
+                    "title": "28 minutes",
+                    "id": "097407-167-A_fr",
+                    "type": "teaser",
+                    "kind": {
+                        "code": "SHOW",
+                        "label": "Programme",
+                        "isCollection": false
+                    },
+                    "programId": "097407-167-A",
+                    "url": "https://www.arte.tv/fr/videos/097407-167-A/28-minutes/",
+                    "deeplink": "arte://program/097407-167-A",
+                    "subtitle": "Alexis Jenni / Pakistan : manifestation contre la France (19/04/2021)",
+                    "teaserText": "Les pauvres aussi ont le droit de bien manger / International : quel prix sommes-nous prêts à payer pour notre laïcité ?",
+                    "shortDescription": "L'ancien Prix Goncourt Alexis Jenni publie un roman, \"La beauté dure toujours\", ainsi qu'une enquête coécrite avec Frédéric Denhez, \"Ensemble pour mieux se nourrir\" / Au Pakistan, le parti islamiste radical Tehreek-e-Labbaik appelle à une manifestation anti-française ce jeudi 20 avril. Les caricatures du prophète Mahomet sont au coeur des tensions. Quel prix sommes-nous prêts à payer pour notre laïcité ?",
+                    "callToAction": "Regarder",
+                    "images": {
+                        "landscape": {
+                            "caption": " ",
+                            "resolutions": [{
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-167-A/200x113?ts=1618861422",
+                                    "w": 200,
+                                    "h": 113
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-167-A/400x225?ts=1618861422",
+                                    "w": 400,
+                                    "h": 225
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-167-A/720x406?ts=1618861422",
+                                    "w": 720,
+                                    "h": 406
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-167-A/940x530?ts=1618861422",
+                                    "w": 940,
+                                    "h": 530
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-167-A/1920x1080?ts=1618861422",
+                                    "w": 1920,
+                                    "h": 1080
+                                }
+                            ],
+                            "blurUrl": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-167-A/80x45?ts=1618861422"
+                        },
+                        "banner": null,
+                        "square": null,
+                        "portrait": null
+                    },
+                    "stickers": [{
+                            "code": "PLAYABLE",
+                            "label": "PLAYABLE"
+                        },
+                        {
+                            "code": "FULL_VIDEO",
+                            "label": "Voir le programme"
+                        }
+                    ],
+                    "duration": 3420,
+                    "childrenCount": null,
+                    "geoblocking": {
+                        "code": "SAT",
+                        "label": ""
+                    },
+                    "availability": {
+                        "type": "VOD",
+                        "start": "2021-04-19T18:05:00Z",
+                        "end": "2021-06-18T18:05:00Z",
+                        "upcomingDate": "2021-04-19T18:05:00Z",
+                        "label": "Disponible du 19/04/2021 au 18/06/2021"
+                    },
+                    "ageRating": 0,
+                    "trackingPixel": "https://www.arte.tv/ct/?language=fr&pageid=SEARCH&support=web&zonename=Search%20Listing&zoneid=listing_SEARCH&position=3&teaserid=097407-167-A_fr&teasertitle=28%20minutes&em=097407-167-A"
+                },
+                {
+                    "title": "28 minutes",
+                    "id": "097407-166-A_fr",
+                    "type": "teaser",
+                    "kind": {
+                        "code": "SHOW",
+                        "label": "Programme",
+                        "isCollection": false
+                    },
+                    "programId": "097407-166-A",
+                    "url": "https://www.arte.tv/fr/videos/097407-166-A/28-minutes/",
+                    "deeplink": "arte://program/097407-166-A",
+                    "subtitle": "Le club (16/04/2021)",
+                    "teaserText": "Peut-on encore sauver l’accord sur le nucléaire iranien ? / L’Europe a-t-elle besoin des États-Unis pour agir face à Poutine ?",
+                    "shortDescription": "Peut-on encore sauver l’accord sur le nucléaire iranien ? / L’Europe a-t-elle besoin des États-Unis pour agir face à Poutine ? Retour sur l'actualité de la semaine avec l’écrivaine Abnousse Shalmani, le correspondant européen de “Libération” Jean Quatremer, le professeur de littérature et de média à l’Université Paris 8 Yves Citton et la plume avisée du dessinateur Erwann Terrier.",
+                    "callToAction": "Regarder",
+                    "images": {
+                        "landscape": {
+                            "caption": " ",
+                            "resolutions": [{
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-166-A/200x113?ts=1618835513",
+                                    "w": 200,
+                                    "h": 113
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-166-A/400x225?ts=1618835513",
+                                    "w": 400,
+                                    "h": 225
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-166-A/720x406?ts=1618835513",
+                                    "w": 720,
+                                    "h": 406
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-166-A/940x530?ts=1618835513",
+                                    "w": 940,
+                                    "h": 530
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-166-A/1920x1080?ts=1618835513",
+                                    "w": 1920,
+                                    "h": 1080
+                                }
+                            ],
+                            "blurUrl": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-166-A/80x45?ts=1618835513"
+                        },
+                        "banner": null,
+                        "square": null,
+                        "portrait": null
+                    },
+                    "stickers": [{
+                            "code": "PLAYABLE",
+                            "label": "PLAYABLE"
+                        },
+                        {
+                            "code": "FULL_VIDEO",
+                            "label": "Voir le programme"
+                        }
+                    ],
+                    "duration": 2686,
+                    "childrenCount": null,
+                    "geoblocking": {
+                        "code": "SAT",
+                        "label": ""
+                    },
+                    "availability": {
+                        "type": "VOD",
+                        "start": "2021-04-16T18:05:00Z",
+                        "end": "2021-06-15T18:06:52Z",
+                        "upcomingDate": "2021-04-16T18:05:00Z",
+                        "label": "Disponible du 16/04/2021 au 15/06/2021"
+                    },
+                    "ageRating": 0,
+                    "trackingPixel": "https://www.arte.tv/ct/?language=fr&pageid=SEARCH&support=web&zonename=Search%20Listing&zoneid=listing_SEARCH&position=4&teaserid=097407-166-A_fr&teasertitle=28%20minutes&em=097407-166-A"
+                },
+                {
+                    "title": "28 minutes",
+                    "id": "097407-165-A_fr",
+                    "type": "teaser",
+                    "kind": {
+                        "code": "SHOW",
+                        "label": "Programme",
+                        "isCollection": false
+                    },
+                    "programId": "097407-165-A",
+                    "url": "https://www.arte.tv/fr/videos/097407-165-A/28-minutes/",
+                    "deeplink": "arte://program/097407-165-A",
+                    "subtitle": "36 ans, pas d’enfant / États : dépenser toujours plus ? (15/04/2021)",
+                    "teaserText": "À 36 ans, Chloé Chaudet ne veut pas d'enfant. Rencontre. / Face à la crise, l'État peut-il dépenser sans compter ?",
+                    "shortDescription": "Chloé Chaudet a décidé de ne pas être mère. La maîtresse de conférences en littérature générale et comparée nous parle des injonctions faites aux femmes et de la pression sociale autour de la maternité. / Biden investit massivement, Macron prolonge son \"quoi qu’il en coûte\" : face à la crise, l’État peut-il dépenser toujours plus ?",
+                    "callToAction": "Regarder",
+                    "images": {
+                        "landscape": {
+                            "caption": "28 Minutes",
+                            "resolutions": [{
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-165-A/200x113?ts=1618844880",
+                                    "w": 200,
+                                    "h": 113
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-165-A/400x225?ts=1618844880",
+                                    "w": 400,
+                                    "h": 225
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-165-A/720x406?ts=1618844880",
+                                    "w": 720,
+                                    "h": 406
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-165-A/940x530?ts=1618844880",
+                                    "w": 940,
+                                    "h": 530
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-165-A/1920x1080?ts=1618844880",
+                                    "w": 1920,
+                                    "h": 1080
+                                }
+                            ],
+                            "blurUrl": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-165-A/80x45?ts=1618844880"
+                        },
+                        "banner": null,
+                        "square": null,
+                        "portrait": null
+                    },
+                    "stickers": [{
+                            "code": "PLAYABLE",
+                            "label": "PLAYABLE"
+                        },
+                        {
+                            "code": "FULL_VIDEO",
+                            "label": "Voir le programme"
+                        }
+                    ],
+                    "duration": 2641,
+                    "childrenCount": null,
+                    "geoblocking": {
+                        "code": "SAT",
+                        "label": ""
+                    },
+                    "availability": {
+                        "type": "VOD",
+                        "start": "2021-04-15T18:05:00Z",
+                        "end": "2021-06-14T18:05:00Z",
+                        "upcomingDate": "2021-04-15T18:05:00Z",
+                        "label": "Disponible du 15/04/2021 au 14/06/2021"
+                    },
+                    "ageRating": 0,
+                    "trackingPixel": "https://www.arte.tv/ct/?language=fr&pageid=SEARCH&support=web&zonename=Search%20Listing&zoneid=listing_SEARCH&position=5&teaserid=097407-165-A_fr&teasertitle=28%20minutes&em=097407-165-A"
+                },
+                {
+                    "title": "28 minutes",
+                    "id": "097407-163-A_fr",
+                    "type": "teaser",
+                    "kind": {
+                        "code": "SHOW",
+                        "label": "Programme",
+                        "isCollection": false
+                    },
+                    "programId": "097407-163-A",
+                    "url": "https://www.arte.tv/fr/videos/097407-163-A/28-minutes/",
+                    "deeplink": "arte://program/097407-163-A",
+                    "subtitle": "Pef / L’islam, une religion française comme les autres ? (13/04/2021)",
+                    "teaserText": "La nostalgie du papa du prince de Motordu / Le \"mois sacré\" de Ramadan s’ouvre ce soir",
+                    "shortDescription": "Un voyage sur les routes des souvenirs avec l’auteur et dessinateur du best-seller “La belle lisse poire du prince de Motordu”, Pierre Élie Ferrier, dit Pef / Le \"mois sacré\" de Ramadan s’ouvre ce soir. L’islam, une religion française comme les autres ? Nos invités font le point. ",
+                    "callToAction": "Regarder",
+                    "images": {
+                        "landscape": {
+                            "caption": " ",
+                            "resolutions": [{
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-163-A/200x113?ts=1618656945",
+                                    "w": 200,
+                                    "h": 113
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-163-A/400x225?ts=1618656945",
+                                    "w": 400,
+                                    "h": 225
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-163-A/720x406?ts=1618656945",
+                                    "w": 720,
+                                    "h": 406
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-163-A/940x530?ts=1618656945",
+                                    "w": 940,
+                                    "h": 530
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-163-A/1920x1080?ts=1618656945",
+                                    "w": 1920,
+                                    "h": 1080
+                                }
+                            ],
+                            "blurUrl": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-163-A/80x45?ts=1618656945"
+                        },
+                        "banner": null,
+                        "square": null,
+                        "portrait": null
+                    },
+                    "stickers": [{
+                            "code": "PLAYABLE",
+                            "label": "PLAYABLE"
+                        },
+                        {
+                            "code": "FULL_VIDEO",
+                            "label": "Voir le programme"
+                        }
+                    ],
+                    "duration": 2608,
+                    "childrenCount": null,
+                    "geoblocking": {
+                        "code": "SAT",
+                        "label": ""
+                    },
+                    "availability": {
+                        "type": "VOD",
+                        "start": "2021-04-13T18:05:00Z",
+                        "end": "2021-06-12T18:05:00Z",
+                        "upcomingDate": "2021-04-13T18:05:00Z",
+                        "label": "Disponible du 13/04/2021 au 12/06/2021"
+                    },
+                    "ageRating": 0,
+                    "trackingPixel": "https://www.arte.tv/ct/?language=fr&pageid=SEARCH&support=web&zonename=Search%20Listing&zoneid=listing_SEARCH&position=6&teaserid=097407-163-A_fr&teasertitle=28%20minutes&em=097407-163-A"
+                },
+                {
+                    "title": "28 minutes samedi",
+                    "id": "097405-016-A_fr",
+                    "type": "teaser",
+                    "kind": {
+                        "code": "SHOW",
+                        "label": "Programme",
+                        "isCollection": false
+                    },
+                    "programId": "097405-016-A",
+                    "url": "https://www.arte.tv/fr/videos/097405-016-A/28-minutes-samedi/",
+                    "deeplink": "arte://program/097405-016-A",
+                    "subtitle": "Chantal Thomas / Chine / Loi sur le séparatisme (17/04/2021)",
+                    "teaserText": "L'art de vivre l'instant présent / Peut-on s’entendre avec la Chine ? / Loi sur le séparatisme : sera-t-il efficace pour lutter contre l’islamisme ?\n\n ",
+                    "shortDescription": "Danse “De Sable et de neige”, Chantal Thomas livre une ode à l’instant présent et à la beauté du quotidien, mais également à la famille / Face à des sujets brûlants, comme la situation des Ouïghours, les tensions commerciales ou encore Hong Kong, la Chine peut-elle faire avancer ses intérêts ? Quelle sera la place de l’Europe dans ces discussions ? / L’examen du projet de loi confortant le respect des principes de la République doit durer deux semaines, mais le Sénat a déjà durci le ton.",
+                    "callToAction": "Regarder",
+                    "images": {
+                        "landscape": {
+                            "caption": " ",
+                            "resolutions": [{
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097405-016-A/200x113?ts=1618659222",
+                                    "w": 200,
+                                    "h": 113
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097405-016-A/400x225?ts=1618659222",
+                                    "w": 400,
+                                    "h": 225
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097405-016-A/720x406?ts=1618659222",
+                                    "w": 720,
+                                    "h": 406
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097405-016-A/940x530?ts=1618659222",
+                                    "w": 940,
+                                    "h": 530
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097405-016-A/1920x1080?ts=1618659222",
+                                    "w": 1920,
+                                    "h": 1080
+                                }
+                            ],
+                            "blurUrl": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097405-016-A/80x45?ts=1618659222"
+                        },
+                        "banner": null,
+                        "square": null,
+                        "portrait": null
+                    },
+                    "stickers": [{
+                            "code": "PLAYABLE",
+                            "label": "PLAYABLE"
+                        },
+                        {
+                            "code": "FULL_VIDEO",
+                            "label": "Voir le programme"
+                        }
+                    ],
+                    "duration": 2609,
+                    "childrenCount": null,
+                    "geoblocking": {
+                        "code": "SAT",
+                        "label": ""
+                    },
+                    "availability": {
+                        "type": "VOD",
+                        "start": "2021-04-17T18:05:00Z",
+                        "end": "2021-04-24T18:05:00Z",
+                        "upcomingDate": "2021-04-17T18:05:00Z",
+                        "label": "Disponible du 17/04/2021 au 24/04/2021"
+                    },
+                    "ageRating": 0,
+                    "trackingPixel": "https://www.arte.tv/ct/?language=fr&pageid=SEARCH&support=web&zonename=Search%20Listing&zoneid=listing_SEARCH&position=7&teaserid=097405-016-A_fr&teasertitle=28%20minutes%20samedi&em=097405-016-A"
+                },
+                {
+                    "title": "28 minutes",
+                    "id": "097407-162-A_fr",
+                    "type": "teaser",
+                    "kind": {
+                        "code": "SHOW",
+                        "label": "Programme",
+                        "isCollection": false
+                    },
+                    "programId": "097407-162-A",
+                    "url": "https://www.arte.tv/fr/videos/097407-162-A/28-minutes/",
+                    "deeplink": "arte://program/097407-162-A",
+                    "subtitle": "Akhenaton / L'Iran et la bombe atomique (12/04/2021)",
+                    "teaserText": "Akhenaton : le côté obscur de l’époque / Peut-on empêcher Téhéran de se doter de la bombe atomique ?\n\n ",
+                    "shortDescription": "Quinze ans après \"La fin de leur monde\", morceau mythique et engagé du groupe IAM, le rappeur Akhenaton s’insurge toujours autant contre les mensonges, l’hypocrisie et les injustices de notre société / En pleine négociation avec la communauté internationale, l’Iran lance de nouvelles centrifugeuses. Peut-on empêcher Téhéran de se doter de la bombe atomique ? Débat.",
+                    "callToAction": "Regarder",
+                    "images": {
+                        "landscape": {
+                            "caption": " ",
+                            "resolutions": [{
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-162-A/200x113?ts=1618817268",
+                                    "w": 200,
+                                    "h": 113
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-162-A/400x225?ts=1618817268",
+                                    "w": 400,
+                                    "h": 225
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-162-A/720x406?ts=1618817268",
+                                    "w": 720,
+                                    "h": 406
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-162-A/940x530?ts=1618817268",
+                                    "w": 940,
+                                    "h": 530
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-162-A/1920x1080?ts=1618817268",
+                                    "w": 1920,
+                                    "h": 1080
+                                }
+                            ],
+                            "blurUrl": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-162-A/80x45?ts=1618817268"
+                        },
+                        "banner": null,
+                        "square": null,
+                        "portrait": null
+                    },
+                    "stickers": [{
+                            "code": "PLAYABLE",
+                            "label": "PLAYABLE"
+                        },
+                        {
+                            "code": "FULL_VIDEO",
+                            "label": "Voir le programme"
+                        }
+                    ],
+                    "duration": 2489,
+                    "childrenCount": null,
+                    "geoblocking": {
+                        "code": "SAT",
+                        "label": ""
+                    },
+                    "availability": {
+                        "type": "VOD",
+                        "start": "2021-04-12T18:05:00Z",
+                        "end": "2021-06-11T18:07:05Z",
+                        "upcomingDate": "2021-04-12T18:05:00Z",
+                        "label": "Disponible du 12/04/2021 au 11/06/2021"
+                    },
+                    "ageRating": 0,
+                    "trackingPixel": "https://www.arte.tv/ct/?language=fr&pageid=SEARCH&support=web&zonename=Search%20Listing&zoneid=listing_SEARCH&position=8&teaserid=097407-162-A_fr&teasertitle=28%20minutes&em=097407-162-A"
+                },
+                {
+                    "title": "28 minutes",
+                    "id": "097407-160-A_fr",
+                    "type": "teaser",
+                    "kind": {
+                        "code": "SHOW",
+                        "label": "Programme",
+                        "isCollection": false
+                    },
+                    "programId": "097407-160-A",
+                    "url": "https://www.arte.tv/fr/videos/097407-160-A/28-minutes/",
+                    "deeplink": "arte://program/097407-160-A",
+                    "subtitle": "Vinciane Despret / Projet de loi sur l'euthanasie (08/04/2021)",
+                    "teaserText": "Elle raconte ce que les animaux ont à nous dire / Faut-il changer la loi sur la fin de vie ?",
+                    "shortDescription": "Avec \"Autobiographie d’un poulpe\", la philosophe des sciences Vinciane Despret livre un roman d’anticipation qui nous plonge au cœur des débats scientifiques / Cinq ans après la loi Claeys-Leonetti qui autorise la sédation profonde et continue, pouvant aller jusqu'à la mort, mais sans euthanasie active, une proposition de loi instituant un droit à une \"fin de vie libre et choisie\" est examinée à l'Assemblée nationale. ",
+                    "callToAction": "Regarder",
+                    "images": {
+                        "landscape": {
+                            "caption": " ",
+                            "resolutions": [{
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-160-A/200x113?ts=1618447073",
+                                    "w": 200,
+                                    "h": 113
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-160-A/400x225?ts=1618447073",
+                                    "w": 400,
+                                    "h": 225
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-160-A/720x406?ts=1618447073",
+                                    "w": 720,
+                                    "h": 406
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-160-A/940x530?ts=1618447073",
+                                    "w": 940,
+                                    "h": 530
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-160-A/1920x1080?ts=1618447073",
+                                    "w": 1920,
+                                    "h": 1080
+                                }
+                            ],
+                            "blurUrl": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-160-A/80x45?ts=1618447073"
+                        },
+                        "banner": null,
+                        "square": null,
+                        "portrait": null
+                    },
+                    "stickers": [{
+                            "code": "PLAYABLE",
+                            "label": "PLAYABLE"
+                        },
+                        {
+                            "code": "FULL_VIDEO",
+                            "label": "Voir le programme"
+                        }
+                    ],
+                    "duration": 2685,
+                    "childrenCount": null,
+                    "geoblocking": {
+                        "code": "SAT",
+                        "label": ""
+                    },
+                    "availability": {
+                        "type": "VOD",
+                        "start": "2021-04-08T18:05:00Z",
+                        "end": "2021-06-07T18:06:57Z",
+                        "upcomingDate": "2021-04-08T18:05:00Z",
+                        "label": "Disponible du 08/04/2021 au 07/06/2021"
+                    },
+                    "ageRating": 0,
+                    "trackingPixel": "https://www.arte.tv/ct/?language=fr&pageid=SEARCH&support=web&zonename=Search%20Listing&zoneid=listing_SEARCH&position=9&teaserid=097407-160-A_fr&teasertitle=28%20minutes&em=097407-160-A"
+                },
+                {
+                    "title": "28 minutes",
+                    "id": "097407-158-A_fr",
+                    "type": "teaser",
+                    "kind": {
+                        "code": "SHOW",
+                        "label": "Programme",
+                        "isCollection": false
+                    },
+                    "programId": "097407-158-A",
+                    "url": "https://www.arte.tv/fr/videos/097407-158-A/28-minutes/",
+                    "deeplink": "arte://program/097407-158-A",
+                    "subtitle": "Prune Nourry / Quel dialogue avec la Turquie ? (06/04/2021)",
+                    "teaserText": "Son combat contre la maladie est passé par l’art / Vers une reprise du dialogue avec le président Erdoğan ?",
+                    "shortDescription": "Rescapée d’un cancer du sein, l’artiste plasticienne Prune Nourry a décidé de créer en s’alliant avec la maladie et de partager son expérience cathartique / Les présidents de la Commission européenne, Ursula von der Leyen, et du Conseil, Charles Michel, se rendent en Turquie pour rencontrer le président Recep Tayyip Erdoğan et répondre à sa volonté d’apaisement affichée : le dialogue avec la Turquie est-il possible ?",
+                    "callToAction": "Regarder",
+                    "images": {
+                        "landscape": {
+                            "caption": " ",
+                            "resolutions": [{
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-158-A/200x113?ts=1618213791",
+                                    "w": 200,
+                                    "h": 113
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-158-A/400x225?ts=1618213791",
+                                    "w": 400,
+                                    "h": 225
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-158-A/720x406?ts=1618213791",
+                                    "w": 720,
+                                    "h": 406
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-158-A/940x530?ts=1618213791",
+                                    "w": 940,
+                                    "h": 530
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-158-A/1920x1080?ts=1618213791",
+                                    "w": 1920,
+                                    "h": 1080
+                                }
+                            ],
+                            "blurUrl": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-158-A/80x45?ts=1618213791"
+                        },
+                        "banner": null,
+                        "square": null,
+                        "portrait": null
+                    },
+                    "stickers": [{
+                            "code": "PLAYABLE",
+                            "label": "PLAYABLE"
+                        },
+                        {
+                            "code": "FULL_VIDEO",
+                            "label": "Voir le programme"
+                        }
+                    ],
+                    "duration": 2607,
+                    "childrenCount": null,
+                    "geoblocking": {
+                        "code": "SAT",
+                        "label": ""
+                    },
+                    "availability": {
+                        "type": "VOD",
+                        "start": "2021-04-06T18:05:00Z",
+                        "end": "2021-06-05T18:06:51Z",
+                        "upcomingDate": "2021-04-06T18:05:00Z",
+                        "label": "Disponible du 06/04/2021 au 05/06/2021"
+                    },
+                    "ageRating": 0,
+                    "trackingPixel": "https://www.arte.tv/ct/?language=fr&pageid=SEARCH&support=web&zonename=Search%20Listing&zoneid=listing_SEARCH&position=10&teaserid=097407-158-A_fr&teasertitle=28%20minutes&em=097407-158-A"
+                },
+                {
+                    "title": "28 minutes",
+                    "id": "097407-154-A_fr",
+                    "type": "teaser",
+                    "kind": {
+                        "code": "SHOW",
+                        "label": "Programme",
+                        "isCollection": false
+                    },
+                    "programId": "097407-154-A",
+                    "url": "https://www.arte.tv/fr/videos/097407-154-A/28-minutes/",
+                    "deeplink": "arte://program/097407-154-A",
+                    "subtitle": "Profession : agricultrice / Le djihad en Afrique (31/03/2021)",
+                    "teaserText": "Tenir ferme : comment je suis devenue paysanne / Jusqu’où ira le djihadisme en Afrique ?",
+                    "shortDescription": "En 2017, alors que Camille Beaurain n’a que 24 ans, son mari, agriculteur dans la Somme, se donne la mort. Malgré cet événement tragique, la jeune femme trouve la force de reprendre la ferme / Sahel, Nigeria, lac Tchad et désormais le Mozambique : l’Afrique est le théâtre d’un nouveau djihad. Daech et al-Qaïda ont-ils trouvé sur le continent un nouveau débouché ? Les Occidentaux doivent-ils intervenir militairement ?",
+                    "callToAction": "Regarder",
+                    "images": {
+                        "landscape": {
+                            "caption": " ",
+                            "resolutions": [{
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-154-A/200x113?ts=1617530990",
+                                    "w": 200,
+                                    "h": 113
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-154-A/400x225?ts=1617530990",
+                                    "w": 400,
+                                    "h": 225
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-154-A/720x406?ts=1617530990",
+                                    "w": 720,
+                                    "h": 406
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-154-A/940x530?ts=1617530990",
+                                    "w": 940,
+                                    "h": 530
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-154-A/1920x1080?ts=1617530990",
+                                    "w": 1920,
+                                    "h": 1080
+                                }
+                            ],
+                            "blurUrl": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-154-A/80x45?ts=1617530990"
+                        },
+                        "banner": null,
+                        "square": null,
+                        "portrait": null
+                    },
+                    "stickers": [{
+                            "code": "PLAYABLE",
+                            "label": "PLAYABLE"
+                        },
+                        {
+                            "code": "FULL_VIDEO",
+                            "label": "Voir le programme"
+                        }
+                    ],
+                    "duration": 2645,
+                    "childrenCount": null,
+                    "geoblocking": {
+                        "code": "SAT",
+                        "label": ""
+                    },
+                    "availability": {
+                        "type": "VOD",
+                        "start": "2021-03-31T18:05:00Z",
+                        "end": "2021-05-30T18:07:20Z",
+                        "upcomingDate": "2021-03-31T18:05:00Z",
+                        "label": "Disponible du 31/03/2021 au 30/05/2021"
+                    },
+                    "ageRating": 0,
+                    "trackingPixel": "https://www.arte.tv/ct/?language=fr&pageid=SEARCH&support=web&zonename=Search%20Listing&zoneid=listing_SEARCH&position=11&teaserid=097407-154-A_fr&teasertitle=28%20minutes&em=097407-154-A"
+                },
+                {
+                    "title": "28 minutes",
+                    "id": "097407-152-A_fr",
+                    "type": "teaser",
+                    "kind": {
+                        "code": "SHOW",
+                        "label": "Programme",
+                        "isCollection": false
+                    },
+                    "programId": "097407-152-A",
+                    "url": "https://www.arte.tv/fr/videos/097407-152-A/28-minutes/",
+                    "deeplink": "arte://program/097407-152-A",
+                    "subtitle": "Dalie Farah / Fragilité de la mondialisation (29/03/2021)",
+                    "teaserText": "Juste un doigt... d'honneur / Canal de Suez : le commerce mondial est-il dangereusement vulnérable ?",
+                    "shortDescription": "Dans \"Le doigt\", la romancière et agrégée de lettres Dalie Farah livre une réflexion sur la violence de la société et des institutions / Canal de Suez bloqué, pénurie de composants électroniques, panne de Google : ces incidents témoignent de la fragilité de la mondialisation. Doit-on procéder à une \"démondialisation\" ?",
+                    "callToAction": "Regarder",
+                    "images": {
+                        "landscape": {
+                            "caption": " ",
+                            "resolutions": [{
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-152-A/200x113?ts=1617467516",
+                                    "w": 200,
+                                    "h": 113
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-152-A/400x225?ts=1617467516",
+                                    "w": 400,
+                                    "h": 225
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-152-A/720x406?ts=1617467516",
+                                    "w": 720,
+                                    "h": 406
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-152-A/940x530?ts=1617467516",
+                                    "w": 940,
+                                    "h": 530
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-152-A/1920x1080?ts=1617467516",
+                                    "w": 1920,
+                                    "h": 1080
+                                }
+                            ],
+                            "blurUrl": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-152-A/80x45?ts=1617467516"
+                        },
+                        "banner": null,
+                        "square": null,
+                        "portrait": null
+                    },
+                    "stickers": [{
+                            "code": "PLAYABLE",
+                            "label": "PLAYABLE"
+                        },
+                        {
+                            "code": "FULL_VIDEO",
+                            "label": "Voir le programme"
+                        }
+                    ],
+                    "duration": 2441,
+                    "childrenCount": null,
+                    "geoblocking": {
+                        "code": "SAT",
+                        "label": ""
+                    },
+                    "availability": {
+                        "type": "VOD",
+                        "start": "2021-03-29T18:05:00Z",
+                        "end": "2021-05-28T18:06:42Z",
+                        "upcomingDate": "2021-03-29T18:05:00Z",
+                        "label": "Disponible du 29/03/2021 au 28/05/2021"
+                    },
+                    "ageRating": 0,
+                    "trackingPixel": "https://www.arte.tv/ct/?language=fr&pageid=SEARCH&support=web&zonename=Search%20Listing&zoneid=listing_SEARCH&position=12&teaserid=097407-152-A_fr&teasertitle=28%20minutes&em=097407-152-A"
+                },
+                {
+                    "title": "28 minutes",
+                    "id": "097407-153-A_fr",
+                    "type": "teaser",
+                    "kind": {
+                        "code": "SHOW",
+                        "label": "Programme",
+                        "isCollection": false
+                    },
+                    "programId": "097407-153-A",
+                    "url": "https://www.arte.tv/fr/videos/097407-153-A/28-minutes/",
+                    "deeplink": "arte://program/097407-153-A",
+                    "subtitle": "Journal sexuel / Passeport sanitaire (30/03/2021)",
+                    "teaserText": "Journal de bord : il a expérimenté le sexe à outrance pendant cinq ans / Mise en place d'un certificat sanitaire européen",
+                    "shortDescription": "Sexe compulsif, drogues et bestialité : dans \"Journal sexuel d'un garçon d'aujourd'hui\", l'écrivain Arthur Dreyfus, 34 ans, se raconte sans tabou / La liberté au prix du non-respect des libertés individuelles et du principe d’équité ? C’est une des craintes avancées avec la possible introduction d’un passeport sanitaire numérique commun à tous les pays européens.",
+                    "callToAction": "Regarder",
+                    "images": {
+                        "landscape": {
+                            "caption": " ",
+                            "resolutions": [{
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-153-A/200x113?ts=1617467512",
+                                    "w": 200,
+                                    "h": 113
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-153-A/400x225?ts=1617467512",
+                                    "w": 400,
+                                    "h": 225
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-153-A/720x406?ts=1617467512",
+                                    "w": 720,
+                                    "h": 406
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-153-A/940x530?ts=1617467512",
+                                    "w": 940,
+                                    "h": 530
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-153-A/1920x1080?ts=1617467512",
+                                    "w": 1920,
+                                    "h": 1080
+                                }
+                            ],
+                            "blurUrl": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-153-A/80x45?ts=1617467512"
+                        },
+                        "banner": null,
+                        "square": null,
+                        "portrait": null
+                    },
+                    "stickers": [{
+                            "code": "PLAYABLE",
+                            "label": "PLAYABLE"
+                        },
+                        {
+                            "code": "FULL_VIDEO",
+                            "label": "Voir le programme"
+                        }
+                    ],
+                    "duration": 2613,
+                    "childrenCount": null,
+                    "geoblocking": {
+                        "code": "SAT",
+                        "label": ""
+                    },
+                    "availability": {
+                        "type": "VOD",
+                        "start": "2021-03-30T18:05:00Z",
+                        "end": "2021-05-29T18:06:51Z",
+                        "upcomingDate": "2021-03-30T18:05:00Z",
+                        "label": "Disponible du 30/03/2021 au 29/05/2021"
+                    },
+                    "ageRating": 0,
+                    "trackingPixel": "https://www.arte.tv/ct/?language=fr&pageid=SEARCH&support=web&zonename=Search%20Listing&zoneid=listing_SEARCH&position=13&teaserid=097407-153-A_fr&teasertitle=28%20minutes&em=097407-153-A"
+                },
+                {
+                    "title": "28 minutes",
+                    "id": "097407-161-A_fr",
+                    "type": "teaser",
+                    "kind": {
+                        "code": "SHOW",
+                        "label": "Programme",
+                        "isCollection": false
+                    },
+                    "programId": "097407-161-A",
+                    "url": "https://www.arte.tv/fr/videos/097407-161-A/28-minutes/",
+                    "deeplink": "arte://program/097407-161-A",
+                    "subtitle": "Le club (09/04/2021)",
+                    "teaserText": "La suppression de l'ENA peut-elle contrebalancer la reproduction des élites ? AstraZeneca : la dissonance et la défiance.",
+                    "shortDescription": "La suppression de l'ENA pourra-t-elle contrebalancer \"la reproduction des élites\" ? AstraZeneca : selon l’agence européenne du médicament, il existe bien un lien avec les thromboses mais le rapport bénéfice/risque reste positif. Retour sur l'actualité de la semaine avec l’éditorialiste Julie Graziani, l'historien Pascal Blanchard, le rédacteur en chef de la revue \"Regards\" Pierre Jacquemain et le dessinateur Thibaut Soulcié.",
+                    "callToAction": "Regarder",
+                    "images": {
+                        "landscape": {
+                            "caption": " ",
+                            "resolutions": [{
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-161-A/200x113?ts=1618834239",
+                                    "w": 200,
+                                    "h": 113
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-161-A/400x225?ts=1618834239",
+                                    "w": 400,
+                                    "h": 225
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-161-A/720x406?ts=1618834239",
+                                    "w": 720,
+                                    "h": 406
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-161-A/940x530?ts=1618834239",
+                                    "w": 940,
+                                    "h": 530
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-161-A/1920x1080?ts=1618834239",
+                                    "w": 1920,
+                                    "h": 1080
+                                }
+                            ],
+                            "blurUrl": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-161-A/80x45?ts=1618834239"
+                        },
+                        "banner": null,
+                        "square": null,
+                        "portrait": null
+                    },
+                    "stickers": [{
+                            "code": "PLAYABLE",
+                            "label": "PLAYABLE"
+                        },
+                        {
+                            "code": "FULL_VIDEO",
+                            "label": "Voir le programme"
+                        }
+                    ],
+                    "duration": 2698,
+                    "childrenCount": null,
+                    "geoblocking": {
+                        "code": "SAT",
+                        "label": ""
+                    },
+                    "availability": {
+                        "type": "VOD",
+                        "start": "2021-04-09T18:05:00Z",
+                        "end": "2021-06-08T18:07:58Z",
+                        "upcomingDate": "2021-04-09T18:05:00Z",
+                        "label": "Disponible du 09/04/2021 au 08/06/2021"
+                    },
+                    "ageRating": 0,
+                    "trackingPixel": "https://www.arte.tv/ct/?language=fr&pageid=SEARCH&support=web&zonename=Search%20Listing&zoneid=listing_SEARCH&position=14&teaserid=097407-161-A_fr&teasertitle=28%20minutes&em=097407-161-A"
+                },
+                {
+                    "title": "28 minutes",
+                    "id": "097407-148-A_fr",
+                    "type": "teaser",
+                    "kind": {
+                        "code": "SHOW",
+                        "label": "Programme",
+                        "isCollection": false
+                    },
+                    "programId": "097407-148-A",
+                    "url": "https://www.arte.tv/fr/videos/097407-148-A/28-minutes/",
+                    "deeplink": "arte://program/097407-148-A",
+                    "subtitle": "John Waters / Risque de pénurie d'eau ? (23/03/2021)",
+                    "teaserText": "Les souvenirs et les conseils du réalisateur le plus provocant d’Hollywood / L’ONU alerte sur les risques de pénurie d’eau",
+                    "shortDescription": "Entretien avec le cinéaste américain John Waters, le \"pape du trash\", qui publie \"M. Je-sais-tout. Conseils impurs d’un vieux dégueulasse\" / L’Organisation des Nations unies annonce que, d’ici 2025, la moitié de la population mondiale vivra dans des zones où l’eau sera rare. Cette pénurie est-elle une conséquence du réchauffement climatique ?",
+                    "callToAction": "Regarder",
+                    "images": {
+                        "landscape": {
+                            "caption": " ",
+                            "resolutions": [{
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-148-A/200x113?ts=1617113270",
+                                    "w": 200,
+                                    "h": 113
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-148-A/400x225?ts=1617113270",
+                                    "w": 400,
+                                    "h": 225
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-148-A/720x406?ts=1617113270",
+                                    "w": 720,
+                                    "h": 406
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-148-A/940x530?ts=1617113270",
+                                    "w": 940,
+                                    "h": 530
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-148-A/1920x1080?ts=1617113270",
+                                    "w": 1920,
+                                    "h": 1080
+                                }
+                            ],
+                            "blurUrl": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-148-A/80x45?ts=1617113270"
+                        },
+                        "banner": null,
+                        "square": null,
+                        "portrait": null
+                    },
+                    "stickers": [{
+                            "code": "PLAYABLE",
+                            "label": "PLAYABLE"
+                        },
+                        {
+                            "code": "FULL_VIDEO",
+                            "label": "Voir le programme"
+                        }
+                    ],
+                    "duration": 2584,
+                    "childrenCount": null,
+                    "geoblocking": {
+                        "code": "SAT",
+                        "label": ""
+                    },
+                    "availability": {
+                        "type": "VOD",
+                        "start": "2021-03-23T19:05:00Z",
+                        "end": "2021-05-22T18:06:54Z",
+                        "upcomingDate": "2021-03-23T19:05:00Z",
+                        "label": "Disponible du 23/03/2021 au 22/05/2021"
+                    },
+                    "ageRating": 0,
+                    "trackingPixel": "https://www.arte.tv/ct/?language=fr&pageid=SEARCH&support=web&zonename=Search%20Listing&zoneid=listing_SEARCH&position=15&teaserid=097407-148-A_fr&teasertitle=28%20minutes&em=097407-148-A"
+                },
+                {
+                    "title": "28 minutes",
+                    "id": "097407-159-A_fr",
+                    "type": "teaser",
+                    "kind": {
+                        "code": "SHOW",
+                        "label": "Programme",
+                        "isCollection": false
+                    },
+                    "programId": "097407-159-A",
+                    "url": "https://www.arte.tv/fr/videos/097407-159-A/28-minutes/",
+                    "deeplink": "arte://program/097407-159-A",
+                    "subtitle": "Bessora / Iran / Vaccination (07/04/2021)",
+                    "teaserText": "L’écrivaine Bessora est notre \"grand témoin\" / L’Iran peut-il renoncer à la bombe ? / La lenteur des vaccinations en Europe",
+                    "shortDescription": "L’écrivaine Bessora publie \"Les orphelins\" : elle est notre invitée \"grand témoin\" / Les dirigeants américains et iraniens se sont retrouvés à Vienne pour tenter de sauver l’accord international sur le nucléaire iranien : l’Iran peut-il renoncer à la bombe ? / La lenteur des vaccinations contre la Covid-19 conduit l’économie européenne au creusement d’un fossé économique entre l’Europe et les États-Unis.",
+                    "callToAction": "Regarder",
+                    "images": {
+                        "landscape": {
+                            "caption": " ",
+                            "resolutions": [{
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-159-A/200x113?ts=1618213815",
+                                    "w": 200,
+                                    "h": 113
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-159-A/400x225?ts=1618213815",
+                                    "w": 400,
+                                    "h": 225
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-159-A/720x406?ts=1618213815",
+                                    "w": 720,
+                                    "h": 406
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-159-A/940x530?ts=1618213815",
+                                    "w": 940,
+                                    "h": 530
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-159-A/1920x1080?ts=1618213815",
+                                    "w": 1920,
+                                    "h": 1080
+                                }
+                            ],
+                            "blurUrl": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-159-A/80x45?ts=1618213815"
+                        },
+                        "banner": null,
+                        "square": null,
+                        "portrait": null
+                    },
+                    "stickers": [{
+                            "code": "PLAYABLE",
+                            "label": "PLAYABLE"
+                        },
+                        {
+                            "code": "FULL_VIDEO",
+                            "label": "Voir le programme"
+                        }
+                    ],
+                    "duration": 2692,
+                    "childrenCount": null,
+                    "geoblocking": {
+                        "code": "SAT",
+                        "label": ""
+                    },
+                    "availability": {
+                        "type": "VOD",
+                        "start": "2021-04-07T18:05:00Z",
+                        "end": "2021-06-06T18:07:37Z",
+                        "upcomingDate": "2021-04-07T18:05:00Z",
+                        "label": "Disponible du 07/04/2021 au 06/06/2021"
+                    },
+                    "ageRating": 0,
+                    "trackingPixel": "https://www.arte.tv/ct/?language=fr&pageid=SEARCH&support=web&zonename=Search%20Listing&zoneid=listing_SEARCH&position=16&teaserid=097407-159-A_fr&teasertitle=28%20minutes&em=097407-159-A"
+                },
+                {
+                    "title": "28 minutes",
+                    "id": "097407-145-A_fr",
+                    "type": "teaser",
+                    "kind": {
+                        "code": "SHOW",
+                        "label": "Programme",
+                        "isCollection": false
+                    },
+                    "programId": "097407-145-A",
+                    "url": "https://www.arte.tv/fr/videos/097407-145-A/28-minutes/",
+                    "deeplink": "arte://program/097407-145-A",
+                    "subtitle": "Épicier devenu écrivain / La \"cancel culture\" en débat (18/03/2021)",
+                    "teaserText": "Épicier devenu écrivain, la littérature lui a sauvé la vie / Faut-il expurger les œuvres des clichés racistes, sexistes et homophobes ?",
+                    "shortDescription": "Épicier-lecteur devenu écrivain, Djamel Cherigui raconte ses \"années d'errances\" dans son premier livre, \"La sainte touche\" / Née aux États-Unis, la \"cancel culture\" vise à compromettre la carrière ou la réputation de quelqu’un dont les opinions ou le comportement sont jugés offensants. Comment fonctionne-t-elle ? Peut-elle exister sans réseaux sociaux ?",
+                    "callToAction": "Regarder",
+                    "images": {
+                        "landscape": {
+                            "caption": " ",
+                            "resolutions": [{
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-145-A/200x113?ts=1616581453",
+                                    "w": 200,
+                                    "h": 113
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-145-A/400x225?ts=1616581453",
+                                    "w": 400,
+                                    "h": 225
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-145-A/720x406?ts=1616581453",
+                                    "w": 720,
+                                    "h": 406
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-145-A/940x530?ts=1616581453",
+                                    "w": 940,
+                                    "h": 530
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-145-A/1920x1080?ts=1616581453",
+                                    "w": 1920,
+                                    "h": 1080
+                                }
+                            ],
+                            "blurUrl": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-145-A/80x45?ts=1616581453"
+                        },
+                        "banner": null,
+                        "square": null,
+                        "portrait": null
+                    },
+                    "stickers": [{
+                            "code": "PLAYABLE",
+                            "label": "PLAYABLE"
+                        },
+                        {
+                            "code": "FULL_VIDEO",
+                            "label": "Voir le programme"
+                        }
+                    ],
+                    "duration": 2645,
+                    "childrenCount": null,
+                    "geoblocking": {
+                        "code": "SAT",
+                        "label": ""
+                    },
+                    "availability": {
+                        "type": "VOD",
+                        "start": "2021-03-18T19:05:00Z",
+                        "end": "2021-05-17T18:08:21Z",
+                        "upcomingDate": "2021-03-18T19:05:00Z",
+                        "label": "Disponible du 18/03/2021 au 17/05/2021"
+                    },
+                    "ageRating": 0,
+                    "trackingPixel": "https://www.arte.tv/ct/?language=fr&pageid=SEARCH&support=web&zonename=Search%20Listing&zoneid=listing_SEARCH&position=17&teaserid=097407-145-A_fr&teasertitle=28%20minutes&em=097407-145-A"
+                },
+                {
+                    "title": "28 minutes",
+                    "id": "097407-157-A_fr",
+                    "type": "teaser",
+                    "kind": {
+                        "code": "SHOW",
+                        "label": "Programme",
+                        "isCollection": false
+                    },
+                    "programId": "097407-157-A",
+                    "url": "https://www.arte.tv/fr/videos/097407-157-A/28-minutes/",
+                    "deeplink": "arte://program/097407-157-A",
+                    "subtitle": "Best of Club (05/04/2021)",
+                    "teaserText": "Le retard de l’Europe dans la course à la vaccination, le rapport Stora sur la mémoire de la guerre d’Algérie.",
+                    "shortDescription": "Retour sur les thèmes d'actualité des dernières semaines : le retard de l’Europe dans la course à la vaccination, le rapport Stora sur la mémoire de la guerre d’Algérie, \"l’islamo-gauchisme\", l’application de streaming Twitch, le boulanger qui a sauvé de l’expulsion son apprenti.",
+                    "callToAction": "Regarder",
+                    "images": {
+                        "landscape": {
+                            "caption": " ",
+                            "resolutions": [{
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-157-A/200x113?ts=1618213797",
+                                    "w": 200,
+                                    "h": 113
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-157-A/400x225?ts=1618213797",
+                                    "w": 400,
+                                    "h": 225
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-157-A/720x406?ts=1618213797",
+                                    "w": 720,
+                                    "h": 406
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-157-A/940x530?ts=1618213797",
+                                    "w": 940,
+                                    "h": 530
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-157-A/1920x1080?ts=1618213797",
+                                    "w": 1920,
+                                    "h": 1080
+                                }
+                            ],
+                            "blurUrl": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-157-A/80x45?ts=1618213797"
+                        },
+                        "banner": null,
+                        "square": null,
+                        "portrait": null
+                    },
+                    "stickers": [{
+                            "code": "PLAYABLE",
+                            "label": "PLAYABLE"
+                        },
+                        {
+                            "code": "FULL_VIDEO",
+                            "label": "Voir le programme"
+                        }
+                    ],
+                    "duration": 2494,
+                    "childrenCount": null,
+                    "geoblocking": {
+                        "code": "SAT",
+                        "label": ""
+                    },
+                    "availability": {
+                        "type": "VOD",
+                        "start": "2021-04-05T18:05:00Z",
+                        "end": "2021-06-04T18:07:40Z",
+                        "upcomingDate": "2021-04-05T18:05:00Z",
+                        "label": "Disponible du 05/04/2021 au 04/06/2021"
+                    },
+                    "ageRating": 0,
+                    "trackingPixel": "https://www.arte.tv/ct/?language=fr&pageid=SEARCH&support=web&zonename=Search%20Listing&zoneid=listing_SEARCH&position=18&teaserid=097407-157-A_fr&teasertitle=28%20minutes&em=097407-157-A"
+                },
+                {
+                    "title": "28 minutes",
+                    "id": "097407-156-A_fr",
+                    "type": "teaser",
+                    "kind": {
+                        "code": "SHOW",
+                        "label": "Programme",
+                        "isCollection": false
+                    },
+                    "programId": "097407-156-A",
+                    "url": "https://www.arte.tv/fr/videos/097407-156-A/28-minutes/",
+                    "deeplink": "arte://program/097407-156-A",
+                    "subtitle": "Le club (02/04/2021)",
+                    "teaserText": "États-Unis : comment classer politiquement Joe Biden ? Confinement : la défiance envers la gestion de crise augmente.",
+                    "shortDescription": "États-Unis : de gauche ou de droite, comment classer politiquement le nouveau président démocrate ? Restrictions sanitaires : nombre de Français expriment leur défiance envers la gestion de cette crise. Retour sur l'actualité de la semaine avec l’éditorialiste Anne-Elisabeth Moutet, le directeur et rédacteur en chef d’\"Afrique Magazine\" Zyad Limam, le journaliste Alexis Poulin et le dessinateur Pascal Gros.",
+                    "callToAction": "Regarder",
+                    "images": {
+                        "landscape": {
+                            "caption": " ",
+                            "resolutions": [{
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-156-A/200x113?ts=1617878507",
+                                    "w": 200,
+                                    "h": 113
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-156-A/400x225?ts=1617878507",
+                                    "w": 400,
+                                    "h": 225
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-156-A/720x406?ts=1617878507",
+                                    "w": 720,
+                                    "h": 406
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-156-A/940x530?ts=1617878507",
+                                    "w": 940,
+                                    "h": 530
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-156-A/1920x1080?ts=1617878507",
+                                    "w": 1920,
+                                    "h": 1080
+                                }
+                            ],
+                            "blurUrl": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-156-A/80x45?ts=1617878507"
+                        },
+                        "banner": null,
+                        "square": null,
+                        "portrait": null
+                    },
+                    "stickers": [{
+                            "code": "PLAYABLE",
+                            "label": "PLAYABLE"
+                        },
+                        {
+                            "code": "FULL_VIDEO",
+                            "label": "Voir le programme"
+                        }
+                    ],
+                    "duration": 2697,
+                    "childrenCount": null,
+                    "geoblocking": {
+                        "code": "SAT",
+                        "label": ""
+                    },
+                    "availability": {
+                        "type": "VOD",
+                        "start": "2021-04-02T18:05:00Z",
+                        "end": "2021-06-01T18:07:12Z",
+                        "upcomingDate": "2021-04-02T18:05:00Z",
+                        "label": "Disponible du 02/04/2021 au 01/06/2021"
+                    },
+                    "ageRating": 0,
+                    "trackingPixel": "https://www.arte.tv/ct/?language=fr&pageid=SEARCH&support=web&zonename=Search%20Listing&zoneid=listing_SEARCH&position=19&teaserid=097407-156-A_fr&teasertitle=28%20minutes&em=097407-156-A"
+                },
+                {
+                    "title": "28 minutes",
+                    "id": "097407-155-A_fr",
+                    "type": "teaser",
+                    "kind": {
+                        "code": "SHOW",
+                        "label": "Programme",
+                        "isCollection": false
+                    },
+                    "programId": "097407-155-A",
+                    "url": "https://www.arte.tv/fr/videos/097407-155-A/28-minutes/",
+                    "deeplink": "arte://program/097407-155-A",
+                    "subtitle": "Néhémy Pierre-Dahomey / La répression en Birmanie (01/04/2021)",
+                    "teaserText": "De Port-au-Prince à Paris, itinéraire d’un conteur / Birmanie : quelles mesures faut-il prendre pour arrêter la répression ?",
+                    "shortDescription": "Dans \"Combats\", l'écrivain Néhémy Pierre-Dahomey prend pour décor l’île d’Haïti en 1842 sur laquelle se croisent les destins de personnages et l’histoire des luttes sociales et égalitaires de la seule république noire du monde / Le Conseil de sécurité de l'ONU s'est réuni mercredi 31 mars en urgence au sujet de la situation en Birmanie. Les sanctions suffiront-elles à arrêter la répression ?",
+                    "callToAction": "Regarder",
+                    "images": {
+                        "landscape": {
+                            "caption": " ",
+                            "resolutions": [{
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-155-A/200x113?ts=1617790212",
+                                    "w": 200,
+                                    "h": 113
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-155-A/400x225?ts=1617790212",
+                                    "w": 400,
+                                    "h": 225
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-155-A/720x406?ts=1617790212",
+                                    "w": 720,
+                                    "h": 406
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-155-A/940x530?ts=1617790212",
+                                    "w": 940,
+                                    "h": 530
+                                },
+                                {
+                                    "url": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-155-A/1920x1080?ts=1617790212",
+                                    "w": 1920,
+                                    "h": 1080
+                                }
+                            ],
+                            "blurUrl": "https://api-cdn.arte.tv/api/mami/v1/program/fr/097407-155-A/80x45?ts=1617790212"
+                        },
+                        "banner": null,
+                        "square": null,
+                        "portrait": null
+                    },
+                    "stickers": [{
+                            "code": "PLAYABLE",
+                            "label": "PLAYABLE"
+                        },
+                        {
+                            "code": "FULL_VIDEO",
+                            "label": "Voir le programme"
+                        }
+                    ],
+                    "duration": 2672,
+                    "childrenCount": null,
+                    "geoblocking": {
+                        "code": "SAT",
+                        "label": ""
+                    },
+                    "availability": {
+                        "type": "VOD",
+                        "start": "2021-04-01T18:05:00Z",
+                        "end": "2021-05-31T18:06:59Z",
+                        "upcomingDate": "2021-04-01T18:05:00Z",
+                        "label": "Disponible du 01/04/2021 au 31/05/2021"
+                    },
+                    "ageRating": 0,
+                    "trackingPixel": "https://www.arte.tv/ct/?language=fr&pageid=SEARCH&support=web&zonename=Search%20Listing&zoneid=listing_SEARCH&position=20&teaserid=097407-155-A_fr&teasertitle=28%20minutes&em=097407-155-A"
+                }
+            ]
+        },
+        {
+            "id": "5e97165d-674f-4eba-8a6b-3d8b86995b9a_null",
+            "code": {
+                "name": "boutique_SEARCH",
+                "id": null
+            },
+            "title": "Search Store",
+            "description": null,
+            "displayOptions": {
+                "zoneLayout": "horizontal",
+                "itemTemplate": "poster",
+                "theme": null,
+                "showZoneTitle": true,
+                "showItemTitle": true
+            },
+            "link": null,
+            "pageNumber": 1,
+            "nextPage": null,
+            "authenticatedContent": null,
+            "data": []
+        }
+    ],
+    "stats": {
+        "xiti": {
+            "page_name": "Search_results",
+            "chapter1": null,
+            "chapter2": null,
+            "chapter3": null,
+            "x1": "fr",
+            "x2": "Search",
+            "s2": 4,
+            "siteId": "582046",
+            "env_work": "prod",
+            "search_keywords": "28 minutes"
+        }
+    },
+    "seo": {
+        "title": ""
+    }
+}

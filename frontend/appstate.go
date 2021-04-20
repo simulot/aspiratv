@@ -24,7 +24,7 @@ var MyAppState *AppState
 
 func InitializeWebApp() *AppState {
 	u := app.Window().URL()
-	u.Scheme = "ws"
+	u.Scheme = "http"
 	u.Path = "/api/"
 	s := NewRestStore(u.String())
 	MyAppState = NewAppState(s)

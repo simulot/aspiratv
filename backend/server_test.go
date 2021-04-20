@@ -51,7 +51,7 @@ func TestProviderDescribleHandler(t *testing.T) {
 			t.Errorf("got %q; want %q", typeGot, typeWant)
 		}
 
-		got := []providers.ProviderDescription{}
+		got := []providers.Description{}
 		b, err := io.ReadAll(response.Body)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
@@ -252,7 +252,7 @@ func TestSearchHandler(t *testing.T) {
 
 type spyProvider struct {
 	describeCalled  bool
-	describe        providers.ProviderDescription
+	describe        providers.Description
 	searchCalled    bool
 	searchResults   []models.SearchResult
 	searchQuery     models.SearchQuery
@@ -261,7 +261,7 @@ type spyProvider struct {
 	searchSent      int
 }
 
-func (s *spyProvider) ProviderDescribe(ctx context.Context) providers.ProviderDescription {
+func (s *spyProvider) ProviderDescribe(ctx context.Context) providers.Description {
 	s.describeCalled = true
 	return s.describe
 }

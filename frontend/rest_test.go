@@ -2,7 +2,6 @@ package frontend
 
 import (
 	"context"
-	"fmt"
 	"net/http/httptest"
 	"net/url"
 	"testing"
@@ -105,7 +104,7 @@ func setupApiServer(t *testing.T, spy providers.Provider) (*httptest.Server, fun
 
 type spyProvider struct {
 	describeCalled  bool
-	describe        providers.ProviderDescription
+	describe        providers.Description
 	searchCalled    bool
 	searchResults   []models.SearchResult
 	searchQuery     models.SearchQuery
@@ -114,7 +113,7 @@ type spyProvider struct {
 	searchSent      int
 }
 
-func (s *spyProvider) ProviderDescribe(ctx context.Context) providers.ProviderDescription {
+func (s *spyProvider) ProviderDescribe(ctx context.Context) providers.Description {
 	s.describeCalled = true
 	return s.describe
 }
@@ -141,15 +140,16 @@ func (s *spyProvider) Search(ctx context.Context, q models.SearchQuery) (<-chan 
 
 	return results, nil
 }
-func (s *spyProvider) makeFakeResults(howMany int) {
-	num := 0
-	for ; howMany > 0; howMany-- {
-		s.searchResults = append(s.searchResults, models.SearchResult{
-			Title: fmt.Sprintf("Result #%d", num)},
-		)
-		num++
-	}
-}
+
+// func (s *spyProvider) makeFakeResults(howMany int) {
+// 	num := 0
+// 	for ; howMany > 0; howMany-- {
+// 		s.searchResults = append(s.searchResults, models.SearchResult{
+// 			Title: fmt.Sprintf("Result #%d", num)},
+// 		)
+// 		num++
+// 	}
+// }
 
 func wsURL(t *testing.T, s string) string {
 	t.Helper()

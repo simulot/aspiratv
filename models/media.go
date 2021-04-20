@@ -4,12 +4,13 @@ import "time"
 
 type MediaType int
 
+//go:generate stringer -type=MediaType
 const (
-	MediaTypeUnknown    MediaType = iota
-	MediaTypeCollection           // We don't know yet the actual type, but this is a collection, Arte?
-	MediaTypeSeries               // Series with seasons and episodes
-	MediaTypeTVShow               // TV Show or magazine
-	MediaTypeMovie                // Movie
+	TypeUnknown    MediaType = iota
+	TypeCollection           // We don't know yet the actual type, but this is a collection, Arte?
+	TypeSeries               // Series with seasons and episodes
+	TypeTVShow               // TV Show or magazine
+	TypeMovie                // Movie
 )
 
 type Media struct {
