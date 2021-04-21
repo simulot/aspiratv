@@ -22,10 +22,7 @@ node_modules
 # Application 
 launch.json
 settings.json
-aspiratv
 cmd/aspiratv/aspiratv
 cmd/aspiratv/test*.json
 errors.log
-web/*
-mystyles.*
 tmp/*

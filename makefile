@@ -10,3 +10,10 @@ sass:
 
 clean:
 	rm ./tmp/*
+
+
+init:
+	npm init
+	npm install node-sass --save-dev
+	npm install bulma --save-dev
+	make sass

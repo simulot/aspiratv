@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/maxence-charriere/go-app/v8/pkg/app"
+	"github.com/maxence-charriere/go-app/v9/pkg/app"
 	"github.com/simulot/aspiratv/models"
 	"github.com/simulot/aspiratv/providers"
 )
@@ -34,7 +34,7 @@ type SearchOnline struct {
 }
 
 func (c *SearchOnline) Render() app.UI {
-	log.Printf("SearchOnline.Render %#v", c)
+	log.Printf("SearchOnline.Render")
 	if c.ResultCards != nil && c.ResultCards.Cards != nil {
 		log.Printf("--SearchOnline.Render.ResultCards %d", len(c.ResultCards.Cards))
 	}
@@ -51,18 +51,13 @@ func (c *SearchOnline) Render() app.UI {
 				app.Div().Class("control").Body(app.Label().Class("checkbox").Body(app.Input().Type("checkbox").OnChange(c.onTick(&c.strict)), app.Text(labelExactMatch))),
 				c.ProvidersTags,
 			),
-			app.If(c.ResultCards != nil,
-				app.P().Text(fmt.Sprintf("%d réponses.", len(c.ResultCards.Cards))),
+			c.ResultCards,
+			// app.If(c.ResultCards != nil), // app.P().Text(fmt.Sprintf("%d réponses.", len(c.ResultCards.Cards))),
 			// 	// c.ResultCards,
-			),
+
 		),
 	),
 	)
-}
-
-func (c *SearchOnline) Update() {
-	log.Printf("SearchOnline.Update")
-	c.Compo.Update()
 }
 
 func (c *SearchOnline) onTick(b *bool) func(ctx app.Context, e app.Event) {
@@ -73,10 +68,11 @@ func (c *SearchOnline) onTick(b *bool) func(ctx app.Context, e app.Event) {
 }
 
 func (c *SearchOnline) ClickOnSearch(ctx app.Context, e app.Event) {
+	log.Printf("ClickOnSearch")
 	defer c.Update()
 
 	if c.IsRunning {
-		c.IsRunning = false
+		log.Printf("ClickOnSearch: STOP")
 		close(c.stop)
 		return
 	}
@@ -85,17 +81,15 @@ func (c *SearchOnline) ClickOnSearch(ctx app.Context, e app.Event) {
 	c.stop = make(chan struct{})
 	c.ResultCards = NewResultCards(c.ChannelsList)
 
-	// Wait results delivered by the server
-	// Can't use ctx.Async as it will wait the end of the
-	// goroutine to update the UI.
-	// cxt.Dispatch(c.Update) force UI update with latest result during the loop
 	go func() {
 		cancelCtx, cancel := context.WithCancel(ctx)
+		cleanExit := "Crash!"
 
 		defer func() {
+			log.Printf("ClickOnSearch goroutine ended Exit: %v", cleanExit)
 			c.IsRunning = false
-			ctx.Dispatch(c.Update)
 			cancel()
+			c.Update()
 		}()
 
 		q := models.SearchQuery{
@@ -115,17 +109,20 @@ func (c *SearchOnline) ClickOnSearch(ctx app.Context, e app.Event) {
 		for {
 			select {
 			case <-c.stop:
+				cleanExit = "Stop detected"
 				return
 			case <-cancelCtx.Done():
 				close(c.stop)
+				cleanExit = "<-cancelCtx.Done()"
 				return
 			case r, ok := <-results:
 				if !ok {
 					close(c.stop)
+					cleanExit = "End of results channel"
 					return
 				}
-				ctx.Dispatch(func() {
-					// Touch the UI in the Dispatch context
+				// Touch the UI in the Dispatch context
+				ctx.Dispatch(func(app.Context) {
 					c.ResultCards.AddResult(r)
 					c.Update()
 				})
@@ -153,14 +150,13 @@ func (c *SearchOnline) OnMount(ctx app.Context) {
 			log.Print("Providers error: ", err)
 			return
 		}
-		ctx.Dispatch(func() {
-			c.ChannelsList = NewChannelList(ps)
-			c.ProvidersTags = NewProviderTags()
-			for _, ch := range c.ChannelsList.SortedList() {
-				c.ProvidersTags.SetTag(&TagInfo{Code: ch.Code, State: TagSelected, Text: ch.Name})
-			}
-			c.Update()
-		})
+		c.ChannelsList = NewChannelList(ps)
+		c.ProvidersTags = NewProviderTags()
+		for _, ch := range c.ChannelsList.SortedList() {
+			c.ProvidersTags.SetTag(&TagInfo{Code: ch.Code, State: TagSelected, Text: ch.Name})
+		}
+		c.ResultCards = NewResultCards(c.ChannelsList)
+		c.Update()
 	})
 }
 
@@ -194,7 +190,9 @@ type ResultCards struct {
 }
 
 func NewResultCards(channels *ChanneList) *ResultCards {
-	c := ResultCards{}
+	c := ResultCards{
+		ChanneList: channels,
+	}
 	c.initialize()
 	return &c
 }
@@ -270,7 +268,7 @@ func NewCard(ChanneList *ChanneList, r models.SearchResult) *Card {
 	c := Card{
 		// Tags:         NewTagList(nil),
 		SearchResult: r,
-		// ChanneList:   ChanneList,
+		ChanneList:   ChanneList,
 	}
 
 	// c.Tags.SetTag(&TagInfo{Code: r.Type.String(), Text: models.MediaTypeLabel[r.Type]})

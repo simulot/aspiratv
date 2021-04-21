@@ -5,7 +5,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/maxence-charriere/go-app/v8/pkg/app"
+	"github.com/maxence-charriere/go-app/v9/pkg/app"
 )
 
 type TagState int
