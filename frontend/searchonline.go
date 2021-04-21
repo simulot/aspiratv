@@ -23,16 +23,21 @@ const (
 type SearchOnline struct {
 	app.Compo
 
-	IsRunning     bool
 	ProvidersTags *ProviderTags
 	ResultCards   *ResultCards
 	ChannelsList  *ChanneList
 
-	search string
-	strict bool
+	search    string
+	strict    bool
+	IsRunning bool
+	stop      chan struct{}
 }
 
 func (c *SearchOnline) Render() app.UI {
+	log.Printf("SearchOnline.Render %#v", c)
+	if c.ResultCards != nil && c.ResultCards.Cards != nil {
+		log.Printf("--SearchOnline.Render.ResultCards %d", len(c.ResultCards.Cards))
+	}
 	MyAppState.currentPage = PageSearchOnLine
 	return app.Div().Class("container").Body(app.Div().Class("columns").Body(
 		&MyApp{},
@@ -46,10 +51,18 @@ func (c *SearchOnline) Render() app.UI {
 				app.Div().Class("control").Body(app.Label().Class("checkbox").Body(app.Input().Type("checkbox").OnChange(c.onTick(&c.strict)), app.Text(labelExactMatch))),
 				c.ProvidersTags,
 			),
-			app.If(c.ResultCards != nil, c.ResultCards),
+			app.If(c.ResultCards != nil,
+				app.P().Text(fmt.Sprintf("%d réponses.", len(c.ResultCards.Cards))),
+			// 	// c.ResultCards,
+			),
 		),
 	),
 	)
+}
+
+func (c *SearchOnline) Update() {
+	log.Printf("SearchOnline.Update")
+	c.Compo.Update()
 }
 
 func (c *SearchOnline) onTick(b *bool) func(ctx app.Context, e app.Event) {
@@ -60,61 +73,66 @@ func (c *SearchOnline) onTick(b *bool) func(ctx app.Context, e app.Event) {
 }
 
 func (c *SearchOnline) ClickOnSearch(ctx app.Context, e app.Event) {
+	defer c.Update()
 
-	if c.ProvidersTags == nil {
-		return
-	}
-
-	cancellableCtx, cancel := context.WithCancel(ctx)
 	if c.IsRunning {
-		cancel()
 		c.IsRunning = false
-		ctx.Dispatch(c.Update)
+		close(c.stop)
 		return
 	}
 
 	c.IsRunning = true
+	c.stop = make(chan struct{})
 	c.ResultCards = NewResultCards(c.ChannelsList)
 
-	// Wait click on Cancel button
-	go func() {
-		<-cancellableCtx.Done()
-		c.IsRunning = false
-	}()
-
-	q := models.SearchQuery{
-		Title:          c.search,
-		OnlyExactTitle: c.strict,
-		//TODO add selected channels
-	}
-	results, err := MyAppState.s.Search(cancellableCtx, q)
-	if err != nil {
-		log.Printf("Search API returns error: %s", err)
-		cancel()
-		return
-	}
-
 	// Wait results delivered by the server
-	ctx.Async(func() {
+	// Can't use ctx.Async as it will wait the end of the
+	// goroutine to update the UI.
+	// cxt.Dispatch(c.Update) force UI update with latest result during the loop
+	go func() {
+		cancelCtx, cancel := context.WithCancel(ctx)
+
 		defer func() {
 			c.IsRunning = false
+			ctx.Dispatch(c.Update)
 			cancel()
-			c.Update()
 		}()
+
+		q := models.SearchQuery{
+			Title:          c.search,
+			OnlyExactTitle: c.strict,
+			//TODO add selected channels
+		}
+
+		results, err := MyAppState.s.Search(cancelCtx, q)
+		if err != nil {
+			log.Printf("Search API returns error: %s", err)
+			cancel()
+			close(c.stop)
+			return
+		}
+
 		for {
 			select {
-			case <-cancellableCtx.Done():
+			case <-c.stop:
+				return
+			case <-cancelCtx.Done():
+				close(c.stop)
 				return
 			case r, ok := <-results:
 				if !ok {
+					close(c.stop)
 					return
 				}
-				c.ResultCards.AddResult(r)
+				ctx.Dispatch(func() {
+					// Touch the UI in the Dispatch context
+					c.ResultCards.AddResult(r)
+					c.Update()
+				})
 			}
 		}
-	})
+	}()
 
-	c.Update()
 }
 
 func firstStringOf(ss ...string) string {
@@ -135,53 +153,49 @@ func (c *SearchOnline) OnMount(ctx app.Context) {
 			log.Print("Providers error: ", err)
 			return
 		}
-		c.ChannelsList = NewChannelList(ps)
-		c.ResultCards = NewResultCards(c.ChannelsList)
-
-		c.ProvidersTags = NewProviderTags()
-
-		for _, ch := range c.ChannelsList.SortedList() {
-			c.ProvidersTags.Tags.SetTag(&TagInfo{Code: ch.Code, State: TagSelected, Text: ch.Name})
-		}
 		ctx.Dispatch(func() {
+			c.ChannelsList = NewChannelList(ps)
+			c.ProvidersTags = NewProviderTags()
+			for _, ch := range c.ChannelsList.SortedList() {
+				c.ProvidersTags.SetTag(&TagInfo{Code: ch.Code, State: TagSelected, Text: ch.Name})
+			}
 			c.Update()
-			log.Print("Providers loaded and updated")
 		})
 	})
 }
 
 type ProviderTags struct {
 	app.Compo
-	Tags *TagList
+	*TagList
 }
 
 func NewProviderTags() *ProviderTags {
 	return &ProviderTags{
-		Tags: NewTagList(&TagListOptions{CanDisable: false, All: &TagInfo{Icon: app.I().Class("mdi mdi-television-classic is-medium"), State: TagSelected}}),
+		TagList: NewTagList(&TagListOptions{CanDisable: false, All: &TagInfo{Icon: app.I().Class("mdi mdi-television-classic is-medium"), State: TagSelected}}),
 	}
 }
 
 func (pt *ProviderTags) Render() app.UI {
-	if pt.Tags == nil {
+	log.Printf("Rendering ProviderTags")
+
+	if len(pt.TagList.tags) == 0 {
 		return app.Text("Loading channel list...")
 	}
-	return pt.Tags
+	return pt.TagList
 }
 
 type ResultCards struct {
 	app.Compo
 	Cards      []*Card
-	Channels   *TagList
-	Tags       *TagList
 	ChanneList *ChanneList
-	MediaTypes *TagList
+	// Channels   *TagList
+	// Tags       *TagList
+	// MediaTypes *TagList
 }
 
 func NewResultCards(channels *ChanneList) *ResultCards {
-	c := ResultCards{
-		ChanneList: channels,
-	}
-	c.Reset()
+	c := ResultCards{}
+	c.initialize()
 	return &c
 }
 
@@ -189,58 +203,60 @@ func (c *ResultCards) OnMount(ctx app.Context) {
 	log.Printf("ResultCards mounted")
 }
 
-func (c *ResultCards) Reset() {
+func (c *ResultCards) initialize() {
 	c.Cards = []*Card{}
-	c.Channels = NewTagList(&TagListOptions{CanCount: true, All: &TagInfo{State: TagSelected, Icon: app.I().Class("mdi mdi-television-classic")}})
-	c.Tags = NewTagList(&TagListOptions{CanCount: true, All: &TagInfo{State: TagSelected, Icon: app.I().Class("mdi mdi-tag-multiple")}})
-	c.MediaTypes = NewTagList(&TagListOptions{CanCount: true})
+	// c.Channels = NewTagList(&TagListOptions{CanCount: true, All: &TagInfo{State: TagSelected, Icon: app.I().Class("mdi mdi-television-classic")}})
+	// c.Tags = NewTagList(&TagListOptions{CanCount: true, All: &TagInfo{State: TagSelected, Icon: app.I().Class("mdi mdi-tag-multiple")}})
+	// c.MediaTypes = NewTagList(&TagListOptions{CanCount: true})
 }
 
 func (c *ResultCards) Render() app.UI {
-	log.Printf("Len MediaTypes %d", len(c.MediaTypes.tags))
+	log.Printf("ResultCards.Render, Cards %d", len(c.Cards))
 	return app.Div().Class("box").Body(
-		app.P().Body(c.MediaTypes),
-		app.P().Body(c.Channels),
-		app.P().Body(c.Tags),
+		// app.P().Body(c.MediaTypes),
+		// app.P().Body(c.Channels),
+		// app.P().Body(c.Tags),
 		app.Div().Class("columns is-multiline is-mobile").Body(
 			app.Range(c.Cards).Slice(func(i int) app.UI {
-				if c.IsCardVisible(c.Cards[i]) {
-					return c.Cards[i]
-				}
-				return nil
+				return c.Cards[i]
+
+				// if c.IsCardVisible(c.Cards[i]) {
+				// 	return c.Cards[i]
+				// }
+				// return nil
 			}),
 		),
 	)
 }
 
 func (c *ResultCards) IsCardVisible(card *Card) bool {
-	if c.Channels.GetState(card.Chanel) != TagSelected {
-		return false
-	}
+	// if c.Channels.GetState(card.Chanel) != TagSelected {
+	// 	return false
+	// }
 
 	return true
 }
 
 func (c *ResultCards) AddResult(r models.SearchResult) {
+	log.Printf("AddResult %#v", r.ID)
 	card := NewCard(c.ChanneList, r)
-	c.Tags.IncAll()
-	for _, t := range r.Tags {
-		c.Tags.SetOrIncTag(&TagInfo{Code: t, Text: t, State: TagSelected})
-	}
-	c.Channels.IncAll()
-	c.Channels.SetOrIncTag(&TagInfo{Code: r.Chanel, State: TagSelected})
+	// c.Tags.IncAll()
+	// for _, t := range r.Tags {
+	// 	c.Tags.SetOrIncTag(&TagInfo{Code: t, Text: t, State: TagSelected})
+	// }
+	// c.Channels.IncAll()
+	// c.Channels.SetOrIncTag(&TagInfo{Code: r.Chanel, State: TagSelected})
 
-	c.MediaTypes.SetTag(&TagInfo{Code: r.Type.String(), Text: models.MediaTypeLabel[r.Type]})
+	// c.MediaTypes.SetTag(&TagInfo{Code: r.Type.String(), Text: models.MediaTypeLabel[r.Type]})
 
 	c.Cards = append(c.Cards, card)
 	// sort.Slice(c.Cards, func(i, j int) bool {
 	// 	return c.Cards[i].Title < c.Cards[j].Title
 	// })
-	if c.Mounted() {
-		c.Update()
-	} else {
-		log.Printf("Results not mounted")
-	}
+	// c.Defer(func(app.Context) {
+	// 	c.Update()
+	// })
+
 }
 
 type Card struct {
@@ -252,19 +268,20 @@ type Card struct {
 
 func NewCard(ChanneList *ChanneList, r models.SearchResult) *Card {
 	c := Card{
-		Tags:         NewTagList(nil),
+		// Tags:         NewTagList(nil),
 		SearchResult: r,
-		ChanneList:   ChanneList,
+		// ChanneList:   ChanneList,
 	}
 
-	c.Tags.SetTag(&TagInfo{Code: r.Type.String(), Text: models.MediaTypeLabel[r.Type]})
-	for _, t := range r.Tags {
-		c.Tags.SetTag(&TagInfo{Code: t, Text: t})
-	}
+	// c.Tags.SetTag(&TagInfo{Code: r.Type.String(), Text: models.MediaTypeLabel[r.Type]})
+	// for _, t := range r.Tags {
+	// 	c.Tags.SetTag(&TagInfo{Code: t, Text: t})
+	// }
 	return &c
 }
 
 func (c *Card) Render() app.UI {
+	log.Printf("Rendering Card %#v", c.ID)
 	return app.Div().Class("column is-4").Body(
 		app.Div().Class("card").Body(
 			app.Div().Class("card-image").Body(app.Img().Class("image").Src(c.ThumbURL)),

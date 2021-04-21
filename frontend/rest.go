@@ -99,7 +99,7 @@ func (s *RestClient) ProviderDescribe(ctx context.Context) ([]providers.Descript
 func (s *RestClient) Search(ctx context.Context, q models.SearchQuery) (<-chan models.SearchResult, error) {
 	// ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	ctx, cancel := context.WithCancel(ctx)
-
+	log.Printf("[HTTPCLIENT] Dial websocket %s", s.endPoint+"search/")
 	c, _, err := websocket.Dial(ctx, s.endPoint+"search/", nil)
 	if err != nil {
 		log.Printf("Search Dial error:%s", err)

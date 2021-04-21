@@ -3,6 +3,7 @@ package frontend
 import (
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/maxence-charriere/go-app/v8/pkg/app"
 )
@@ -49,6 +50,7 @@ const allCode = "all*tags"
 
 type TagList struct {
 	app.Compo
+	sync.RWMutex
 
 	canDisable bool
 	cantCount  bool
@@ -78,16 +80,18 @@ func NewTagList(options *TagListOptions) *TagList {
 	return &l
 }
 
-func (l *TagList) Update() {
-	if l.Mounted() {
-		l.Compo.Update()
-	}
-}
+// func (l *TagList) Update() {
+// 	if l.Mounted() {
+// 		l.Compo.Update()
+// 	}
+// }
 
 func (l *TagList) Render() app.UI {
 	if len(l.tags) == 0 && l.allTag == nil {
 		return nil
 	}
+	l.RLock()
+	defer l.RUnlock()
 	return app.Div().Body(
 		app.If(l.allTag != nil, l.renderTag(l.allTag)),
 		app.Range(l.tags).Map(func(k string) app.UI {
@@ -97,17 +101,18 @@ func (l *TagList) Render() app.UI {
 }
 
 func (l *TagList) Reset() {
-	if l.Mounted() {
-		l.tags = map[string]*TagInfo{}
-		if l.allTag != nil {
-			l.allTag.State = TagSelected
-			l.allTag.Count = 0
-		}
-		l.Update()
+	l.Lock()
+	l.tags = map[string]*TagInfo{}
+	if l.allTag != nil {
+		l.allTag.State = TagSelected
+		l.allTag.Count = 0
 	}
+	l.Unlock()
 }
 
 func (l *TagList) GetTag(code string) *TagInfo {
+	l.RLock()
+	defer l.RUnlock()
 	if code == allCode {
 		return l.allTag
 	}
@@ -123,6 +128,8 @@ func (l *TagList) GetState(code string) TagState {
 }
 
 func (l *TagList) SetTag(t *TagInfo) {
+	l.Lock()
+	defer l.Unlock()
 	if t.Code == allCode {
 		if l.allTag == nil {
 			return
@@ -131,7 +138,6 @@ func (l *TagList) SetTag(t *TagInfo) {
 		return
 	}
 	l.tags[t.Code] = t
-	l.Update()
 }
 
 func (l *TagList) Toggle(code string) {

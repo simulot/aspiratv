@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"github.com/simulot/aspiratv/myhttp"
 	"github.com/simulot/aspiratv/providers"
 	"github.com/simulot/aspiratv/providers/artetv"
+	"github.com/simulot/aspiratv/providers/francetv"
 	"github.com/simulot/aspiratv/store"
 )
 
@@ -33,20 +35,20 @@ func main() {
 				),
 			),
 		),
-		// francetv.NewFranceTV(
-		// 	francetv.WithClientConfigurations(
-		// 		myhttp.WithRequestLogger(log.Default()),
-		// 		myhttp.WithResponseLogger(
-		// 			myhttp.NewPayloadDumper(log.Default(), "tmp", "francetv_*.json", func(b []byte) []byte {
-		// 				var s string
-		// 				err := json.Unmarshal(b, &s)
-		// 				if err != nil {
-		// 					return b
-		// 				}
-		// 				return []byte(s)
-		// 			})),
-		// 	),
-		// ),
+		francetv.NewFranceTV(
+			francetv.WithClientConfigurations(
+				myhttp.WithRequestLogger(log.Default()),
+				myhttp.WithResponseLogger(
+					myhttp.NewPayloadDumper(log.Default(), "tmp", "francetv_*.json", func(b []byte) []byte {
+						var s string
+						err := json.Unmarshal(b, &s)
+						if err != nil {
+							return b
+						}
+						return []byte(s)
+					})),
+			),
+		),
 	}
 	st := store.InMemoryStore{}
 
