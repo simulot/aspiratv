@@ -15,7 +15,6 @@ import (
 
 	"github.com/simulot/aspiratv/models"
 	"github.com/simulot/aspiratv/providers"
-	"github.com/simulot/aspiratv/store"
 	"nhooyr.io/websocket"
 	"nhooyr.io/websocket/wsjson"
 )
@@ -28,7 +27,7 @@ import (
 func TestProviderDescribleHandler(t *testing.T) {
 	t.Run("DescribeProvider called", func(t *testing.T) {
 		spy := &spyProvider{}
-		s := NewServer(&store.InMemoryStore{}, []providers.Provider{spy})
+		s := NewServer(&spyStore{}, []providers.Provider{spy})
 
 		request, _ := http.NewRequest(http.MethodGet, "/api/providers/", nil)
 		response := httptest.NewRecorder()
@@ -72,7 +71,7 @@ func TestSearchHandler(t *testing.T) {
 
 	t.Run("/api/search should return the expected records and check for no more result status", func(t *testing.T) {
 		spy := &spyProvider{}
-		srv := NewServer(&store.InMemoryStore{}, []providers.Provider{spy})
+		srv := NewServer(&spyStore{}, []providers.Provider{spy})
 
 		spy.makeFakeResults(100)
 		s := httptest.NewServer(srv)
@@ -154,7 +153,7 @@ func TestSearchHandler(t *testing.T) {
 
 	t.Run("/api/search should handle request cancellation", func(t *testing.T) {
 		spy := &spyProvider{}
-		srv := NewServer(&store.InMemoryStore{}, []providers.Provider{spy})
+		srv := NewServer(&spyStore{}, []providers.Provider{spy})
 
 		spy.makeFakeResults(100)
 		spy.searchDelay = 10 * time.Millisecond
@@ -251,6 +250,8 @@ func TestSearchHandler(t *testing.T) {
 }
 
 type spyProvider struct {
+	settings map[string]models.ProvidersSetting
+
 	describeCalled  bool
 	describe        providers.Description
 	searchCalled    bool

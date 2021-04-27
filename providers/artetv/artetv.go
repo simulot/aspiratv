@@ -137,6 +137,7 @@ func (p *Arte) callSearch(ctx context.Context, results chan models.SearchResult,
 					mediaType = models.TypeCollection
 				} else {
 					mediaType = models.TypeMovie
+					continue
 				}
 
 				r := models.SearchResult{
@@ -148,19 +149,9 @@ func (p *Arte) callSearch(ctx context.Context, results chan models.SearchResult,
 					Type:        mediaType,
 					Chanel:      "arte",
 					Provider:    "arte",
-					IsPlayable:  false,
-					IsTeaser:    mediaType != models.TypeCollection,
 					AvailableOn: d.Availability.Start.Time(),
 				}
 
-				for _, s := range d.Stickers {
-					switch s.Code {
-					case "PLAYABLE":
-						r.IsPlayable = true
-					case "FULL_VIDEO":
-						r.IsTeaser = false
-					}
-				}
 				if !q.OnlyExactTitle || q.IsMatch(r.Title) {
 					rank++
 					r.Rank = rank

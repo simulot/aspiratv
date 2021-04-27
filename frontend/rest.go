@@ -34,54 +34,6 @@ func NewRestStore(endPoint string) *RestClient {
 	}
 }
 
-/*
-func (s *RestClient) GetProvider(ctx context.Context, name string) (providers.Provider, error) {
-	req, err := s.newRequest(ctx, s.endPoint+"providers/%s", []string{name}, nil, nil)
-	if err != nil {
-		return providers.Provider{}, err
-	}
-	p := providers.Provider{}
-	err = s.do(http.MethodGet, req, &p)
-	if err != nil {
-		return providers.Provider{}, err
-	}
-	return p, nil
-}
-
-func (s *RestClient) SetProvider(ctx context.Context, p providers.Provider) (providers.Provider, error) {
-	b, err := json.Marshal(p)
-	if err != nil {
-		return providers.Provider{}, err
-	}
-
-	req, err := s.newRequest(ctx, s.endPoint+"providers/", nil, bytes.NewReader(b), nil)
-	if err != nil {
-		return providers.Provider{}, err
-	}
-
-	newP := providers.Provider{}
-	err = s.do(http.MethodPost, req, &newP)
-	if err != nil {
-		return providers.Provider{}, err
-	}
-	return newP, nil
-}
-
-func (s *RestClient) GetProviderList(ctx context.Context) ([]providers.Provider, error) {
-	req, err := s.newRequest(ctx, s.endPoint+"providers/", nil, nil, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	list := []providers.Provider{}
-	err = s.do(http.MethodGet, req, &list)
-	if err != nil {
-		return nil, err
-	}
-	return list, nil
-}
-*/
-
 func (s *RestClient) ProviderDescribe(ctx context.Context) ([]providers.Description, error) {
 	req, err := s.client.NewRequestJSON(ctx, s.endPoint+"providers/", nil, nil, nil)
 	if err != nil {
@@ -141,24 +93,6 @@ func (s *RestClient) Search(ctx context.Context, q models.SearchQuery) (<-chan m
 				return
 			default:
 				r := models.SearchResult{}
-				// log.Print("Another result")
-				// _, b, err := c.Read(ctx)
-				// log.Print(string(b))
-				// if err == nil {
-				// 	err = json.Unmarshal(b, &r)
-				// }
-				// if err != nil {
-				// 	var wsErr websocket.CloseError
-				// 	if errors.As(err, &wsErr) && wsErr.Code == websocket.StatusNormalClosure {
-				// 		c.Close(websocket.StatusNormalClosure, "")
-				// 		return
-				// 	}
-				// 	// TODO log errors
-				// 	log.Printf("Can't read WS:%s", err)
-				// 	return
-
-				// }
-
 				if err := wsjson.Read(ctx, c, &r); err != nil {
 					var wsErr websocket.CloseError
 					if errors.As(err, &wsErr) && wsErr.Code == websocket.StatusNormalClosure {
@@ -185,3 +119,30 @@ func (s *RestClient) Search(ctx context.Context, q models.SearchQuery) (<-chan m
 // func (e httpError) Error() string {
 // 	return e.StatusText
 // }
+
+func (s *RestClient) GetSettings(ctx context.Context) (models.Settings, error) {
+	req, err := s.client.NewRequestJSON(ctx, s.endPoint+"settings/", nil, nil, nil)
+	if err != nil {
+		return models.Settings{}, err
+	}
+
+	var settings models.Settings
+
+	err = s.client.GetJSON(req, &settings)
+	if err != nil {
+		return models.Settings{}, err
+	}
+	return settings, err
+}
+
+func (s *RestClient) SetSettings(ctx context.Context, settings models.Settings) (models.Settings, error) {
+	req, err := s.client.NewRequestJSON(ctx, s.endPoint+"settings/", nil, nil, settings)
+	if err != nil {
+		return models.Settings{}, err
+	}
+	err = s.client.PostJSON(req, &settings)
+	if err != nil {
+		return models.Settings{}, err
+	}
+	return settings, err
+}

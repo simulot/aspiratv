@@ -1,6 +1,8 @@
 package frontend
 
 import (
+	"time"
+
 	"github.com/maxence-charriere/go-app/v9/pkg/app"
 )
 
@@ -48,4 +50,78 @@ func (c *LandingPage) OnNav(ctx app.Context) {
 
 func (c *LandingPage) Render() app.UI {
 	return app.A().Href("/search").Text("Aller sur la page de recherche")
+}
+
+type appMessage struct {
+	Class   string
+	Stay    bool
+	Content app.UI
+}
+type ToastContainer struct {
+	app.Compo
+	messages []*appMessage
+}
+
+func (c *ToastContainer) AddMessage(ctx app.Context, t string, class string, stay bool) {
+	m := appMessage{
+		Class:   class,
+		Stay:    stay,
+		Content: app.Text(t),
+	}
+	c.messages = append(c.messages, &m)
+	if !stay {
+		time.AfterFunc(4*time.Second, func() {
+			ctx.Dispatch(func(ctx app.Context) {
+				c.closeMessage(&m)
+			})
+		})
+	}
+}
+
+func (c *ToastContainer) Render() app.UI {
+	return app.Div().
+		Class("toast-container").
+		Body(
+			app.Range(c.messages).
+				Slice(func(i int) app.UI {
+					return c.renderMessage(i)
+				}),
+		)
+}
+
+func (c *ToastContainer) renderMessage(i int) app.UI {
+	m := c.messages[i]
+	return app.Div().
+		Class("toast").
+		Body(
+			app.Div().
+				Class("notification").
+				Class(StringIf(m.Class == "", "is-info", m.Class)).
+				Body(
+					app.If(m.Stay,
+						app.Button().
+							Class("delete").
+							OnClick(c.toastDismiss(m)),
+					),
+					m.Content,
+				),
+		)
+}
+
+func (c *ToastContainer) toastDismiss(m *appMessage) func(ctx app.Context, e app.Event) {
+	return func(ctx app.Context, e app.Event) {
+		c.closeMessage(m)
+		c.Update()
+	}
+}
+
+func (c *ToastContainer) closeMessage(m *appMessage) {
+	for i := 0; i < len(c.messages); i++ {
+		if c.messages[i] == m {
+			copy(c.messages[i:], c.messages[i+1:])      // Shift a[i+1:] left one index.
+			c.messages[len(c.messages)-1] = nil         // Erase last element (write zero value).
+			c.messages = c.messages[:len(c.messages)-1] // Truncate slice.
+			return
+		}
+	}
 }

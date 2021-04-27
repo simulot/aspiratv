@@ -3,12 +3,18 @@ module github.com/simulot/aspiratv
 go 1.16
 
 require (
-	github.com/golang/protobuf v1.4.2 // indirect
-	github.com/maxence-charriere/go-app/v8 v8.0.2
-	github.com/maxence-charriere/go-app/v9 v9.0.0-20210421094209-f9f3ee1ccba4 // indirect
+	github.com/PuerkitoBio/goquery v1.6.1 // indirect
+	github.com/antchfx/xmlquery v1.3.6 // indirect
+	github.com/antchfx/xpath v1.1.11 // indirect
+	github.com/gocolly/colly/v2 v2.1.0 // indirect
+	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/maxence-charriere/go-app/v9 v9.0.0-20210422141225-0e7d7c5630b2 // indirect
+	github.com/temoto/robotstxt v1.1.2 // indirect
+	golang.org/x/net v0.0.0-20210421230115-4e50805a0758 // indirect
 	golang.org/x/text v0.3.6
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
-	google.golang.org/protobuf v1.24.0 // indirect
+	google.golang.org/appengine v1.6.7 // indirect
 	nhooyr.io/websocket v1.8.6
 )

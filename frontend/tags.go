@@ -11,8 +11,8 @@ import (
 type TagState int
 
 const (
-	TagUnselected TagState = iota
-	TagSelected
+	TagSelected TagState = iota
+	TagUnselected
 	TagInactive
 )
 
@@ -43,7 +43,7 @@ type TagListOptions struct {
 	// True if labels can be be disabled
 	CanDisable bool
 
-	// TODO: NotClickable
+	NotClickable bool
 }
 
 const allCode = "all*tags"
@@ -52,9 +52,10 @@ type TagList struct {
 	app.Compo
 	sync.RWMutex
 
-	canDisable bool
-	cantCount  bool
-	allTag     *TagInfo
+	canDisable   bool
+	cantCount    bool
+	notClickable bool
+	allTag       *TagInfo
 
 	// List of tags
 	tags map[string]*TagInfo
@@ -67,9 +68,10 @@ func NewTagList(options *TagListOptions) *TagList {
 	}
 
 	l := TagList{
-		canDisable: opt.CanDisable,
-		cantCount:  opt.CanCount,
-		tags:       map[string]*TagInfo{},
+		canDisable:   opt.CanDisable,
+		cantCount:    opt.CanCount,
+		notClickable: opt.NotClickable,
+		tags:         map[string]*TagInfo{},
 	}
 
 	if opt.All != nil {
@@ -87,8 +89,8 @@ func NewTagList(options *TagListOptions) *TagList {
 // }
 
 func (l *TagList) Render() app.UI {
-	if len(l.tags) == 0 && l.allTag == nil {
-		return nil
+	if l.allTag == nil && len(l.tags) == 0 {
+		return app.Raw("")
 	}
 	l.RLock()
 	defer l.RUnlock()
@@ -130,6 +132,9 @@ func (l *TagList) GetState(code string) TagState {
 func (l *TagList) SetTag(t *TagInfo) {
 	l.Lock()
 	defer l.Unlock()
+	if l.notClickable {
+		t.State = TagSelected
+	}
 	if t.Code == allCode {
 		if l.allTag == nil {
 			return
@@ -157,7 +162,6 @@ func (l *TagList) Toggle(code string) {
 	case TagInactive:
 		t.State = TagSelected
 	}
-	l.Update()
 }
 
 func (l *TagList) IncAll() int {
@@ -165,7 +169,6 @@ func (l *TagList) IncAll() int {
 		return -1
 	}
 	l.allTag.Count++
-	l.Update()
 	return l.allTag.Count
 }
 
@@ -176,19 +179,20 @@ func (l *TagList) SetOrIncTag(nt *TagInfo) int {
 
 	var t *TagInfo
 	var ok bool
+	l.Lock()
+	defer l.Unlock()
 	if t, ok = l.tags[nt.Code]; !ok {
 		t = nt
 	}
 	t.Count++
 	l.tags[nt.Code] = t
-	l.Update()
 	return t.Count
 }
 
 func (l *TagList) renderTag(i *TagInfo) app.UI {
 	if i == nil {
 		log.Printf("renderTag NIL! %#v", l)
-		return nil
+		return app.Raw("")
 	}
 	var class string
 	switch i.State {
@@ -200,15 +204,18 @@ func (l *TagList) renderTag(i *TagInfo) app.UI {
 		class = "is-info"
 	}
 
-	return app.Div().Class("tag m-1").Class(class).Body(
-		app.Span().Class("icon-text").Body(
-			app.If(i.Icon != nil, app.Span().Class("icon").Body(i.Icon)),
-			app.Span().Body(
-				app.Text(i.Text),
-				app.If(l.cantCount, app.Text(fmt.Sprintf("\u00a0(%d)", i.Count))),
-			),
-		).OnClick(l.click(i), i.Code),
+	t := app.Span().Class("icon-text").Body(
+		app.If(i.Icon != nil, app.Span().Class("icon").Body(i.Icon)),
+		app.Span().Body(
+			app.Text(i.Text),
+			app.If(l.cantCount, app.Text(fmt.Sprintf("\u00a0(%d)", i.Count))),
+		),
 	)
+
+	if !l.notClickable {
+		t.OnClick(l.click(i), i).Style("cursor", "pointer")
+	}
+	return app.Div().Class("tag m-1").Class(class).Body(t)
 }
 
 func (l *TagList) click(i *TagInfo) func(ctx app.Context, e app.Event) {
@@ -219,6 +226,8 @@ func (l *TagList) click(i *TagInfo) func(ctx app.Context, e app.Event) {
 }
 
 func (l *TagList) tagClicked(i *TagInfo) {
+	l.Lock()
+	defer l.Unlock()
 	if l.allTag != nil {
 		if i.Code != allCode {
 			allSelected := true
@@ -234,12 +243,10 @@ func (l *TagList) tagClicked(i *TagInfo) {
 				l.allTag.State = TagUnselected
 			}
 		} else {
-			log.Printf("All tags to %d", i.State)
 			for k, t := range l.tags {
 				t.State = i.State
 				l.tags[k] = t
 			}
 		}
 	}
-	l.Update()
 }

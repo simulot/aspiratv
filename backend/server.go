@@ -14,6 +14,7 @@ const (
 	APIURL      = "/api/"
 	providerURL = APIURL + "providers/"
 	searchURL   = APIURL + "search/"
+	settingsURL = APIURL + "settings/"
 )
 
 type logger interface {
@@ -36,6 +37,7 @@ func NewServer(store store.Store, p []providers.Provider) *Server {
 	router := http.NewServeMux()
 	router.Handle(providerURL, http.HandlerFunc(s.providersDescribleHandler))
 	router.Handle(searchURL, http.HandlerFunc(s.searchHandler))
+	router.Handle(settingsURL, http.HandlerFunc(s.settingsHandler))
 	s.Handler = router
 	return s
 }

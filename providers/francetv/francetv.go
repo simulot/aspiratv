@@ -3,11 +3,15 @@ package francetv
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/gocolly/colly/v2"
 	"github.com/simulot/aspiratv/models"
 	"github.com/simulot/aspiratv/myhttp"
 	"github.com/simulot/aspiratv/providers"
@@ -179,18 +183,21 @@ func (p *FranceTV) callSearch(ctx context.Context, results chan models.SearchRes
 			if hit.Type == "extrait" {
 				continue
 			}
+
+			u := firstStringOf(hit.URLComplete, hit.Path)
+			if u == "" {
+				continue
+			}
+
 			r := models.SearchResult{
 				ID:       hit.ObjectID,
 				Show:     firstStringOf(hit.Program.Label, hit.Label),
 				Title:    hit.Title,
-				PageURL:  home + "/" + firstStringOf(hit.URLComplete, hit.Path),
+				PageURL:  home + "/" + u,
 				ThumbURL: home + hit.Image.Formats["vignette_16x9"].Urls["w:1024"], //TODO: some images are missing
 				Chanel:   firstStringOf(description.Channels[hit.Channel].Code, "francetv"),
-				Plot:     firstStringOf(hit.Synopsis, hit.Description),
+				Plot:     firstStringOf(hit.Synopsis, hit.Text, hit.Description),
 				Provider: "francetv",
-				IsTeaser: hit.Type == "extrait",
-				Season:   hit.SeasonNumber,
-				Episode:  hit.EpisodeNumber,
 				Aired:    hit.Dates["broadcast_begin_date"].Time(),
 			}
 
@@ -199,6 +206,7 @@ func (p *FranceTV) callSearch(ctx context.Context, results chan models.SearchRes
 				r.Type = models.TypeCollection
 			case "video":
 				r.Type = models.TypeMovie
+				continue
 			case "program":
 				r.Type = models.TypeSeries
 			}
@@ -207,7 +215,15 @@ func (p *FranceTV) callSearch(ctx context.Context, results chan models.SearchRes
 				r.AddTag(c.Label)
 			}
 
-			if !q.OnlyExactTitle || q.IsMatch(r.Title) {
+			if r.Type != models.TypeMovie && (!q.OnlyExactTitle || q.IsMatch(r.Title)) {
+				err := p.GetCollectionDetails(ctx, hit, &r, q)
+				if err != nil {
+					log.Printf("[ARTE] Can't get collection details: %s", err)
+					continue
+				}
+				if r.AvailableVideos == 0 {
+					continue
+				}
 				rank++
 				r.Rank = rank
 				select {
@@ -219,8 +235,90 @@ func (p *FranceTV) callSearch(ctx context.Context, results chan models.SearchRes
 		}
 
 	}
-
 }
+
+func (p *FranceTV) GetCollectionDetails(ctx context.Context, hit Hits, r *models.SearchResult, q models.SearchQuery) error {
+
+	page := 0
+	r.Type = models.TypeCollection
+	for {
+		hits := 0
+		u := fmt.Sprintf("%s/toutes-les-videos/?page=%d", r.PageURL, page)
+		err := p.limiter.Wait(ctx)
+		if err != nil {
+			return err
+		}
+		parser := colly.NewCollector()
+		parser.OnHTML("a.c-card-video", func(e *colly.HTMLElement) {
+			if strings.Contains(e.Attr("class"), "c-card-video--unavailable") {
+				return
+			}
+			var (
+				extract bool
+				aired   time.Time
+			)
+			e.ForEach("span", func(i int, e *colly.HTMLElement) {
+				if e.Text == "extrait" {
+					extract = true
+					return
+				}
+				cl := strings.Split(e.Attr("class"), " ")
+				for _, c := range cl {
+					switch c {
+					case "c-card-video__textarea-title":
+						if r.Show != e.Text {
+							r.Type = models.TypeCollection
+						} else {
+							r.Type = models.TypeTVShow
+						}
+					case "c-card-video__textarea-subtitle":
+						if match := reAnalyseTitle.FindStringSubmatch(e.Text); len(match) == 4 {
+							r.Type = models.TypeSeries
+						}
+					case "c-label":
+						extract = true
+					case "c-metadata":
+						if match := reAired.FindStringSubmatch(e.Text); len(match) == 3 {
+							day, _ := strconv.Atoi(match[1])
+							month, _ := strconv.Atoi(match[2])
+							year := time.Now().Year()
+							d := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.Local)
+							if d.After(time.Now()) {
+								d = time.Date(year-1, time.Month(month), day, 0, 0, 0, 0, time.Local)
+							}
+							aired = d
+							if aired.Before(q.AiredAfter) {
+								return
+							}
+						}
+					}
+				}
+			})
+			if extract {
+				return
+			}
+			r.AvailableVideos++
+			hits++
+
+		})
+		log.Printf("[HTTPCLIENT] GET %s", u)
+		err = parser.Visit(u)
+		if err != nil {
+			return err
+		}
+		page++
+		if page == 2 && hits > 0 {
+			r.MoreAvailable = true
+			return nil
+		}
+		if hits == 0 {
+			return nil
+		}
+	}
+}
+
+var reAnalyseTitle = regexp.MustCompile(`^\s?S(\d+)?\s+E(\d+)\s+-\s+(.*)$`)
+var reAired = regexp.MustCompile(`(\d{2})\/(\d{2})`)
 
 func joinStrings(sep string, ss ...string) string {
 	r := strings.Builder{}

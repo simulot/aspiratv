@@ -25,3 +25,15 @@ func (c *Menu) Render() app.UI {
 		),
 	)
 }
+
+func AppPageRender(pages ...app.UI) app.UI {
+	return app.Div().Class("container").Body(app.Div().Class("columns").Body(
+		&MyApp{},
+		app.Div().Class("column").Body(
+			app.Range(pages).Slice(func(i int) app.UI {
+				return pages[i]
+			}),
+		),
+	),
+	)
+}

@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/simulot/aspiratv/models"
 	"github.com/simulot/aspiratv/providers"
@@ -51,6 +52,10 @@ func (s *Server) getSearch(w http.ResponseWriter, r *http.Request) (err error) {
 		log.Printf("Can't decode query: %s", err)
 		wsjson.Write(ctx, c, "Error: invalid query")
 		return err
+	}
+
+	if query.AiredAfter.IsZero() {
+		query.AiredAfter = time.Now().AddDate(0, -1, 0)
 	}
 
 	err = wsjson.Write(ctx, c, "OK")

@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
 	"testing"
 	"time"
 
@@ -18,7 +19,7 @@ func TestRestSearch(t *testing.T) {
 		spy := spyProvider{
 			searchResults: make([]models.SearchResult, 100),
 		}
-		s, tearDownSrv := setupApiServer(t, &spy)
+		s, tearDownSrv := setupApiServer(t, &spyStore{}, &spy)
 		defer tearDownSrv()
 		ctx := context.Background()
 		restStore := NewRestStore(wsURL(t, s.URL) + "/api/")
@@ -48,7 +49,7 @@ func TestRestSearch(t *testing.T) {
 			searchDelay:   10 * time.Millisecond,
 			searchResults: make([]models.SearchResult, 100),
 		}
-		s, tearDownSrv := setupApiServer(t, &spy)
+		s, tearDownSrv := setupApiServer(t, &spyStore{}, &spy)
 		defer tearDownSrv()
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -96,9 +97,36 @@ func TestRestSearch(t *testing.T) {
 
 }
 
-func setupApiServer(t *testing.T, spy providers.Provider) (*httptest.Server, func()) {
+func TestSettings(t *testing.T) {
+	t.Run("Test GetSettings", func(t *testing.T) {
+		spySt := spyStore{
+			settings: models.Settings{
+				LibraryPath: "mypath",
+			},
+		}
+		s, tearDownSrv := setupApiServer(t, &spySt, nil)
+
+		defer tearDownSrv()
+		ctx := context.Background()
+		restStore := NewRestStore(s.URL + "/api/")
+
+		got, err := restStore.GetSettings(ctx)
+		if err != nil {
+			t.Errorf("Unexpected error: %s", err)
+			return
+		}
+
+		want := spySt.settings
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("Expecting %#v result, got %#v", want, got)
+		}
+	})
+
+}
+
+func setupApiServer(t *testing.T, st store.Store, spy providers.Provider) (*httptest.Server, func()) {
 	t.Helper()
-	s := httptest.NewServer(backend.NewServer(&store.InMemoryStore{}, []providers.Provider{spy}))
+	s := httptest.NewServer(backend.NewServer(st, []providers.Provider{spy}))
 	return s, func() {}
 }
 
@@ -160,4 +188,20 @@ func wsURL(t *testing.T, s string) string {
 	}
 	u.Scheme = "ws"
 	return u.String()
+}
+
+type spyStore struct {
+	settings          models.Settings
+	getSettingsCalled bool
+	setSettingsCalled bool
+}
+
+func (s *spyStore) GetSettings() (models.Settings, error) {
+	s.getSettingsCalled = true
+	return s.settings, nil
+}
+
+func (s *spyStore) SetSettings(settings models.Settings) (models.Settings, error) {
+	s.setSettingsCalled = true
+	return settings, nil
 }

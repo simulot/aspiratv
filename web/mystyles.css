@@ -10198,4 +10198,33 @@ a.has-text-danger-dark:hover, a.has-text-danger-dark:focus {
   padding: 3rem 1.5rem 6rem;
 }
 
+.plot {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+}
+
+.toast-container {
+  width: 100%;
+  z-index: 99999;
+  position: fixed;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+}
+
+.toast {
+  width: auto;
+  pointer-events: auto;
+  display: inline-flex;
+  white-space: pre-wrap;
+  opacity: 1;
+  right: 0;
+  top: 0;
+  text-align: right;
+  align-items: flex-end;
+}
+
 /*# sourceMappingURL=mystyles.css.map */
