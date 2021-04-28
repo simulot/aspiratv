@@ -1,6 +1,7 @@
 package frontend
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/maxence-charriere/go-app/v9/pkg/app"
@@ -18,6 +19,8 @@ const (
 type Settings struct {
 	app.Compo
 	Settings models.Settings
+
+	i int
 }
 
 func (c *Settings) OnMount(ctx app.Context) {
@@ -79,16 +82,46 @@ func (c *Settings) Render() app.UI {
 							),
 					),
 			),
+		app.Div().
+			Class("field is-grouped").
+			Body(
+				app.Div().
+					Class("control").
+					Body(
+						app.Button().
+							Class("button is-link").
+							OnClick(c.message).
+							Text("Message!"),
+					),
+			),
 	)
+}
+
+func (c *Settings) message(ctx app.Context, e app.Event) {
+	c.i++
+	MyAppState.Messages.Send(appMessage{
+		Class: "is-error",
+		// Stay:    true,
+		Content: app.Text(fmt.Sprintf("Message %d !", c.i)),
+	})
 }
 
 func (c *Settings) submit(ctx app.Context, e app.Event) {
 	s, err := MyAppState.s.SetSettings(ctx, c.Settings)
 	if err != nil {
-		//TODO show error
+		MyAppState.Messages.Send(appMessage{
+			Class:   "is-error",
+			Stay:    true,
+			Content: app.Text(err.Error()),
+		})
 		return
 	}
 	c.Settings = s
+	MyAppState.Messages.Send(appMessage{
+		Class:   "is-info",
+		Stay:    true,
+		Content: app.Text("Réglages enregistrés"),
+	})
 
 }
 

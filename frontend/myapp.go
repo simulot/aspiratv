@@ -1,6 +1,8 @@
 package frontend
 
 import (
+	"log"
+	"sync"
 	"time"
 
 	"github.com/maxence-charriere/go-app/v9/pkg/app"
@@ -30,6 +32,27 @@ func (c *MyApp) Render() app.UI {
 	)
 }
 
+func AppPageRender(pages ...app.UI) app.UI {
+	return app.Div().
+		Class("container").
+		Body(
+			NewToastContainer(),
+			app.Div().
+				Class("columns").
+				Body(
+					&MyApp{},
+					app.Div().
+						Class("column").
+						Body(
+							app.Range(pages).
+								Slice(func(i int) app.UI {
+									return pages[i]
+								}),
+						),
+				),
+		)
+}
+
 type Logo struct {
 	app.Compo
 }
@@ -52,76 +75,102 @@ func (c *LandingPage) Render() app.UI {
 	return app.A().Href("/search").Text("Aller sur la page de recherche")
 }
 
-type appMessage struct {
-	Class   string
-	Stay    bool
-	Content app.UI
-}
 type ToastContainer struct {
 	app.Compo
 	messages []*appMessage
+	sync.RWMutex
+	unsubscribe func()
 }
 
-func (c *ToastContainer) AddMessage(ctx app.Context, t string, class string, stay bool) {
-	m := appMessage{
-		Class:   class,
-		Stay:    stay,
-		Content: app.Text(t),
-	}
-	c.messages = append(c.messages, &m)
-	if !stay {
-		time.AfterFunc(4*time.Second, func() {
-			ctx.Dispatch(func(ctx app.Context) {
-				c.closeMessage(&m)
-			})
+func NewToastContainer() *ToastContainer {
+	return &ToastContainer{}
+}
+
+func (c *ToastContainer) OnMount(ctx app.Context) {
+	log.Printf("ToastContainer.OnMount")
+	c.unsubscribe = MyAppState.Messages.Subscribe(func(m appMessage) {
+		ctx.Dispatch(func(ctx app.Context) {
+			c.AddMessage(ctx, m)
 		})
-	}
+	})
+}
+
+func (c *ToastContainer) OnDismount() {
+	c.unsubscribe()
+}
+
+func (c *ToastContainer) AddMessage(ctx app.Context, m appMessage) {
+	c.Lock()
+	defer c.Unlock()
+	c.messages = append(c.messages, &m)
 }
 
 func (c *ToastContainer) Render() app.UI {
+	c.RLock()
+	defer c.RUnlock()
 	return app.Div().
 		Class("toast-container").
 		Body(
 			app.Range(c.messages).
 				Slice(func(i int) app.UI {
-					return c.renderMessage(i)
+					m := c.messages[i]
+					return NewToast(func() { c.DismissMessage(m) }, m)
 				}),
 		)
 }
 
-func (c *ToastContainer) renderMessage(i int) app.UI {
-	m := c.messages[i]
+func (c *ToastContainer) DismissMessage(m *appMessage) {
+	c.Lock()
+	defer c.Unlock()
+	for i := 0; i < len(c.messages); i++ {
+		if c.messages[i] == m {
+			log.Printf("Dismiss %d", i)
+			copy(c.messages[i:], c.messages[i+1:])      // Shift a[i+1:] left one index.
+			c.messages[len(c.messages)-1] = nil         // Erase last element (write zero value).
+			c.messages = c.messages[:len(c.messages)-1] // Truncate slice.
+			c.Update()
+			return
+		}
+	}
+}
+
+type Toast struct {
+	app.Compo
+	dismiss func()
+	*appMessage
+}
+
+func NewToast(dismiss func(), m *appMessage) *Toast {
+	c := &Toast{
+		dismiss:    dismiss,
+		appMessage: m,
+	}
+	if !m.Stay {
+		time.AfterFunc(4*time.Second, dismiss)
+	}
+	return c
+}
+
+func (c *Toast) Render() app.UI {
 	return app.Div().
 		Class("toast").
 		Body(
 			app.Div().
 				Class("notification").
-				Class(StringIf(m.Class == "", "is-info", m.Class)).
+				Class(StringIf(c.Class == "", "is-info", c.Class)).
 				Body(
-					app.If(m.Stay,
+					app.If(c.Stay,
 						app.Button().
 							Class("delete").
-							OnClick(c.toastDismiss(m)),
+							OnClick(c.Dismiss()),
 					),
-					m.Content,
+					c.Content,
 				),
 		)
 }
 
-func (c *ToastContainer) toastDismiss(m *appMessage) func(ctx app.Context, e app.Event) {
+func (c *Toast) Dismiss() func(ctx app.Context, e app.Event) {
 	return func(ctx app.Context, e app.Event) {
-		c.closeMessage(m)
-		c.Update()
-	}
-}
-
-func (c *ToastContainer) closeMessage(m *appMessage) {
-	for i := 0; i < len(c.messages); i++ {
-		if c.messages[i] == m {
-			copy(c.messages[i:], c.messages[i+1:])      // Shift a[i+1:] left one index.
-			c.messages[len(c.messages)-1] = nil         // Erase last element (write zero value).
-			c.messages = c.messages[:len(c.messages)-1] // Truncate slice.
-			return
-		}
+		c.dismiss()
 	}
 }

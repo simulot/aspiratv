@@ -10211,20 +10211,25 @@ a.has-text-danger-dark:hover, a.has-text-danger-dark:focus {
   position: fixed;
   pointer-events: none;
   display: flex;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 2em;
+  overflow: hidden;
   flex-direction: column;
-  padding: 15px;
 }
 
 .toast {
+  margin: 0.5em 0;
+  display: grid;
   width: auto;
   pointer-events: auto;
-  display: inline-flex;
   white-space: pre-wrap;
   opacity: 1;
   right: 0;
   top: 0;
-  text-align: right;
-  align-items: flex-end;
+  align-self: flex-end;
 }
 
 /*# sourceMappingURL=mystyles.css.map */
