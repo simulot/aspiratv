@@ -2,10 +2,11 @@ package frontend
 
 import (
 	"log"
-	"sync"
 	"time"
 
 	"github.com/maxence-charriere/go-app/v9/pkg/app"
+	"github.com/simulot/aspiratv/frontend/bulma"
+	"github.com/simulot/aspiratv/models"
 )
 
 // MyApp component draw de application banner and menus
@@ -77,8 +78,6 @@ func (c *LandingPage) Render() app.UI {
 
 type ToastContainer struct {
 	app.Compo
-	messages []*appMessage
-	sync.RWMutex
 	unsubscribe func()
 }
 
@@ -88,89 +87,67 @@ func NewToastContainer() *ToastContainer {
 
 func (c *ToastContainer) OnMount(ctx app.Context) {
 	log.Printf("ToastContainer.OnMount")
-	c.unsubscribe = MyAppState.Messages.Subscribe(func(m appMessage) {
+	c.unsubscribe = MyAppState.Drawer.OnChange(func() {
+		log.Printf("ToastContainer notified")
 		ctx.Dispatch(func(ctx app.Context) {
-			c.AddMessage(ctx, m)
+			log.Printf("ToastContainer Updated")
+			ns := MyAppState.Drawer.Notifications()
+			for i := 0; i < len(ns); i++ {
+				log.Printf("-- %d: %s", i, ns[i].Text)
+			}
+			// c.Update()
 		})
 	})
 }
 
 func (c *ToastContainer) OnDismount() {
-	c.unsubscribe()
-}
-
-func (c *ToastContainer) AddMessage(ctx app.Context, m appMessage) {
-	c.Lock()
-	defer c.Unlock()
-	c.messages = append(c.messages, &m)
+	if c.unsubscribe != nil {
+		c.unsubscribe()
+	}
 }
 
 func (c *ToastContainer) Render() app.UI {
-	c.RLock()
-	defer c.RUnlock()
+	ns := MyAppState.Drawer.Notifications()
 	return app.Div().
-		Class("toast-container").
+		Class("toast-container column is-4 is-offset-8").
 		Body(
-			app.Range(c.messages).
+			app.Range(ns).
 				Slice(func(i int) app.UI {
-					m := c.messages[i]
-					return NewToast(func() { c.DismissMessage(m) }, m)
+					n := ns[i]
+					return NewToast(n, func() { MyAppState.Drawer.Dismiss(n) })
 				}),
 		)
-}
-
-func (c *ToastContainer) DismissMessage(m *appMessage) {
-	c.Lock()
-	defer c.Unlock()
-	for i := 0; i < len(c.messages); i++ {
-		if c.messages[i] == m {
-			log.Printf("Dismiss %d", i)
-			copy(c.messages[i:], c.messages[i+1:])      // Shift a[i+1:] left one index.
-			c.messages[len(c.messages)-1] = nil         // Erase last element (write zero value).
-			c.messages = c.messages[:len(c.messages)-1] // Truncate slice.
-			c.Update()
-			return
-		}
-	}
 }
 
 type Toast struct {
 	app.Compo
 	dismiss func()
-	*appMessage
+	models.Notification
 }
 
-func NewToast(dismiss func(), m *appMessage) *Toast {
+func NewToast(n models.Notification, dismiss func()) *Toast {
 	c := &Toast{
-		dismiss:    dismiss,
-		appMessage: m,
+		dismiss:      dismiss,
+		Notification: n,
 	}
-	if !m.Stay {
+	if n.Type != models.NotificationError {
 		time.AfterFunc(4*time.Second, dismiss)
 	}
 	return c
 }
 
 func (c *Toast) Render() app.UI {
-	return app.Div().
-		Class("toast").
-		Body(
-			app.Div().
-				Class("notification").
-				Class(StringIf(c.Class == "", "is-info", c.Class)).
-				Body(
-					app.If(c.Stay,
-						app.Button().
-							Class("delete").
-							OnClick(c.Dismiss()),
-					),
-					c.Content,
-				),
-		)
-}
+	log.Printf("Toast.Render %d, %s", c.Notification.ID(), c.Text)
+	class := map[models.NotificationType]string{
+		models.NotificationError:   "is-danger",
+		models.NotificationInfo:    "is-info",
+		models.NotificationSuccess: "is-success",
+		models.NotificationWarning: "is-warning",
+	}[c.Notification.Type]
 
-func (c *Toast) Dismiss() func(ctx app.Context, e app.Event) {
-	return func(ctx app.Context, e app.Event) {
-		c.dismiss()
+	n := bulma.NewNotification().Class(class).Text(c.Notification.Text)
+	if c.Type == models.NotificationError {
+		n.Delete(c.dismiss)
 	}
+	return n
 }

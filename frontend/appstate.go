@@ -2,9 +2,9 @@ package frontend
 
 import (
 	"log"
-	"sync"
 
 	"github.com/maxence-charriere/go-app/v9/pkg/app"
+	"github.com/simulot/aspiratv/models"
 )
 
 type PageID int
@@ -22,7 +22,8 @@ type AppState struct {
 	currentPage PageID
 	menuItems   []Menuitem
 
-	Messages *MessageDispatcher
+	Dispatch *models.NotificationDispatcher
+	Drawer   *NotificationsDrawer
 }
 
 var MyAppState *AppState
@@ -38,6 +39,9 @@ func InitializeWebApp() *AppState {
 }
 
 func NewAppState(s *RestClient) *AppState {
+	dispatch := models.NewNotificationDispatcher()
+	drawer := NewNotificationsDrawer()
+	drawer.Attach(dispatch)
 	return &AppState{
 		s:           s,
 		currentPage: PageSearchOnLine,
@@ -67,7 +71,8 @@ func NewAppState(s *RestClient) *AppState {
 				"/credits",
 			},
 		},
-		Messages: NewMessageDispatcher(),
+		Dispatch: dispatch,
+		Drawer:   drawer,
 	}
 }
 
@@ -78,73 +83,71 @@ func StringIf(b bool, whenTrue string, whenFalse string) string {
 	return whenFalse
 }
 
-type MessageDispatcher struct {
-	sync.RWMutex
-	subscribers []*subscriber
+type NotificationsDrawer struct {
+	n           []models.Notification
+	subscribers []chan struct{}
 }
 
-func NewMessageDispatcher() *MessageDispatcher {
-	log.Printf("NewMessageDispatcher")
-	d := MessageDispatcher{}
+func NewNotificationsDrawer() *NotificationsDrawer {
+	d := NotificationsDrawer{}
 	return &d
 }
 
-func (d *MessageDispatcher) Send(m appMessage) {
-	log.Printf("NewMessageDispatcher.Send to %d", len(d.subscribers))
-	d.RLock()
-	defer d.RUnlock()
-	for _, s := range d.subscribers {
-		s.m <- m
+// Attach a notification provider to the drawer
+func (d *NotificationsDrawer) Attach(sub models.Subscriber) {
+	sub.Subscribe(d.onNotification)
+}
+
+func (d *NotificationsDrawer) onNotification(n models.Notification) {
+	d.n = append(d.n, n)
+	d.notify()
+}
+
+func (d *NotificationsDrawer) notify() {
+	for _, c := range d.subscribers {
+		c <- struct{}{}
 	}
 }
 
-// Subscribe call onMessage function for each message and return the Unsubscribe function
-func (d *MessageDispatcher) Subscribe(onMessage func(m appMessage)) func() {
-	log.Printf("NewMessageDispatcher.Subscribe")
-
-	d.Lock()
-	defer d.Unlock()
-	s := &subscriber{
-		m: make(chan appMessage, 1),
-	}
-	d.subscribers = append(d.subscribers, s)
-
+func (d *NotificationsDrawer) OnChange(fn func()) func() {
+	c := make(chan struct{}, 1)
 	go func() {
-		for m := range s.m {
-			onMessage(m)
+		for _ = range c {
+			fn()
 		}
-
 	}()
+	d.subscribers = append(d.subscribers, c)
 
 	return func() {
-		d.Unsubscribe(s)
+		for i := 0; i < len(d.subscribers); i++ {
+			if d.subscribers[i] == c {
+				close(c)
+				d.subscribers[i] = d.subscribers[len(d.subscribers)-1]
+				d.subscribers[len(d.subscribers)-1] = nil
+				d.subscribers = d.subscribers[0 : len(d.subscribers)-1]
+			}
+		}
 	}
 }
 
-// Unsubscribe remove the subscriber from the list
-func (d *MessageDispatcher) Unsubscribe(s *subscriber) {
-	log.Printf("NewMessageDispatcher.Unsubscribe")
-	d.Lock()
-	defer d.Unlock()
-	for i := range d.subscribers {
-		if d.subscribers[i] == s {
-			close(s.m)
-			d.subscribers[i] = d.subscribers[len(d.subscribers)-1]
-			d.subscribers[len(d.subscribers)-1] = nil
-			d.subscribers = d.subscribers[0 : len(d.subscribers)-1]
+func (d *NotificationsDrawer) Notifications() []models.Notification {
+	r := []models.Notification{}
+	for i := 0; i < len(d.n); i++ {
+		r = append(r, d.n[i])
+	}
+	return r
+}
+
+func (d *NotificationsDrawer) Dismiss(n models.Notification) {
+	id := n.ID()
+	for i := range d.n {
+		if d.n[i].ID() == id {
+			log.Printf("dismiss %d %s", i, d.n[i].Text)
+			copy(d.n[i:], d.n[i+1:])                // Shift d.n[i+1:] left one index.
+			d.n[len(d.n)-1] = models.Notification{} // Erase last element (write zero value).
+			d.n = d.n[:len(d.n)-1]                  // Truncate slice.
+			d.notify()
 			return
 		}
 	}
-}
-
-type subscriber struct {
-	// message channel
-	m chan appMessage
-}
-
-type appMessage struct {
-	ID      string
-	Class   string
-	Stay    bool
-	Content app.UI
 }

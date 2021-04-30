@@ -90,37 +90,45 @@ func (c *Settings) Render() app.UI {
 					Body(
 						app.Button().
 							Class("button is-link").
-							OnClick(c.message).
-							Text("Message!"),
+							OnClick(c.messageError).
+							Text("Message Erreur!"),
 					),
+				app.Button().
+					Class("button is-link").
+					OnClick(c.messageSuccess).
+					Text("Message Succés!"),
 			),
 	)
 }
 
-func (c *Settings) message(ctx app.Context, e app.Event) {
+func (c *Settings) messageError(ctx app.Context, e app.Event) {
 	c.i++
-	MyAppState.Messages.Send(appMessage{
-		Class: "is-error",
-		// Stay:    true,
-		Content: app.Text(fmt.Sprintf("Message %d !", c.i)),
+	MyAppState.Dispatch.Publish(models.Notification{
+		Type: models.NotificationError,
+		Text: fmt.Sprintf("Message %d !", c.i),
+	})
+}
+func (c *Settings) messageSuccess(ctx app.Context, e app.Event) {
+	c.i++
+	MyAppState.Dispatch.Publish(models.Notification{
+		Type: models.NotificationSuccess,
+		Text: fmt.Sprintf("Message %d !", c.i),
 	})
 }
 
 func (c *Settings) submit(ctx app.Context, e app.Event) {
 	s, err := MyAppState.s.SetSettings(ctx, c.Settings)
 	if err != nil {
-		MyAppState.Messages.Send(appMessage{
-			Class:   "is-error",
-			Stay:    true,
-			Content: app.Text(err.Error()),
+		MyAppState.Dispatch.Publish(models.Notification{
+			Type: models.NotificationError,
+			Text: err.Error(),
 		})
 		return
 	}
 	c.Settings = s
-	MyAppState.Messages.Send(appMessage{
-		Class:   "is-info",
-		Stay:    true,
-		Content: app.Text("Réglages enregistrés"),
+	MyAppState.Dispatch.Publish(models.Notification{
+		Type: models.NotificationSuccess,
+		Text: "Réglages enregistrés",
 	})
 
 }
