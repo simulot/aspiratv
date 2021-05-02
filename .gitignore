@@ -26,3 +26,4 @@ cmd/aspiratv/aspiratv
 cmd/aspiratv/test*.json
 errors.log
 tmp/*
+web/app.wasm

@@ -1,7 +1,6 @@
 package bulma
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/maxence-charriere/go-app/v9/pkg/app"
@@ -9,45 +8,43 @@ import (
 
 type Notification struct {
 	app.Compo
-	id        string
-	class     []string
-	text      string
-	onDelete  func()
-	hasDelete bool
+	Cl             []string
+	T              string
+	DeleteCallback func()
 }
 
 func NewNotification() *Notification {
-	return &Notification{}
+	return &Notification{
+		DeleteCallback: func() {},
+	}
 }
 
 func (n *Notification) Text(text string) *Notification {
-	n.text = text
+	n.T = text
 	return n
 }
 
 func (n *Notification) Class(c string) *Notification {
-	n.class = append(n.class, c)
+	n.Cl = append(n.Cl, c)
 	return n
 }
 
-func (n *Notification) Delete(fn func()) *Notification {
-	n.onDelete = fn
-	n.hasDelete = true
+func (n *Notification) OnDelete(fn func()) *Notification {
+	n.DeleteCallback = fn
 	return n
 }
 
 func (n *Notification) Render() app.UI {
 	return app.Div().
 		Class("notification").
-		Class(strings.Join(n.class, " ")).
+		Class(strings.Join(n.Cl, " ")).
 		Body(
-			app.Raw(fmt.Sprintf("<!-- %#v -->", n)),
-			app.Text(n.text),
-			app.If(n.hasDelete,
+			app.Text(n.T),
+			app.If(n.DeleteCallback != nil,
 				app.Button().
 					Class("delete").
 					OnClick(func(ctx app.Context, e app.Event) {
-						n.onDelete()
+						n.DeleteCallback()
 					}, n),
 			),
 		)

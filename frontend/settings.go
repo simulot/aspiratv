@@ -24,23 +24,18 @@ type Settings struct {
 }
 
 func (c *Settings) OnMount(ctx app.Context) {
-	ctx.Async(func() {
-		c.getSettings(ctx)
-		c.Update()
-	})
-}
+	if !MyAppState.StateReady {
+		ctx.Async(func() {
 
-func (c *Settings) getSettings(ctx app.Context) {
-	s, err := MyAppState.s.GetSettings(ctx)
-	if err != nil {
-		log.Print("[SETTINGS] Cant get settings error: ", err)
-		return
+			log.Printf("Settings is waiting")
+			<-MyAppState.Ready
+			c.Update()
+		})
 	}
-	log.Printf("[SETTINGS] Get %#v", s)
-	c.Settings = s
 }
 
 func (c *Settings) Render() app.UI {
+	MyAppState.CurrentPage = PageSettings
 	return AppPageRender(
 		app.H1().
 			Class("title is-1").
@@ -59,7 +54,7 @@ func (c *Settings) Render() app.UI {
 							Type("text").
 							Placeholder(labelLibraryPathPlaceHolder).
 							AutoFocus(true).
-							Value(c.Settings.LibraryPath).
+							Value(MyAppState.Settings.LibraryPath).
 							OnChange(c.ValueTo(&c.Settings.LibraryPath))),
 				app.Div().
 					Class("field is-grouped").
@@ -117,7 +112,7 @@ func (c *Settings) messageSuccess(ctx app.Context, e app.Event) {
 }
 
 func (c *Settings) submit(ctx app.Context, e app.Event) {
-	s, err := MyAppState.s.SetSettings(ctx, c.Settings)
+	s, err := MyAppState.Store.SetSettings(ctx, MyAppState.Settings)
 	if err != nil {
 		MyAppState.Dispatch.Publish(models.Notification{
 			Type: models.NotificationError,
@@ -125,7 +120,7 @@ func (c *Settings) submit(ctx app.Context, e app.Event) {
 		})
 		return
 	}
-	c.Settings = s
+	MyAppState.Settings = s
 	MyAppState.Dispatch.Publish(models.Notification{
 		Type: models.NotificationSuccess,
 		Text: "Réglages enregistrés",
@@ -134,6 +129,10 @@ func (c *Settings) submit(ctx app.Context, e app.Event) {
 }
 
 func (c *Settings) cancel(ctx app.Context, e app.Event) {
-	c.getSettings(ctx)
+	s, err := MyAppState.GetSettings(ctx)
+	if err != nil {
+		MyAppState.Dispatch.Publish(models.Notification{Type: models.NotificationError, Text: err.Error()})
+	}
+	MyAppState.Settings = s
 	c.Update()
 }

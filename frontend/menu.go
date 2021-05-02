@@ -20,7 +20,7 @@ func (c *Menu) Render() app.UI {
 		app.Ul().Class("menu-list").Body(
 			app.Range(MyAppState.menuItems).Slice(func(i int) app.UI {
 				return app.Li().Body(
-					app.A().Class(StringIf(MyAppState.menuItems[i].page == MyAppState.currentPage, "is-active", "")).Href(MyAppState.menuItems[i].path).Text(MyAppState.menuItems[i].label))
+					app.A().Class(StringIf(MyAppState.menuItems[i].page == MyAppState.CurrentPage, "is-active", "")).Href(MyAppState.menuItems[i].path).Text(MyAppState.menuItems[i].label))
 			}),
 		),
 	)

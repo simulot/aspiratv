@@ -7,7 +7,7 @@ type Credits struct {
 }
 
 func (c *Credits) Render() app.UI {
-	MyAppState.currentPage = PageCredits
+	MyAppState.CurrentPage = PageCredits
 
 	return app.Div().Class("container").Body(
 		app.Div().Class("columns").Body(

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 
@@ -14,9 +15,9 @@ import (
 
 func main() {
 	// Initialize web application storage and state
-	frontend.InitializeWebApp()
+	frontend.InitializeWebApp(context.Background())
 	app.Route("/", &frontend.LandingPage{})
-	app.Route("/search", &frontend.SearchOnline{})
+	app.Route("/search", &frontend.Search{})
 	app.Route("/settings", &frontend.Settings{})
 	app.Route("/credits", &frontend.Credits{})
 	app.RunWhenOnBrowser()

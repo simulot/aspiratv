@@ -19,80 +19,76 @@ const (
 	labelAvailableVideos = "%d%s video(s) disponible(s)"
 )
 
-type SearchOnline struct {
+type Search struct {
 	app.Compo
-	ChannelsList *ChanneList
-	Results      []models.SearchResult
+	Results []models.SearchResult
 
-	searchTerms string
-	isRunning   bool
-	stopSearch  chan struct{}
+	SearchTerms string
+	IsRunning   bool
+	StopSearch  chan struct{}
 }
 
-func (c *SearchOnline) OnMount(ctx app.Context) {
+func (c *Search) OnMount(ctx app.Context) {
 	log.Print("SearchOnLine mounted")
+	MyAppState.CurrentPage = PageSearchOnLine
+	c.Results = MyAppState.Results
 
-	ctx.Async(func() {
-		ps, err := MyAppState.s.ProviderDescribe(ctx)
-		if err != nil {
-			log.Print("Providers error: ", err)
-			return
-		}
-		c.ChannelsList = NewChannelList(ps)
-		log.Printf("%#v", c.ChannelsList)
-		// c.ProvidersTags = NewProviderTags()
-		// for _, ch := range c.ChannelsList.SortedList() {
-		// 	c.ProvidersTags.SetTag(&TagInfo{Code: ch.Code, State: TagSelected, Text: ch.Name})
-		// }
-		// c.Update()
-	})
+	// ctx.Async(func() {
+	// 	c.Update()
+
+	// })
 }
 
-func (c *SearchOnline) OnUpdate(ctx app.Context) {
+func (c *Search) OnDismount() {
+	MyAppState.Results = c.Results
+}
+
+func (c *Search) OnUpdate(ctx app.Context) {
 	log.Printf("SearchOnline OnUpdate")
 }
 
-func (c *SearchOnline) Render() app.UI {
+func (c *Search) Render() app.UI {
+
 	return AppPageRender(
 		app.H1().Class("title is-1").Text("Rechercher sur l'Internet"),
 		app.Div().Class("field is-groupped").Body(
 			app.Div().Class("field has-addons").Body(
-				app.Div().Class("control").Body(app.Input().Class("input").Type("text").Placeholder("keywords").AutoFocus(true).OnChange(c.ValueTo(&c.searchTerms))),
-				app.Div().Class("control").Body(app.Button().Class("button is-info").Text("Search").OnClick(c.Search).Class(StringIf(c.isRunning, "is-loading", ""))),
+				app.Div().Class("control").Body(app.Input().Class("input").Type("text").Placeholder("keywords").AutoFocus(true).OnChange(c.ValueTo(&c.SearchTerms))),
+				app.Div().Class("control").Body(app.Button().Class("button is-info").Text("Search").OnClick(c.Search).Class(StringIf(c.IsRunning, "is-loading", ""))),
 			),
 		),
 		c.RenderResults(),
 	)
 }
 
-func (c *SearchOnline) Search(ctx app.Context, e app.Event) {
-	log.Printf("[SEARCH] %q", c.searchTerms)
+func (c *Search) Search(ctx app.Context, e app.Event) {
+	log.Printf("[SEARCH] %q", c.SearchTerms)
 
-	if c.isRunning {
+	if c.IsRunning {
 		log.Printf("[SEARCH] Stopped clicked")
-		close(c.stopSearch)
-		c.isRunning = false
+		close(c.StopSearch)
+		c.IsRunning = false
 		c.Update()
 		return
 	}
 
-	c.stopSearch = make(chan struct{})
-	c.isRunning = true
+	c.StopSearch = make(chan struct{})
+	c.IsRunning = true
 	c.Results = []models.SearchResult{}
 	go func() {
 		cancelCtx, cancel := context.WithCancel(ctx)
 		defer func() {
 			log.Printf("[SEARCH] search goroutine ended")
-			c.isRunning = false
+			c.IsRunning = false
 			cancel()
 			c.Update()
 		}()
 
 		q := models.SearchQuery{
-			Title: c.searchTerms,
+			Title: c.SearchTerms,
 		}
 
-		results, err := MyAppState.s.Search(cancelCtx, q)
+		results, err := MyAppState.Store.Search(cancelCtx, q)
 		if err != nil {
 			log.Printf("[SEARCH] Search replies error: %s", err)
 			return
@@ -100,17 +96,17 @@ func (c *SearchOnline) Search(ctx app.Context, e app.Event) {
 
 		for {
 			select {
-			case <-c.stopSearch:
+			case <-c.StopSearch:
 				log.Printf("[SEARCH] Search stopped")
 				return
 			case <-cancelCtx.Done():
 				log.Printf("[SEARCH] Cancellation: %s", cancelCtx.Err())
-				close(c.stopSearch)
+				close(c.StopSearch)
 				return
 			case r, ok := <-results:
 				if !ok {
 					log.Printf("[SEARCH] Search reply end")
-					close(c.stopSearch)
+					close(c.StopSearch)
 					return
 				}
 				log.Printf("[SEARCH] Got %q", r.Title)
@@ -122,12 +118,12 @@ func (c *SearchOnline) Search(ctx app.Context, e app.Event) {
 
 }
 
-func (c *SearchOnline) Add(ctx app.Context, r models.SearchResult) {
+func (c *Search) Add(ctx app.Context, r models.SearchResult) {
 	c.Results = append(c.Results, r)
 	c.Update()
 }
 
-func (c *SearchOnline) RenderResults() app.UI {
+func (c *Search) RenderResults() app.UI {
 	return app.If(len(c.Results) > 0,
 		app.H2().Class("title is-2").Text(fmt.Sprintf("%d result(s)", len(c.Results))),
 		app.Div().Class("columns is-multiline is-mobile").Body(
@@ -140,14 +136,14 @@ func (c *SearchOnline) RenderResults() app.UI {
 	)
 }
 
-func (c *SearchOnline) RenderResult(r models.SearchResult) app.UI {
-	// log.Printf("SearchOnline rendering RenderResult %s", r.Title)
+func (c *Search) RenderResult(r models.SearchResult) app.UI {
+	log.Printf("SearchOnline rendering RenderResult %s", r.Title)
 	return app.Body().Class("column is-6").Body(
 		app.Div().Class("card").Body(
 			app.Div().Class("card-image").Body(app.Img().Class("image").Src(r.ThumbURL)),
 			app.Div().Class("card-content").Body(
 				app.Div().Class("media").Body(
-					app.Div().Class("media-left").Body(app.Img().Class("image is-48x48").Src(c.ChannelsList.Channel(r.Chanel).Logo)).Title(c.ChannelsList.Channel(r.Chanel).Name),
+					app.Div().Class("media-left").Body(app.Img().Class("image is-48x48").Src(MyAppState.ChannelsList.Channel(r.Chanel).Logo)).Title(MyAppState.ChannelsList.Channel(r.Chanel).Name),
 					app.Div().Class("media-content").Body(
 						app.P().Class("title is-6").Text(r.Show),
 						app.P().Class("subtitle is-6").Text(r.ID),
@@ -199,3 +195,15 @@ func (c ChanneList) SortedList() []providers.Channel {
 }
 
 func (c ChanneList) Channel(code string) providers.Channel { return c.channels[code] }
+
+type DownloadDialog struct {
+	Result models.SearchResult
+
+	Path string
+}
+
+func NewDownloadDialog(r models.SearchResult) *DownloadDialog {
+	return &DownloadDialog{
+		Result: r,
+	}
+}

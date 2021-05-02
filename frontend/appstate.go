@@ -1,7 +1,9 @@
 package frontend
 
 import (
+	"context"
 	"log"
+	"time"
 
 	"github.com/maxence-charriere/go-app/v9/pkg/app"
 	"github.com/simulot/aspiratv/models"
@@ -16,35 +18,76 @@ const (
 	PageCredits
 )
 
+// sync.Condition:  https://kaviraj.me/understanding-condition-variable-in-go/
+
 // AppState hold the state of the application
 type AppState struct {
-	s           *RestClient
-	currentPage PageID
-	menuItems   []Menuitem
+	Ready chan struct{}
 
+	// Indicate when the application is ready. Used by LoadSetting component
+	StateReady bool
+
+	// Store use server's REST API
+	Store *RestClient
+
+	// Application settings
+	Settings models.Settings
+
+	// Keep track of displayed page, used for application menue
+	CurrentPage PageID
+
+	// List of menu items.
+	menuItems []Menuitem
+
+	// Dispatch sent notifications to all of its subscribers
 	Dispatch *models.NotificationDispatcher
-	Drawer   *NotificationsDrawer
+
+	// Drawer display notifications
+	Drawer *NotificationsDrawer
+
+	// List of available channels and TV sites
+	ChannelsList *ChanneList
+
+	// For Search Page
+	// Store results and presents them back instantly
+	Results []models.SearchResult
 }
 
 var MyAppState *AppState
 
-func InitializeWebApp() *AppState {
+func InitializeWebApp(ctx context.Context) *AppState {
 	u := app.Window().URL()
 	u.Scheme = "http"
 	u.Path = "/api/"
 	s := NewRestStore(u.String())
-	MyAppState = NewAppState(s)
+	MyAppState = NewAppState(ctx, s)
 
+	go func() {
+		ps, err := MyAppState.Store.ProviderDescribe(ctx)
+		if err != nil {
+			log.Print("Providers error: ", err)
+			return
+		}
+		MyAppState.ChannelsList = NewChannelList(ps)
+		MyAppState.Settings, err = MyAppState.GetSettings(ctx)
+		if err != nil {
+			log.Print("Settings error: ", err)
+			return
+		}
+
+		time.Sleep(2 * time.Second)
+		MyAppState.StateReady = true
+		close(MyAppState.Ready)
+	}()
 	return MyAppState
 }
 
-func NewAppState(s *RestClient) *AppState {
-	dispatch := models.NewNotificationDispatcher()
-	drawer := NewNotificationsDrawer()
-	drawer.Attach(dispatch)
-	return &AppState{
-		s:           s,
-		currentPage: PageSearchOnLine,
+func NewAppState(ctx context.Context, s *RestClient) *AppState {
+
+	state := AppState{
+		Ready:       make(chan struct{}, 1),
+		Store:       s,
+		CurrentPage: PageSearchOnLine,
 		menuItems: []Menuitem{
 			{
 				PageSearchOnLine,
@@ -71,9 +114,20 @@ func NewAppState(s *RestClient) *AppState {
 				"/credits",
 			},
 		},
-		Dispatch: dispatch,
-		Drawer:   drawer,
 	}
+	state.Dispatch = models.NewNotificationDispatcher()
+	state.Drawer = NewNotificationsDrawer()
+	state.Drawer.Attach(state.Dispatch)
+
+	return &state
+}
+
+func (s *AppState) GetSettings(ctx context.Context) (models.Settings, error) {
+	settings, err := MyAppState.Store.GetSettings(ctx)
+	if err != nil {
+		return models.Settings{}, err
+	}
+	return settings, nil
 }
 
 func StringIf(b bool, whenTrue string, whenFalse string) string {

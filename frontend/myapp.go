@@ -12,11 +12,14 @@ import (
 // MyApp component draw de application banner and menus
 type MyApp struct {
 	app.Compo
-	updateAvailable bool
+	UpdateAvailable bool
+}
+
+func (c *MyApp) OnMount(ctx app.Context) {
 }
 
 func (c *MyApp) OnAppUpdate(ctx app.Context) {
-	c.updateAvailable = ctx.AppUpdateAvailable // Reports that an app update is available.
+	c.UpdateAvailable = ctx.AppUpdateAvailable // Reports that an app update is available.
 	c.Update()                                 // Triggers UI update.
 }
 
@@ -29,7 +32,7 @@ func (c *MyApp) Render() app.UI {
 	return app.Div().Class("column is-narrow").Body(
 		&Logo{},
 		&Menu{},
-		app.If(c.updateAvailable, app.Button().Text("Mettre à jour").OnClick(c.onUpdateClick)),
+		app.If(c.UpdateAvailable, app.Button().Text("Mettre à jour").OnClick(c.onUpdateClick)),
 	)
 }
 
@@ -37,6 +40,7 @@ func AppPageRender(pages ...app.UI) app.UI {
 	return app.Div().
 		Class("container").
 		Body(
+			&LoadSettings{},
 			NewToastContainer(),
 			app.Div().
 				Class("columns").
@@ -86,16 +90,12 @@ func NewToastContainer() *ToastContainer {
 }
 
 func (c *ToastContainer) OnMount(ctx app.Context) {
-	log.Printf("ToastContainer.OnMount")
 	c.unsubscribe = MyAppState.Drawer.OnChange(func() {
-		log.Printf("ToastContainer notified")
 		ctx.Dispatch(func(ctx app.Context) {
-			log.Printf("ToastContainer Updated")
 			ns := MyAppState.Drawer.Notifications()
 			for i := 0; i < len(ns); i++ {
 				log.Printf("-- %d: %s", i, ns[i].Text)
 			}
-			// c.Update()
 		})
 	})
 }
@@ -113,31 +113,29 @@ func (c *ToastContainer) Render() app.UI {
 		Body(
 			app.Range(ns).
 				Slice(func(i int) app.UI {
-					n := ns[i]
-					return NewToast(n, func() { MyAppState.Drawer.Dismiss(n) })
+					return NewToast(ns[i])
 				}),
 		)
 }
 
 type Toast struct {
 	app.Compo
-	dismiss func()
+	Dismiss func()
 	models.Notification
 }
 
-func NewToast(n models.Notification, dismiss func()) *Toast {
+func NewToast(n models.Notification) *Toast {
 	c := &Toast{
-		dismiss:      dismiss,
+		Dismiss:      func() { MyAppState.Drawer.Dismiss(n) },
 		Notification: n,
 	}
 	if n.Type != models.NotificationError {
-		time.AfterFunc(4*time.Second, dismiss)
+		time.AfterFunc(4*time.Second, c.Dismiss)
 	}
 	return c
 }
 
 func (c *Toast) Render() app.UI {
-	log.Printf("Toast.Render %d, %s", c.Notification.ID(), c.Text)
 	class := map[models.NotificationType]string{
 		models.NotificationError:   "is-danger",
 		models.NotificationInfo:    "is-info",
@@ -147,7 +145,7 @@ func (c *Toast) Render() app.UI {
 
 	n := bulma.NewNotification().Class(class).Text(c.Notification.Text)
 	if c.Type == models.NotificationError {
-		n.Delete(c.dismiss)
+		n.OnDelete(c.Dismiss)
 	}
 	return n
 }
