@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"sort"
 
 	"github.com/maxence-charriere/go-app/v9/pkg/app"
 	"github.com/simulot/aspiratv/models"
-	"github.com/simulot/aspiratv/providers"
 )
 
 const (
@@ -23,19 +21,19 @@ type Search struct {
 	app.Compo
 	Results []models.SearchResult
 
-	SearchTerms string
-	IsRunning   bool
-	StopSearch  chan struct{}
+	SearchTerms    string
+	IsRunning      bool
+	StopSearch     chan struct{}
+	DownloadOpen   bool
+	SelectedResult models.SearchResult
 }
 
 func (c *Search) OnMount(ctx app.Context) {
-	log.Print("SearchOnLine mounted")
 	MyAppState.CurrentPage = PageSearchOnLine
 	c.Results = MyAppState.Results
 
 	// ctx.Async(func() {
 	// 	c.Update()
-
 	// })
 }
 
@@ -58,12 +56,15 @@ func (c *Search) Render() app.UI {
 			),
 		),
 		c.RenderResults(),
+		app.If(c.DownloadOpen,
+			NewDownloadDialog(c.SelectedResult, func() {
+				c.DownloadOpen = false
+			}),
+		),
 	)
 }
 
 func (c *Search) Search(ctx app.Context, e app.Event) {
-	log.Printf("[SEARCH] %q", c.SearchTerms)
-
 	if c.IsRunning {
 		log.Printf("[SEARCH] Stopped clicked")
 		close(c.StopSearch)
@@ -109,7 +110,6 @@ func (c *Search) Search(ctx app.Context, e app.Event) {
 					close(c.StopSearch)
 					return
 				}
-				log.Printf("[SEARCH] Got %q", r.Title)
 				c.Add(ctx, r)
 			}
 		}
@@ -137,7 +137,6 @@ func (c *Search) RenderResults() app.UI {
 }
 
 func (c *Search) RenderResult(r models.SearchResult) app.UI {
-	log.Printf("SearchOnline rendering RenderResult %s", r.Title)
 	return app.Body().Class("column is-6").Body(
 		app.Div().Class("card").Body(
 			app.Div().Class("card-image").Body(app.Img().Class("image").Src(r.ThumbURL)),
@@ -158,52 +157,17 @@ func (c *Search) RenderResult(r models.SearchResult) app.UI {
 				),
 			),
 			app.Div().Class("card-footer").Body(
-				app.A().Href("#").Class("card-footer-item").Text("Télécharger"),
+				app.A().Href("#").Class("card-footer-item").Text("Télécharger").OnClick(c.OnDownload(r)),
 				app.A().Href("#").Class("card-footer-item").Text("Surveiller"),
 			),
 		),
 	)
-
 }
 
-type ChanneList struct {
-	channels map[string]providers.Channel
-}
-
-func NewChannelList(l []providers.Description) *ChanneList {
-	c := ChanneList{
-		channels: map[string]providers.Channel{},
-	}
-
-	for _, p := range l {
-		for code, ch := range p.Channels {
-			c.channels[code] = ch
-		}
-	}
-	return &c
-}
-
-func (c ChanneList) SortedList() []providers.Channel {
-	s := []providers.Channel{}
-	for _, ch := range c.channels {
-		s = append(s, ch)
-	}
-	sort.Slice(s, func(i, j int) bool {
-		return s[i].Name < s[j].Name
-	})
-	return s
-}
-
-func (c ChanneList) Channel(code string) providers.Channel { return c.channels[code] }
-
-type DownloadDialog struct {
-	Result models.SearchResult
-
-	Path string
-}
-
-func NewDownloadDialog(r models.SearchResult) *DownloadDialog {
-	return &DownloadDialog{
-		Result: r,
+func (c *Search) OnDownload(r models.SearchResult) func(ctx app.Context, e app.Event) {
+	return func(ctx app.Context, e app.Event) {
+		c.DownloadOpen = true
+		c.SelectedResult = r
+		c.Update()
 	}
 }

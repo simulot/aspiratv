@@ -3,10 +3,11 @@ package frontend
 import (
 	"context"
 	"log"
-	"time"
+	"sort"
 
 	"github.com/maxence-charriere/go-app/v9/pkg/app"
 	"github.com/simulot/aspiratv/models"
+	"github.com/simulot/aspiratv/providers"
 )
 
 type PageID int
@@ -17,8 +18,6 @@ const (
 	PageSettings
 	PageCredits
 )
-
-// sync.Condition:  https://kaviraj.me/understanding-condition-variable-in-go/
 
 // AppState hold the state of the application
 type AppState struct {
@@ -75,7 +74,6 @@ func InitializeWebApp(ctx context.Context) *AppState {
 			return
 		}
 
-		time.Sleep(2 * time.Second)
 		MyAppState.StateReady = true
 		close(MyAppState.Ready)
 	}()
@@ -166,7 +164,7 @@ func (d *NotificationsDrawer) notify() {
 func (d *NotificationsDrawer) OnChange(fn func()) func() {
 	c := make(chan struct{}, 1)
 	go func() {
-		for _ = range c {
+		for range c {
 			fn()
 		}
 	}()
@@ -205,3 +203,33 @@ func (d *NotificationsDrawer) Dismiss(n models.Notification) {
 		}
 	}
 }
+
+type ChanneList struct {
+	channels map[string]providers.Channel
+}
+
+func NewChannelList(l []providers.Description) *ChanneList {
+	c := ChanneList{
+		channels: map[string]providers.Channel{},
+	}
+
+	for _, p := range l {
+		for code, ch := range p.Channels {
+			c.channels[code] = ch
+		}
+	}
+	return &c
+}
+
+func (c ChanneList) SortedList() []providers.Channel {
+	s := []providers.Channel{}
+	for _, ch := range c.channels {
+		s = append(s, ch)
+	}
+	sort.Slice(s, func(i, j int) bool {
+		return s[i].Name < s[j].Name
+	})
+	return s
+}
+
+func (c ChanneList) Channel(code string) providers.Channel { return c.channels[code] }
