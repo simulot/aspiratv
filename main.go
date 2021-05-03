@@ -6,15 +6,19 @@ import (
 	"net/http"
 
 	"github.com/maxence-charriere/go-app/v9/pkg/app"
-	"github.com/simulot/aspiratv/backend"
-	"github.com/simulot/aspiratv/frontend"
-	"github.com/simulot/aspiratv/providers"
-	"github.com/simulot/aspiratv/providers/mockup"
-	"github.com/simulot/aspiratv/store"
+	"github.com/simulot/aspiratv/pkg/backend"
+	"github.com/simulot/aspiratv/pkg/frontend"
+	"github.com/simulot/aspiratv/pkg/providers"
+	"github.com/simulot/aspiratv/pkg/providers/mockup"
+	"github.com/simulot/aspiratv/pkg/store"
 )
 
 func main() {
 	// Initialize web application storage and state
+
+	ctx := context.Background()
+	// TODO: Handle gracefull shutdown
+
 	frontend.InitializeWebApp(context.Background())
 	app.Route("/", &frontend.LandingPage{})
 	app.Route("/search", &frontend.Search{})
@@ -60,7 +64,7 @@ func main() {
 			"https://cdn.jsdelivr.net/npm/@mdi/font@5.9.55/css/materialdesignicons.min.css",
 		},
 	}))
-	mux.Handle(backend.APIURL, logRequests(backend.NewServer(st, providers)))
+	mux.Handle(backend.APIURL, logRequests(backend.NewServer(ctx, st, providers)))
 
 	if err := http.ListenAndServe(":8000", mux); err != nil {
 		log.Fatal(err)

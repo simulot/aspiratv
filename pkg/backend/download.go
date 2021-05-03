@@ -1,0 +1,65 @@
+package backend
+
+import (
+	"encoding/json"
+	"log"
+	"net/http"
+
+	"github.com/simulot/aspiratv/pkg/models"
+)
+
+/*
+	Download Handler
+	GET  --> List of ongoing download
+	POST --> Add a Download
+	DELETE --> Kill a download
+*/
+
+func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
+
+	switch r.Method {
+	// case http.MethodGet:
+	// 	s.getDownloads(w, r)
+	case http.MethodPost, http.MethodPut, http.MethodPatch:
+		s.postDownload(w, r)
+	default:
+		s.sendError(w, APIError{nil, http.StatusMethodNotAllowed, ""})
+	}
+}
+
+// func (s *Server) getDownloads(w http.ResponseWriter, r *http.Request) {
+// s.sendError(w, APIError{code: http.StatusNotImplemented})
+// }
+
+func (s *Server) postDownload(w http.ResponseWriter, r *http.Request) {
+	var task models.DownloadTask
+	var err error
+
+	defer r.Body.Close()
+	err = json.NewDecoder(r.Body).Decode(&task)
+	if err != nil {
+		s.sendError(w, err)
+		return
+	}
+	log.Printf("[HTTPSERVER] DownloadTask: %#v", task)
+
+	p := s.Provider(task.Result.Provider)
+	if p == nil {
+		s.sendError(w, APIError{code: http.StatusBadRequest, message: "Unknown provider"})
+		return
+	}
+
+	c, err := p.GetMedias(r.Context(), task)
+
+	if p == nil {
+		s.sendError(w, APIError{err: err, code: http.StatusBadRequest})
+		return
+	}
+
+	go s.GetMedias(task, c)
+	s.sendError(w, APIError{code: http.StatusNotImplemented})
+}
+
+func (s *Server) GetMedias(task models.DownloadTask, c <-chan models.DownloadItem) {
+
+}
