@@ -145,8 +145,9 @@ type dlProgression struct {
 
 func (p *dlProgression) Progress(current int, total int) {
 	p.Message.Progression.Progress(current, total)
-	if current > total {
+	if current >= total {
 		p.Status = models.StatusSuccess
+		p.SetPinned(false)
 	}
 	p.d.Publish(p.Message)
 }
