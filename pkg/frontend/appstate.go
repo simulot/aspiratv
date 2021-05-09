@@ -125,9 +125,9 @@ func NewAppState(ctx context.Context, s *API) *AppState {
 	state.Dispatch = dispatcher.NewDispatcher()
 	state.Drawer = NewNotificationsDrawer()
 	state.Drawer.Attach(state.Dispatch)
-	// if !app.IsServer {
-	// 	go state.ServerNotifications(ctx)
-	// }
+	if !app.IsServer {
+		go state.ServerNotifications(ctx)
+	}
 	return &state
 }
 
@@ -160,13 +160,10 @@ func (s *AppState) ServerNotifications(ctx context.Context) func() {
 		cancelCtx()
 	}
 
-	passage := 0
 	go func() {
 		connected := false
-		errMessage := models.NewMessage("connexion", models.StatusSuccess)
+		errMessage := models.NewMessage("connexion").SetStatus(models.StatusSuccess)
 		for {
-			log.Printf("[NOTIFICATION CLIENT] Connecting to notification server #%d", passage)
-			passage++
 			messages, err := s.API.SubscribeServerNotifications(ctx)
 
 			select {

@@ -151,48 +151,39 @@ func (s *API) PostDownload(ctx context.Context, dr models.DownloadTask) (models.
 }
 
 // Subscribe to server notifications api, return a channel of messages, a closing function and an error
-func (s *API) SubscribeServerNotifications(ctx context.Context) (<-chan models.Message, error) {
-
+func (s *API) SubscribeServerNotifications(ctx context.Context) (<-chan *models.Message, error) {
 	ctx, cancel := context.WithCancel(ctx)
-	// ctx, cancel := context.WithCancel(ctx)
-	log.Printf("[HTTPCLIENT] Dial websocket %s", s.endPoint+"notifications/")
 	c, _, err := websocket.Dial(ctx, s.endPoint+"notifications/", nil)
 	if err != nil {
-		log.Printf("notifications Dial error:%s", err)
+		log.Printf("[HTTPCLIENT] Can't connect to %s: %s", s.endPoint+"notifications/", err)
 		cancel()
 		return nil, err
 	}
 	log.Printf("[HTTPCLIENT] connected to %s", s.endPoint+"notifications/")
-	messages := make(chan models.Message, 1)
+	messages := make(chan *models.Message, 1)
 
 	go func() {
 		defer close(messages)
 		defer c.Close(websocket.StatusInternalError, "the sky is falling to the Notification client")
 		defer cancel()
 		for {
-			log.Printf("Notifications WS loop")
 			select {
 			case <-ctx.Done():
-				log.Printf("Receive cancellation while writing WS")
 				c.Close(websocket.StatusNormalClosure, "Context cancellation")
 				return
 			default:
 				m := models.Message{}
-				log.Printf("Notifications WS loop - wait message")
 				if err := wsjson.Read(ctx, c, &m); err != nil {
 					var wsErr websocket.CloseError
 					if errors.As(err, &wsErr) && wsErr.Code == websocket.StatusNormalClosure {
 						c.Close(websocket.StatusNormalClosure, "")
 						return
 					}
-					// TODO log errors
-					log.Printf("Can't read WS:%s", err)
+					log.Printf("[HTTPCLIENT] Can't read message:%s", err)
 					c.Close(websocket.StatusGoingAway, "WS receive error")
 					return
 				}
-				log.Printf("Publish server message")
-				messages <- m
-				log.Printf("Publish server message done")
+				messages <- &m
 			}
 		}
 	}()

@@ -14,7 +14,7 @@ import (
 // to global state of the application in order to survives to
 // page navigation
 type NotificationsDrawer struct {
-	p           []models.Message
+	p           []*models.Message
 	subscribers []chan struct{}
 }
 
@@ -32,7 +32,7 @@ func (d *NotificationsDrawer) Attach(sub dispatcher.Subscriber) {
 // onNotification is the called back when a new publication arrives
 // when the incoming publication is already known ( same UUID) the new one
 // replace the old one. Then drawer subscribers are notified
-func (d *NotificationsDrawer) onNotification(new models.Message) {
+func (d *NotificationsDrawer) onNotification(new *models.Message) {
 	defer d.notify()
 	for i := range d.p {
 		if d.p[i].UUID() == new.UUID() {
@@ -76,8 +76,8 @@ func (d *NotificationsDrawer) OnChange(fn func()) func() {
 }
 
 // Notifications get the list of all notifications maintained in the drawer
-func (d *NotificationsDrawer) Notifications() []models.Message {
-	r := []models.Message{}
+func (d *NotificationsDrawer) Notifications() []*models.Message {
+	r := []*models.Message{}
 	for i := 0; i < len(d.p); i++ {
 		r = append(r, d.p[i])
 	}
@@ -85,13 +85,13 @@ func (d *NotificationsDrawer) Notifications() []models.Message {
 }
 
 // Dismiss remove a notification when the user click on close or a timeout run off
-func (d *NotificationsDrawer) Dismiss(p models.Message) {
+func (d *NotificationsDrawer) Dismiss(p *models.Message) {
 	id := p.UUID()
 	for i := range d.p {
 		if d.p[i].UUID() == id {
-			copy(d.p[i:], d.p[i+1:])           // Shift d.n[i+1:] left one index.
-			d.p[len(d.p)-1] = models.Message{} // Erase last element (write zero value).
-			d.p = d.p[:len(d.p)-1]             // Truncate slice.
+			copy(d.p[i:], d.p[i+1:]) // Shift d.n[i+1:] left one index.
+			d.p[len(d.p)-1] = nil    // Erase last element (write zero value).
+			d.p = d.p[:len(d.p)-1]   // Truncate slice.
 			d.notify()
 			return
 		}
@@ -137,15 +137,15 @@ func (c *PublishableContainer) Render() app.UI {
 type MessageElement struct {
 	app.Compo
 	Dismiss func()
-	models.Message
+	*models.Message
 }
 
-func NewPublishableElement(p models.Message) *MessageElement {
+func NewPublishableElement(p *models.Message) *MessageElement {
 	c := &MessageElement{
 		Dismiss: func() { MyAppState.Drawer.Dismiss(p) },
 		Message: p,
 	}
-	if p.AutoClose() {
+	if !p.Pinned {
 		time.AfterFunc(4*time.Second, c.Dismiss)
 	}
 	return c

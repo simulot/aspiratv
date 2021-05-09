@@ -98,27 +98,27 @@ func (c *Settings) Render() app.UI {
 
 func (c *Settings) messageError(ctx app.Context, e app.Event) {
 	c.i++
-	MyAppState.Dispatch.Publish(models.NewMessage(fmt.Sprintf("Message %d !", c.i), models.StatusError))
+	MyAppState.Dispatch.Publish(models.NewMessage(fmt.Sprintf("Message %d !", c.i)).SetStatus(models.StatusError).SetPinned(true))
 }
 func (c *Settings) messageSuccess(ctx app.Context, e app.Event) {
 	c.i++
-	MyAppState.Dispatch.Publish(models.NewMessage(fmt.Sprintf("Message %d !", c.i), models.StatusSuccess))
+	MyAppState.Dispatch.Publish(models.NewMessage(fmt.Sprintf("Message %d !", c.i)).SetStatus(models.StatusSuccess))
 }
 
 func (c *Settings) submit(ctx app.Context, e app.Event) {
 	s, err := MyAppState.API.SetSettings(ctx, MyAppState.Settings)
 	if err != nil {
-		MyAppState.Dispatch.Publish(models.NewMessage(err.Error(), models.StatusError))
+		MyAppState.Dispatch.Publish(models.NewMessage(err.Error()).SetStatus(models.StatusError).SetPinned(true))
 		return
 	}
 	MyAppState.Settings = s
-	MyAppState.Dispatch.Publish(models.NewMessage("Réglages enregistrés", models.StatusSuccess))
+	MyAppState.Dispatch.Publish(models.NewMessage("Réglages enregistrés").SetStatus(models.StatusSuccess))
 }
 
 func (c *Settings) cancel(ctx app.Context, e app.Event) {
 	s, err := MyAppState.GetSettings(ctx)
 	if err != nil {
-		MyAppState.Dispatch.Publish(models.NewMessage(err.Error(), models.StatusError))
+		MyAppState.Dispatch.Publish(models.NewMessage(err.Error()).SetStatus(models.StatusError).SetPinned(true))
 	}
 	MyAppState.Settings = s
 	c.Update()

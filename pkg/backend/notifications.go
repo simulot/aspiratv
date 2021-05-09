@@ -35,10 +35,10 @@ func (s *Server) getNotifications(w http.ResponseWriter, r *http.Request) (err e
 	}
 	defer c.Close(websocket.StatusInternalError, "the sky is falling on notification server")
 
-	notificationsChan := make(chan models.Message, 10)
+	notificationsChan := make(chan *models.Message, 10)
 	defer close(notificationsChan)
 
-	cancelSubscription := s.dispatcher.Subscribe(func(p models.Message) {
+	cancelSubscription := s.dispatcher.Subscribe(func(p *models.Message) {
 		notificationsChan <- p
 	})
 	defer cancelSubscription()

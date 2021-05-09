@@ -66,7 +66,7 @@ func (s *Server) Scheduler(ctx context.Context) {
 		for {
 			select {
 			case t := <-tick.C:
-				s.dispatcher.Publish(models.NewMessage(fmt.Sprintf("It's %s, and I'm alive", t.Format("15:04:05")), models.StatusInfo))
+				s.dispatcher.Publish(models.NewMessage(fmt.Sprintf("It's %s, and I'm alive", t.Format("15:04:05"))).SetStatus(models.StatusInfo))
 			case <-ctx.Done():
 				return
 			}
@@ -80,7 +80,7 @@ func (s *Server) WithLogger(log logger) *Server {
 	return s
 }
 
-func (s *Server) LogNotifications(p models.Message) {
+func (s *Server) LogNotifications(p *models.Message) {
 	s.log.Printf("[SERVER NOTIFICATION] %s", p)
 }
 

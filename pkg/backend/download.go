@@ -62,6 +62,8 @@ func (s *Server) postDownload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go s.GetMedias(task, c)
+	s.writeJsonResponse(w, task, http.StatusOK)
+
 }
 
 func (s *Server) GetMedias(task models.DownloadTask, c <-chan models.DownloadItem) {
@@ -73,12 +75,11 @@ func (s *Server) GetMedias(task models.DownloadTask, c <-chan models.DownloadIte
 	// 	job.End()
 	// }()
 
-	jobDownload := models.NewMessage(fmt.Sprintf("Téléchargement de %q", task.Result.Show), models.StatusInfo)
+	jobDownload := models.NewMessage(fmt.Sprintf("Téléchargement de %q", task.Result.Show)).SetPinned(true).SetStatus(models.StatusInfo)
 	s.dispatcher.Publish(jobDownload)
 
 	dispatchError := func(err error) {
-		jobDownload.Text = fmt.Sprintf("Téléchargement de %q: erreur: %s", task.Result.Show, err)
-		jobDownload.Status = models.StatusError
+		jobDownload.SetText(fmt.Sprintf("Téléchargement de %q: erreur: %s", task.Result.Show, err)).SetStatus(models.StatusError).SetPinned(true)
 		s.dispatcher.Publish(jobDownload)
 	}
 
@@ -93,8 +94,7 @@ func (s *Server) GetMedias(task models.DownloadTask, c <-chan models.DownloadIte
 		select {
 		case item, ok := <-c:
 			if !ok {
-				jobDownload.Status = models.StatusSuccess
-				jobDownload.Text = fmt.Sprintf("Téléchargement de %q terminé", task.Result.Show)
+				jobDownload.SetText(fmt.Sprintf("Téléchargement de %q terminé", task.Result.Show)).SetStatus(models.StatusSuccess).SetPinned(false)
 				s.dispatcher.Publish(jobDownload)
 				return
 			}
@@ -116,7 +116,7 @@ func (s *Server) GetMedias(task models.DownloadTask, c <-chan models.DownloadIte
 			mp4Name := fmt.Sprintf("%s S%02dE%02d %s.mp4", item.MediaInfo.Show, item.MediaInfo.Season, item.MediaInfo.Episode, item.MediaInfo.Title)
 			episodePath := path.Join(seasonPath, mp4Name)
 			itemProgression := dlProgression{
-				Message: models.NewProgression(mp4Name, models.StatusInfo, 0, 0),
+				Message: models.NewProgression(mp4Name, 0, 0).SetPinned(true).SetStatus(models.StatusInfo),
 				d:       s.dispatcher,
 			}
 
@@ -139,11 +139,14 @@ func (s *Server) GetMedias(task models.DownloadTask, c <-chan models.DownloadIte
 }
 
 type dlProgression struct {
-	models.Message
+	*models.Message
 	d *dispatcher.Dispatcher
 }
 
 func (p *dlProgression) Progress(current int, total int) {
 	p.Message.Progression.Progress(current, total)
+	if current > total {
+		p.Status = models.StatusSuccess
+	}
 	p.d.Publish(p.Message)
 }

@@ -63,8 +63,8 @@ func (dd *DownloadDialog) OnDownload(ctx app.Context, e app.Event) {
 
 	task, err = MyAppState.API.PostDownload(ctx, task)
 	if err != nil {
-		MyAppState.Dispatch.Publish(models.NewMessage(err.Error(), models.StatusError))
+		MyAppState.Dispatch.Publish(models.NewMessage(err.Error()).SetStatus(models.StatusError))
 		return
 	}
-	MyAppState.Dispatch.Publish(models.NewMessage("Démarrage du téléchargement", models.StatusInfo))
+	dd.Back()
 }

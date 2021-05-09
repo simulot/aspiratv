@@ -30,18 +30,7 @@ func (c *MyApp) Render() app.UI {
 		&Logo{},
 		&Menu{},
 		app.If(c.UpdateAvailable, app.Button().Text("Mettre à jour").OnClick(c.onUpdateClick)),
-		app.Div().Class("field").Body(
-			app.Label().Class("label").Text("Activer les notifications"),
-			app.Div().Class("control").Body(
-				app.Input().Type("checkbox").OnChange(c.onCheckBox),
-			),
-		),
 	)
-}
-
-func (c *MyApp) onCheckBox(ctx app.Context, e app.Event) {
-	c.Notifications = ctx.JSSrc.Get("checked").Bool()
-	MyAppState.ToggleServerNotifications(c.Notifications)
 }
 
 func AppPageRender(pages ...app.UI) app.UI {

@@ -22,27 +22,25 @@ type PublishableType int
 type Message struct {
 	ID          uuid.UUID           // uuid
 	Status      StatusType          // Status Success/Error/Info...
+	Pinned      bool                // True, the notification stays on screen
 	When        time.Time           // creation / update time
 	Text        string              // Textual message
-	Progression *ProgressionPayload //
+	Progression *ProgressionPayload // When message is a progression
 }
 
-func NewMessage(t string, s StatusType) Message {
-	return Message{
-		Status: s,
-		When:   time.Now(),
-		ID:     uuid.New(),
-		Text:   t,
+func NewMessage(t string) *Message {
+	return &Message{
+		When: time.Now(),
+		ID:   uuid.New(),
+		Text: t,
 	}
 }
+
+func (m *Message) SetPinned(b bool) *Message       { m.Pinned = b; return m }
+func (m *Message) SetStatus(s StatusType) *Message { m.Status = s; return m }
+func (m *Message) SetText(t string) *Message       { m.Text = t; return m }
 
 func (m Message) UUID() uuid.UUID { return m.ID }
-func (m Message) AutoClose() bool {
-	if m.Progression != nil {
-		return m.Progression.AutoClose()
-	}
-	return true
-}
 func (m Message) String() string {
 	if m.Progression != nil {
 		return m.Text + " " + m.Progression.String()
@@ -56,20 +54,16 @@ type ProgressionPayload struct {
 	Total   int
 }
 
-func NewProgression(t string, s StatusType, current int, total int) Message {
-	return Message{
-		ID:     uuid.New(),
-		Status: s,
-		When:   time.Now(),
-		Text:   t,
+func NewProgression(t string, current int, total int) *Message {
+	return &Message{
+		ID:   uuid.New(),
+		When: time.Now(),
+		Text: t,
 		Progression: &ProgressionPayload{
 			Current: current,
 			Total:   total,
 		},
 	}
-}
-func (p ProgressionPayload) AutoClose() bool {
-	return p.Total > p.Current
 }
 
 func (p ProgressionPayload) String() string {
