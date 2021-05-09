@@ -3,7 +3,6 @@ package backend
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -90,7 +89,6 @@ func (s *Server) GetMedias(task models.DownloadTask, c <-chan models.DownloadIte
 	}
 
 	for {
-		log.Printf("GetMedias Wait for a new media")
 		select {
 		case item, ok := <-c:
 			if !ok {
@@ -130,7 +128,6 @@ func (s *Server) GetMedias(task models.DownloadTask, c <-chan models.DownloadIte
 
 			// }
 			// jobChannel <- itemJob
-			log.Printf("au suivant")
 		case <-s.backgroundCtx.Done():
 			dispatchError(s.backgroundCtx.Err())
 			return

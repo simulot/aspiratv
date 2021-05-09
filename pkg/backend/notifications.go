@@ -2,7 +2,6 @@ package backend
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"time"
 
@@ -44,7 +43,6 @@ func (s *Server) getNotifications(w http.ResponseWriter, r *http.Request) (err e
 	defer cancelSubscription()
 
 	defer func() {
-		log.Printf("server.getNotifications defer")
 		if err != nil {
 			// Prevent sending http error through classical connection when being hijacked
 			s.logError(err)
@@ -53,23 +51,19 @@ func (s *Server) getNotifications(w http.ResponseWriter, r *http.Request) (err e
 	}()
 
 	for {
-		log.Printf("getNotifications loop")
 		select {
 		case m := <-notificationsChan:
-			log.Printf("getNotifications write message %v", m)
-			err = wsjson.Write(ctx, c, m)
-			// err = writemessage(ctx, c, m)
+			err = writemessage(ctx, c, m)
 			if err != nil {
 				return err
 			}
 		case <-ctx.Done():
-			log.Printf("getNotifications context done: %s", ctx.Err())
 			return ctx.Err()
 		}
 	}
 }
 
-func writemessage(ctx context.Context, c *websocket.Conn, m models.Message) error {
+func writemessage(ctx context.Context, c *websocket.Conn, m *models.Message) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	return wsjson.Write(ctx, c, m)
