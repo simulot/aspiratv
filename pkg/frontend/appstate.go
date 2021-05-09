@@ -174,26 +174,23 @@ func (s *AppState) ServerNotifications(ctx context.Context) func() {
 				if err != nil {
 					log.Printf("[NOTIFICATION CLIENT] Can't get connection with the server")
 					if connected {
-						errMessage.Text = "Connexion perdue avec le serveur"
+						errMessage.SetText("Connexion perdue avec le serveur")
 					} else {
-						errMessage.Text = "Connexion impossible avec le serveur"
+						errMessage.SetText("Connexion impossible avec le serveur")
 					}
-					errMessage.Status = models.StatusError
+					errMessage.SetStatus(models.StatusError).SetPinned(true)
 					s.Dispatch.Publish(errMessage)
 					time.Sleep(5 * time.Second)
 					continue
 				} else {
 					if errMessage.Status == models.StatusError {
-						connected = true
-						errMessage.Text = "Connexion rétablie avec le serveur"
-						errMessage.Status = models.StatusSuccess
+						errMessage.SetText("Connexion rétablie avec le serveur").SetStatus(models.StatusSuccess).SetPinned(false)
 						s.Dispatch.Publish(errMessage)
-
 					}
 				}
 			}
 			log.Printf("[NOTIFICATION CLIENT] Connected to notification server")
-
+			connected = true
 		messageLoop:
 			for {
 				select {
