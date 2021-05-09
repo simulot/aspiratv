@@ -18,8 +18,8 @@ func TestNotifications(t *testing.T) {
 		done := make(chan struct{})
 
 		var got models.Message
-		cancel := d.Subscribe(func(p models.Publishable) {
-			got = p.(models.Message)
+		cancel := d.Subscribe(func(p models.Message) {
+			got = p
 			close(done)
 		})
 		d.Publish(want)
@@ -46,8 +46,8 @@ func TestNotifications(t *testing.T) {
 			go func(i int) {
 				var w sync.WaitGroup
 				w.Add(10)
-				cancel := d.Subscribe(func(p models.Publishable) {
-					got := p.(models.Message)
+				cancel := d.Subscribe(func(p models.Message) {
+					got := p
 					if !reflect.DeepEqual(want, got) {
 						t.Errorf("Client %d, want %v, got %v", i, want, got)
 					}

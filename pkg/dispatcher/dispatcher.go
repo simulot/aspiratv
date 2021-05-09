@@ -9,12 +9,12 @@ import (
 type Subscriber interface {
 	// Subscribe call the given function for each new notification.
 	// The returned function must be called to cancel the subscription
-	Subscribe(func(models.Publishable)) (cancel func())
+	Subscribe(func(models.Message)) (cancel func())
 }
 
 type Publisher interface {
 	// Publish the notification to all current subcribers
-	Publish(models.Publishable)
+	Publish(models.Message)
 }
 
 // Dispatcher is in charge of dispatch notifications to
@@ -26,7 +26,7 @@ type Dispatcher struct {
 
 // subscriber will receive message emitted by the dispatcher
 type subscriber struct {
-	n chan models.Publishable
+	n chan models.Message
 }
 
 // NewDispatcher creates a dispatcher
@@ -36,7 +36,7 @@ func NewDispatcher() *Dispatcher {
 }
 
 // Publish send the notification to all of subscribers
-func (d *Dispatcher) Publish(n models.Publishable) {
+func (d *Dispatcher) Publish(n models.Message) {
 	d.RLock()
 	defer d.RUnlock()
 	for _, s := range d.subscribers {
@@ -46,11 +46,11 @@ func (d *Dispatcher) Publish(n models.Publishable) {
 
 // Subscribe call onMessage function for each message and return the Unsubscribe function
 // It creates a subcriber record for each subscriber
-func (d *Dispatcher) Subscribe(onMessage func(models.Publishable)) (cancel func()) {
+func (d *Dispatcher) Subscribe(onMessage func(models.Message)) (cancel func()) {
 	d.Lock()
 	defer d.Unlock()
 	s := &subscriber{
-		n: make(chan models.Publishable, 1),
+		n: make(chan models.Message, 1),
 	}
 	d.subscribers = append(d.subscribers, s)
 

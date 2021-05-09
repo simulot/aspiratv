@@ -15,16 +15,15 @@ import (
 
 type (
 	logger     interface{ Printf(string, ...interface{}) }
-	progresser interface{ Progress(current, total int) }
+	Progresser interface{ Progress(current, total int) }
 )
 
 type FFMPEG struct {
 	l      logger     // to produce some logs
-	p      progresser // to follow progession
-	wd     *watchdog  // drop the download after a while
+	p      Progresser // to follow progession
+	wd     *watchdog  // drop the download when idle
 	cmd    *exec.Cmd  // the command
 	inputs []string
-	output string
 
 	lastOutput strings.Builder
 }
@@ -35,14 +34,12 @@ func NewFFMPEG() *FFMPEG {
 	}
 }
 
-func (d *FFMPEG) WithLogger(l interface{ Printf(string, ...interface{}) }) *FFMPEG {
+func (d *FFMPEG) WithLogger(l interface{ Printf(string, ...interface{}) }) {
 	d.l = l
-	return d
 }
 
-func (d *FFMPEG) WithProgresser(p progresser) *FFMPEG {
+func (d *FFMPEG) WithProgresser(p Progresser) {
 	d.p = p
-	return d
 }
 
 func (d *FFMPEG) Input(uri string) *FFMPEG {

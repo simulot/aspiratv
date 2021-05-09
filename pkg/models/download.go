@@ -2,6 +2,7 @@ package models
 
 import (
 	"github.com/google/uuid"
+	"github.com/simulot/aspiratv/pkg/download"
 )
 
 type DownloadTask struct {
@@ -16,13 +17,7 @@ type DownloadTask struct {
 	}
 }
 
-type TypeDownloader int
-
-const (
-	DownloaderFFMPEG TypeDownloader = iota
-)
-
 type DownloadItem struct {
-	Downloader TypeDownloader // Providers decides the downloader
-	MediaInfo  MediaInfo      // Details of media, contains the stream's url
+	Downloader download.Downloader
+	MediaInfo  MediaInfo // Details of media, contains the stream's url
 }

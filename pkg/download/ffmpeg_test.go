@@ -52,8 +52,9 @@ func TestFFMPEG(t *testing.T) {
 		os.Mkdir("data", 0777)
 		p := pgr{t: t}
 		d := NewFFMPEG().
-			WithProgresser(&p).
 			Input("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4")
+		d.WithProgresser(&p)
+
 		err := d.Download(
 			context.TODO(),
 			"data/test.mp4")

@@ -2,7 +2,10 @@ package mockup
 
 import (
 	"context"
+	"log"
 	"math/rand"
+
+	"github.com/simulot/aspiratv/pkg/download"
 
 	"github.com/google/uuid"
 	"github.com/simulot/aspiratv/pkg/models"
@@ -38,6 +41,7 @@ func (p Mockup) GetMedias(ctx context.Context, task models.DownloadTask) (<-chan
 	list := []models.MediaInfo{
 		{
 			ID:         uuid.NewString(),
+			Show:       show.Title,
 			Title:      "title",
 			Episode:    1,
 			Season:     4,
@@ -46,6 +50,7 @@ func (p Mockup) GetMedias(ctx context.Context, task models.DownloadTask) (<-chan
 		},
 		{
 			ID:         uuid.NewString(),
+			Show:       show.Title,
 			Title:      "title",
 			Episode:    2,
 			Season:     4,
@@ -55,6 +60,7 @@ func (p Mockup) GetMedias(ctx context.Context, task models.DownloadTask) (<-chan
 		{
 			ID:         uuid.NewString(),
 			Title:      "title",
+			Show:       show.Title,
 			Episode:    1,
 			Season:     3,
 			SeasonInfo: &season,
@@ -62,21 +68,30 @@ func (p Mockup) GetMedias(ctx context.Context, task models.DownloadTask) (<-chan
 		},
 	}
 
-	c := make(chan models.DownloadItem)
+	c := make(chan models.DownloadItem, 1)
 
 	go func() {
-		for _, m := range list {
+		defer log.Printf("Exit GR mockup.GetMedias")
+		for i, m := range list {
+			log.Printf("Loop GR mockup.GetMedias %d/%d", i, len(list))
+			stream := videoSamples[rand.Intn(len(videoSamples))]
+			m.StreamURL = stream
+			m.Provider = "mockup"
+
 			item := models.DownloadItem{
-				Downloader: models.DownloaderFFMPEG,
+				Downloader: download.NewFFMPEG().Input(m.StreamURL),
 				MediaInfo:  m,
 			}
-			item.MediaInfo.StreamURL = videoSamples[rand.Intn(len(videoSamples))]
+			log.Printf("Found media: %s", m.ID)
 			select {
 			case <-ctx.Done():
+				log.Printf("GR mockup.GetMedias ctx.done: %s", ctx.Err())
 				return
 			case c <- item:
+				log.Printf("Media send: %s", m.ID)
 			}
 		}
+		log.Printf("End of Loop GR mockup.GetMedias")
 		close(c)
 	}()
 

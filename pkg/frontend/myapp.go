@@ -8,6 +8,8 @@ import (
 type MyApp struct {
 	app.Compo
 	UpdateAvailable bool
+
+	Notifications bool
 }
 
 func (c *MyApp) OnMount(ctx app.Context) {
@@ -28,7 +30,18 @@ func (c *MyApp) Render() app.UI {
 		&Logo{},
 		&Menu{},
 		app.If(c.UpdateAvailable, app.Button().Text("Mettre à jour").OnClick(c.onUpdateClick)),
+		app.Div().Class("field").Body(
+			app.Label().Class("label").Text("Activer les notifications"),
+			app.Div().Class("control").Body(
+				app.Input().Type("checkbox").OnChange(c.onCheckBox),
+			),
+		),
 	)
+}
+
+func (c *MyApp) onCheckBox(ctx app.Context, e app.Event) {
+	c.Notifications = ctx.JSSrc.Get("checked").Bool()
+	MyAppState.ToggleServerNotifications(c.Notifications)
 }
 
 func AppPageRender(pages ...app.UI) app.UI {
@@ -36,7 +49,7 @@ func AppPageRender(pages ...app.UI) app.UI {
 		Class("container").
 		Body(
 			&LoadSettings{},
-			NewPublishableContainer(),
+			NewMessagesContainer(),
 			app.Div().
 				Class("columns").
 				Body(

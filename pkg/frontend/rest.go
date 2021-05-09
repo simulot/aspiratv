@@ -59,33 +59,31 @@ func (s *API) Search(ctx context.Context, q models.SearchQuery) (<-chan models.S
 		return nil, err
 	}
 
-	err = wsjson.Write(ctx, c, q)
-	if err != nil {
-		c.Close(websocket.StatusInternalError, "the sky is falling to the rest client")
-		cancel()
-		return nil, err
-	}
-
-	var status string
-	err = wsjson.Read(ctx, c, &status)
-	if err != nil {
-		c.Close(websocket.StatusInternalError, "the sky is falling to the rest client")
-		cancel()
-		return nil, err
-	}
-	if status != "OK" {
-		err = fmt.Errorf("Search returns an error: %s", status)
-		log.Print(err)
-		cancel()
-		return nil, err
-	}
-
 	results := make(chan models.SearchResult, 1)
 
 	go func() {
+		defer cancel()
 		defer close(results)
 		defer c.Close(websocket.StatusInternalError, "the sky is falling to the rest client")
-		defer cancel()
+
+		err = wsjson.Write(ctx, c, q)
+		if err != nil {
+			c.Close(websocket.StatusInternalError, "Search Write Error")
+			return
+		}
+
+		var status string
+		err = wsjson.Read(ctx, c, &status)
+		if err != nil {
+			c.Close(websocket.StatusInternalError, "Search Read Error")
+			return
+		}
+		if status != "OK" {
+			err = fmt.Errorf("Search returns an error: %s", status)
+			log.Print(err)
+			return
+		}
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -101,6 +99,7 @@ func (s *API) Search(ctx context.Context, q models.SearchQuery) (<-chan models.S
 					}
 					// TODO log errors
 					log.Printf("Can't read WS:%s", err)
+					c.Close(websocket.StatusInternalError, "Search read error 2")
 					return
 				}
 				results <- r
@@ -110,15 +109,6 @@ func (s *API) Search(ctx context.Context, q models.SearchQuery) (<-chan models.S
 
 	return results, nil
 }
-
-// type httpError struct {
-// 	StatusCode int
-// 	StatusText string
-// }
-
-// func (e httpError) Error() string {
-// 	return e.StatusText
-// }
 
 func (s *API) GetSettings(ctx context.Context) (models.Settings, error) {
 	req, err := s.client.NewRequestJSON(ctx, s.endPoint+"settings/", nil, nil, nil)
@@ -158,4 +148,54 @@ func (s *API) PostDownload(ctx context.Context, dr models.DownloadTask) (models.
 	}
 	return dr, err
 
+}
+
+// Subscribe to server notifications api, return a channel of messages, a closing function and an error
+func (s *API) SubscribeServerNotifications(ctx context.Context) (<-chan models.Message, error) {
+
+	ctx, cancel := context.WithCancel(ctx)
+	// ctx, cancel := context.WithCancel(ctx)
+	log.Printf("[HTTPCLIENT] Dial websocket %s", s.endPoint+"notifications/")
+	c, _, err := websocket.Dial(ctx, s.endPoint+"notifications/", nil)
+	if err != nil {
+		log.Printf("notifications Dial error:%s", err)
+		cancel()
+		return nil, err
+	}
+	log.Printf("[HTTPCLIENT] connected to %s", s.endPoint+"notifications/")
+	messages := make(chan models.Message, 1)
+
+	go func() {
+		defer close(messages)
+		defer c.Close(websocket.StatusInternalError, "the sky is falling to the Notification client")
+		defer cancel()
+		for {
+			log.Printf("Notifications WS loop")
+			select {
+			case <-ctx.Done():
+				log.Printf("Receive cancellation while writing WS")
+				c.Close(websocket.StatusNormalClosure, "Context cancellation")
+				return
+			default:
+				m := models.Message{}
+				log.Printf("Notifications WS loop - wait message")
+				if err := wsjson.Read(ctx, c, &m); err != nil {
+					var wsErr websocket.CloseError
+					if errors.As(err, &wsErr) && wsErr.Code == websocket.StatusNormalClosure {
+						c.Close(websocket.StatusNormalClosure, "")
+						return
+					}
+					// TODO log errors
+					log.Printf("Can't read WS:%s", err)
+					c.Close(websocket.StatusGoingAway, "WS receive error")
+					return
+				}
+				log.Printf("Publish server message")
+				messages <- m
+				log.Printf("Publish server message done")
+			}
+		}
+	}()
+
+	return messages, nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"sort"
+	"time"
 
 	"github.com/maxence-charriere/go-app/v9/pkg/app"
 	"github.com/simulot/aspiratv/pkg/dispatcher"
@@ -23,6 +24,9 @@ const (
 // AppState hold the state of the application
 type AppState struct {
 	Ready chan struct{}
+
+	// When running in backend
+	InBackend bool
 
 	// Indicate when the application is ready. Used by LoadSetting component
 	StateReady bool
@@ -51,6 +55,9 @@ type AppState struct {
 	// For Search Page
 	// Store results and presents them back instantly
 	Results []models.SearchResult
+
+	serverNotificationCancel func()
+	StateContext             context.Context
 }
 
 var MyAppState *AppState
@@ -84,9 +91,10 @@ func InitializeWebApp(ctx context.Context) *AppState {
 func NewAppState(ctx context.Context, s *API) *AppState {
 
 	state := AppState{
-		Ready:       make(chan struct{}, 1),
-		API:         s,
-		CurrentPage: PageSearchOnLine,
+		StateContext: ctx,
+		Ready:        make(chan struct{}, 1),
+		API:          s,
+		CurrentPage:  PageSearchOnLine,
 		menuItems: []Menuitem{
 			{
 				PageSearchOnLine,
@@ -117,16 +125,96 @@ func NewAppState(ctx context.Context, s *API) *AppState {
 	state.Dispatch = dispatcher.NewDispatcher()
 	state.Drawer = NewNotificationsDrawer()
 	state.Drawer.Attach(state.Dispatch)
-
+	// if !app.IsServer {
+	// 	go state.ServerNotifications(ctx)
+	// }
 	return &state
 }
 
 func (s *AppState) GetSettings(ctx context.Context) (models.Settings, error) {
-	settings, err := MyAppState.API.GetSettings(ctx)
-	if err != nil {
-		return models.Settings{}, err
+	if !app.IsServer {
+		settings, err := MyAppState.API.GetSettings(ctx)
+		if err != nil {
+			return models.Settings{}, err
+		}
+		return settings, nil
 	}
-	return settings, nil
+	return models.Settings{}, nil
+}
+
+func (s *AppState) ToggleServerNotifications(b bool) {
+	if b && s.serverNotificationCancel == nil {
+		s.serverNotificationCancel = s.ServerNotifications(s.StateContext)
+		return
+	}
+	if !b && s.serverNotificationCancel != nil {
+		s.serverNotificationCancel()
+		s.serverNotificationCancel = nil
+	}
+}
+
+// Start ServerNotifications receiver and return a function to turning it off
+func (s *AppState) ServerNotifications(ctx context.Context) func() {
+	ctx, cancelCtx := context.WithCancel(ctx)
+	closeFun := func() {
+		cancelCtx()
+	}
+
+	passage := 0
+	go func() {
+		connected := false
+		errMessage := models.NewMessage("connexion", models.StatusSuccess)
+		for {
+			log.Printf("[NOTIFICATION CLIENT] Connecting to notification server #%d", passage)
+			passage++
+			messages, err := s.API.SubscribeServerNotifications(ctx)
+
+			select {
+			case <-ctx.Done():
+				return
+			default:
+
+				if err != nil {
+					log.Printf("[NOTIFICATION CLIENT] Can't get connection with the server")
+					if connected {
+						errMessage.Text = "Connexion perdue avec le serveur"
+					} else {
+						errMessage.Text = "Connexion impossible avec le serveur"
+					}
+					errMessage.Status = models.StatusError
+					s.Dispatch.Publish(errMessage)
+					time.Sleep(5 * time.Second)
+					continue
+				} else {
+					if errMessage.Status == models.StatusError {
+						connected = true
+						errMessage.Text = "Connexion rétablie avec le serveur"
+						errMessage.Status = models.StatusSuccess
+						s.Dispatch.Publish(errMessage)
+
+					}
+				}
+			}
+			log.Printf("[NOTIFICATION CLIENT] Connected to notification server")
+
+		messageLoop:
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case m, ok := <-messages:
+					if !ok {
+						break messageLoop
+					}
+					s.Dispatch.Publish(m)
+				}
+			}
+			log.Printf("[NOTIFICATION CLIENT] Lost connection with server")
+		}
+
+	}()
+
+	return closeFun
 }
 
 func StringIf(b bool, whenTrue string, whenFalse string) string {

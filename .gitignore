@@ -28,3 +28,4 @@ errors.log
 tmp/*
 web/app.wasm
 aspiratv
+pkg/download/data/*.mp4

@@ -67,6 +67,7 @@ func (p *Mockup) callSearch(ctx context.Context, results chan models.SearchResul
 			ID:              uuid.NewString(),
 			Type:            models.MediaType(rand.Intn(int(models.TypeMovie) + 1)),
 			Chanel:          "mockup",
+			Provider:        "mockup",
 			Show:            "The " + q.Title + " show",
 			Title:           fmt.Sprintf("%q Item %d", q.Title, i),
 			ThumbURL:        "https://via.placeholder.com/1920x1080.png",

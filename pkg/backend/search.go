@@ -36,7 +36,7 @@ func (s *Server) getSearch(w http.ResponseWriter, r *http.Request) (err error) {
 			// Prevent sending http error through classical connection when being hijacked
 			s.logError(err)
 			err = nil
-			c.Close(websocket.StatusInternalError, "the sky is falling")
+			c.Close(websocket.StatusInternalError, "the sky is falling on search server")
 		}
 	}()
 

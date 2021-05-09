@@ -2,48 +2,38 @@ package job
 
 import (
 	"context"
+	"log"
 	"sync"
-
-	"github.com/google/uuid"
 )
 
 // A job launch a series of tasks
 type Job struct {
 	concurrency int // Number of concurrent jobs
 	tokens      chan struct{}
-	name        string
+	running     sync.WaitGroup
 }
 
 // a task is a work unit
 type Task func() error
 
-type JobNotificationType int
-
-const (
-	JobStarted JobNotificationType = iota
-	JobTaskStarted
-	JobTaskRunning
-	JobTaskSuccess
-	JobTaskError
-	JobEnded
-)
-
-type JobNotification struct {
-	Type    JobNotificationType
-	JobUUID uuid.UUID
-	TaskID  uuid.UUID
-	Message string
-}
-
-func NewJob(name string) *Job {
+func NewJob() *Job {
 	return &Job{
-		name:        name,
 		concurrency: 1,
 	}
 }
 
+func (j *Job) End() {
+	close(j.tokens)
+	j.running.Wait()
+}
+
 func (j *Job) Run(ctx context.Context, tasks <-chan Task) {
+	j.running.Add(1)
+	defer j.running.Done()
 	j.tokens = make(chan struct{}, j.concurrency)
+	for i := 0; i < j.concurrency; i++ {
+		j.tokens <- struct{}{}
+	}
 	wg := sync.WaitGroup{}
 	wg.Add(j.concurrency)
 	for i := 0; i < j.concurrency; i++ {
@@ -54,15 +44,20 @@ func (j *Job) Run(ctx context.Context, tasks <-chan Task) {
 				case <-ctx.Done():
 					return
 				case <-j.tokens:
+					log.Printf("Got a job token")
 					select {
 					case <-ctx.Done():
 						return
 					case task, ok := <-tasks:
+						log.Printf("Go ta task, %v", ok)
 						if !ok {
 							return
 						}
 						task()
+						log.Printf("Task done")
 						j.tokens <- struct{}{}
+						log.Printf("Token returned")
+
 					}
 				}
 			}

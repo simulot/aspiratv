@@ -4,22 +4,28 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
+	"time"
 
+	"github.com/simulot/aspiratv/pkg/dispatcher"
+	"github.com/simulot/aspiratv/pkg/models"
 	"github.com/simulot/aspiratv/pkg/providers"
 	"github.com/simulot/aspiratv/pkg/store"
 )
 
 const (
-	APIURL      = "/api/"
-	providerURL = APIURL + "providers/"
-	searchURL   = APIURL + "search/"
-	settingsURL = APIURL + "settings/"
-	downloadURL = APIURL + "download/"
+	APIURL           = "/api/"
+	providerURL      = APIURL + "providers/"
+	searchURL        = APIURL + "search/"
+	settingsURL      = APIURL + "settings/"
+	downloadURL      = APIURL + "download/"
+	notificationsURL = APIURL + "notifications/"
 )
 
 type logger interface {
-	Logf(f string, args ...interface{})
+	Printf(f string, args ...interface{})
 }
 
 type Server struct {
@@ -28,6 +34,7 @@ type Server struct {
 	providers     []providers.Provider
 	backgroundCtx context.Context
 	log           logger
+	dispatcher    *dispatcher.Dispatcher
 }
 
 func NewServer(ctx context.Context, store store.Store, p []providers.Provider) *Server {
@@ -36,19 +43,45 @@ func NewServer(ctx context.Context, store store.Store, p []providers.Provider) *
 		store:         store,
 		providers:     p,
 		backgroundCtx: ctx,
+		dispatcher:    dispatcher.NewDispatcher(),
+		log:           log.Default(),
 	}
+	s.dispatcher.Subscribe(s.LogNotifications)
 	router := http.NewServeMux()
 	router.Handle(providerURL, http.HandlerFunc(s.providersDescribleHandler))
 	router.Handle(searchURL, http.HandlerFunc(s.searchHandler))
 	router.Handle(settingsURL, http.HandlerFunc(s.settingsHandler))
 	router.Handle(downloadURL, http.HandlerFunc(s.downloadHandler))
+	router.Handle(notificationsURL, http.HandlerFunc(s.notificationsHandler))
 	s.Handler = router
+	s.Scheduler(ctx)
 	return s
 }
 
-func (s *Server) SetLogger(log logger) *Server {
+func (s *Server) Scheduler(ctx context.Context) {
+	go func() {
+		log.Printf("[SCHEDULER] Started")
+		tick := time.NewTicker(10 * time.Second)
+		defer tick.Stop()
+		for {
+			select {
+			case t := <-tick.C:
+				s.dispatcher.Publish(models.NewMessage(fmt.Sprintf("It's %s, and I'm alive", t.Format("15:04:05")), models.StatusInfo))
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+}
+
+func (s *Server) WithLogger(log logger) *Server {
 	s.log = log
 	return s
+}
+
+func (s *Server) LogNotifications(p models.Message) {
+	s.log.Printf("[SERVER NOTIFICATION] %s", p)
 }
 
 func (s *Server) decodeRequest(r *http.Request, body interface{}) error {
@@ -90,7 +123,7 @@ func (e APIError) Error() string {
 
 func (s *Server) logError(err error) {
 	if s.log != nil {
-		s.log.Logf("APIServer:", err)
+		s.log.Printf("APIServer:", err)
 	}
 }
 
