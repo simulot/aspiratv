@@ -14,50 +14,49 @@ const (
 )
 
 type MediaInfo struct {
-	ID         string    // Unique ID given by the program
-	Title      string    // Episode title, show title, movie title
-	Type       MediaType // Series, TVShow, Movie
-	Season     int       // Season number
-	Episode    int       // Episode number
-	Aired      time.Time // date of the 1st broadcast
-	Year       int       // Year of broadcast
-	Show       string    // Name of the show
-	Plot       string    // Show plot
-	Actors     []Person  // Show actors
-	Team       []Person  // Production team
-	Categories []string  //
-	Thumbs     []Image   //
-	Provider   string    // Provider where the show has been taken
-	Channel    string    // TV Channel
-	PageURL    string    // Episode page on web site
+	ID         string    `json:"id,omitempty"`         // Unique ID given by the program
+	Title      string    `json:"title,omitempty"`      // Episode title, show title, movie title
+	Show       string    `json:"show,omitempty"`       // Name of the show
+	Type       MediaType `json:"type,omitempty"`       // Series, TVShow, Movie
+	Season     int       `json:"season,omitempty"`     // Season number
+	Episode    int       `json:"episode,omitempty"`    // Episode number
+	Aired      time.Time `json:"aired,omitempty"`      // date of the 1st broadcast
+	Year       int       `json:"year,omitempty"`       // Year of broadcast
+	Plot       string    `json:"plot,omitempty"`       // Show plot
+	Actors     []Person  `json:"actors,omitempty"`     // Show actors
+	Team       []Person  `json:"team,omitempty"`       // Production team
+	Categories []string  `json:"categories,omitempty"` //
+	Thumbs     []Image   `json:"thumbs,omitempty"`     //
+	Provider   string    `json:"provider,omitempty"`   // Provider where the show has been taken
+	Channel    string    `json:"channel,omitempty"`    // TV Channel
+	PageURL    string    `json:"page_url,omitempty"`   // Episode page on web site
+	IsBonus    bool      `json:"is_bonus,omitempty"`   //
 
-	SeasonInfo *SeasonInfo // Season metadata
-	ShowInfo   *ShowInfo   // Show metadata
+	SeasonInfo *SeasonInfo `json:"-"` // Season metadata
+	ShowInfo   *ShowInfo   `json:"-"` // Show metadata
 
-	StreamURL string
+	StreamURL string `json:"-"`
 }
 
 type SeasonInfo struct {
-	ID      string
-	Title   string // Season title
-	Plot    string //Season plot
-	Season  int    // Season Number
-	Year    int    // Broadcasting year
-	PageURL string
-	Thumbs  []Image //
+	ID      string  `json:"id,omitempty"`
+	Title   string  `json:"title,omitempty"`  // Season title
+	Plot    string  `json:"plot,omitempty"`   //Season plot
+	Season  int     `json:"season,omitempty"` // Season Number
+	Year    int     `json:"year,omitempty"`   // Broadcasting year
+	PageURL string  `json:"page_url,omitempty"`
+	Thumbs  []Image `json:"thumbs,omitempty"` //
 
 	// Episods []*Media
 }
 
 type ShowInfo struct {
-	ID      string
-	Title   string // Show name
-	Plot    string // Show plot
-	Type    MediaType
-	PageURL string
-	Thumbs  []Image
-	// Seasons []*SeasonInfo
-	// Episods []*Media
+	ID      string    `json:"id,omitempty"`
+	Title   string    `json:"title,omitempty"` // Show name
+	Plot    string    `json:"plot,omitempty"`  // Show plot
+	Type    MediaType `json:"type,omitempty"`
+	PageURL string    `json:"page_url,omitempty"`
+	Thumbs  []Image   `json:"thumbs,omitempty"`
 }
 
 type Person struct {

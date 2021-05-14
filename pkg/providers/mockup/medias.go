@@ -42,7 +42,7 @@ func (p Mockup) GetMedias(ctx context.Context, task models.DownloadTask) (<-chan
 		{
 			ID:         uuid.NewString(),
 			Show:       show.Title,
-			Title:      "title",
+			Title:      "episode title",
 			Episode:    1,
 			Season:     4,
 			SeasonInfo: &season,
@@ -51,7 +51,7 @@ func (p Mockup) GetMedias(ctx context.Context, task models.DownloadTask) (<-chan
 		{
 			ID:         uuid.NewString(),
 			Show:       show.Title,
-			Title:      "title",
+			Title:      "episode title",
 			Episode:    2,
 			Season:     4,
 			SeasonInfo: &season,
@@ -59,7 +59,7 @@ func (p Mockup) GetMedias(ctx context.Context, task models.DownloadTask) (<-chan
 		},
 		{
 			ID:         uuid.NewString(),
-			Title:      "title",
+			Title:      "episode title",
 			Show:       show.Title,
 			Episode:    1,
 			Season:     3,

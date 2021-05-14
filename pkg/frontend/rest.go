@@ -9,25 +9,29 @@ import (
 	"github.com/simulot/aspiratv/pkg/models"
 	"github.com/simulot/aspiratv/pkg/myhttp"
 	"github.com/simulot/aspiratv/pkg/providers"
+	"github.com/simulot/aspiratv/pkg/store"
 	"nhooyr.io/websocket"
 	"nhooyr.io/websocket/wsjson"
 )
 
 const (
-	APIURL      = "/api/"
-	providerURL = APIURL + "providers/"
-	searchURL   = APIURL + "search/"
+	APIURL      = "api/"
+	settingsURL = "settings/"
+	providerURL = "providers/"
+	searchURL   = "search/"
 )
 
 // API implements a store using RestAPI.
 type API struct {
-	endPoint string
-	client   *myhttp.Client
+	endPoint  string
+	client    *myhttp.Client
+	jsonStore store.Store
 }
 
-func NewRestStore(endPoint string) *API {
+func NewRestStore(endPoint string, s store.Store) *API {
 	return &API{
-		endPoint: endPoint,
+		endPoint:  endPoint,
+		jsonStore: s,
 		client: myhttp.NewClient(
 			myhttp.WithLogger(log.Default()),
 		),
@@ -111,7 +115,10 @@ func (s *API) Search(ctx context.Context, q models.SearchQuery) (<-chan models.S
 }
 
 func (s *API) GetSettings(ctx context.Context) (models.Settings, error) {
-	req, err := s.client.NewRequestJSON(ctx, s.endPoint+"settings/", nil, nil, nil)
+	if s.jsonStore != nil {
+		return s.jsonStore.GetSettings()
+	}
+	req, err := s.client.NewRequestJSON(ctx, s.endPoint+settingsURL, nil, nil, nil)
 	if err != nil {
 		return models.Settings{}, err
 	}
@@ -126,7 +133,10 @@ func (s *API) GetSettings(ctx context.Context) (models.Settings, error) {
 }
 
 func (s *API) SetSettings(ctx context.Context, settings models.Settings) (models.Settings, error) {
-	req, err := s.client.NewRequestJSON(ctx, s.endPoint+"settings/", nil, nil, settings)
+	if s.jsonStore != nil {
+		return s.jsonStore.SetSettings(settings)
+	}
+	req, err := s.client.NewRequestJSON(ctx, s.endPoint+settingsURL, nil, nil, settings)
 	if err != nil {
 		return models.Settings{}, err
 	}

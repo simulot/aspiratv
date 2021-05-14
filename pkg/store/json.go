@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/simulot/aspiratv/pkg/library"
 	"github.com/simulot/aspiratv/pkg/models"
 )
 
@@ -31,10 +32,35 @@ func (s *StoreJSON) GetSettings() (models.Settings, error) {
 			} else {
 				err = nil
 			}
-			return models.Settings{}, err
+			settings := models.Settings{}
+			if err != nil {
+				return settings, err
+			}
+			settings.DefaultSeriesSettings, err = initPathSettings(library.DefaultPathSettings[models.TypeSeries], library.RegularNameCleaner)
+			if err != nil {
+				return settings, err
+			}
+			settings.DefaultCollectionSettings, err = initPathSettings(library.DefaultPathSettings[models.TypeCollection], library.RegularNameCleaner)
+			if err != nil {
+				return settings, err
+			}
+			settings.DefaultTVShowsSettings, err = initPathSettings(library.DefaultPathSettings[models.TypeTVShow], library.RegularNameCleaner)
+			if err != nil {
+				return settings, err
+			}
+			return settings, nil
 		}
+
 	}
+
 	return s.settings, nil
+}
+
+func initPathSettings(s models.PathSettings, nameCleaner *library.NameCleaner) (*models.PathSettings, error) {
+	var err error
+	settings := s
+	settings.FileNamer, err = library.NewFilesNamer(s, nameCleaner)
+	return &settings, err
 }
 
 func (s *StoreJSON) SetSettings(settings models.Settings) (models.Settings, error) {
@@ -50,6 +76,18 @@ func (s *StoreJSON) SetSettings(settings models.Settings) (models.Settings, erro
 func (s *StoreJSON) readSettings(r io.Reader) error {
 	var settings models.Settings
 	err := json.NewDecoder(r).Decode(&settings)
+	if err != nil {
+		return err
+	}
+	settings.DefaultSeriesSettings, err = initPathSettings(*settings.DefaultSeriesSettings, library.RegularNameCleaner)
+	if err != nil {
+		return err
+	}
+	settings.DefaultCollectionSettings, err = initPathSettings(*settings.DefaultCollectionSettings, library.RegularNameCleaner)
+	if err != nil {
+		return err
+	}
+	settings.DefaultTVShowsSettings, err = initPathSettings(*settings.DefaultTVShowsSettings, library.RegularNameCleaner)
 	if err != nil {
 		return err
 	}

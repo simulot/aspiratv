@@ -10,6 +10,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.2.0 // indirect
+	github.com/kr/pretty v0.2.1 // indirect
 	github.com/maxence-charriere/go-app/v9 v9.0.0-20210422141225-0e7d7c5630b2 // indirect
 	github.com/temoto/robotstxt v1.1.2 // indirect
 	golang.org/x/net v0.0.0-20210421230115-4e50805a0758 // indirect

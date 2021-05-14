@@ -14,7 +14,6 @@ import (
 )
 
 func main() {
-	// Initialize web application storage and state
 
 	ctx := context.Background()
 	// TODO: Handle gracefull shutdown
@@ -27,6 +26,9 @@ func main() {
 	app.RunWhenOnBrowser()
 
 	// Starting here, the server side
+
+	serverAddress := "localhost:8000"
+	st := store.NewStoreJSON("config.json")
 
 	providers := []providers.Provider{
 		mockup.NewMockup(),
@@ -53,7 +55,6 @@ func main() {
 		// 	),
 		// ),
 	}
-	st := store.NewStoreJSON("config.json")
 
 	mux := http.NewServeMux()
 	mux.Handle("/", logRequests(&app.Handler{
@@ -66,7 +67,7 @@ func main() {
 	}))
 	mux.Handle(backend.APIURL, logRequests(backend.NewServer(ctx, st, providers)))
 
-	if err := http.ListenAndServe(":8000", mux); err != nil {
+	if err := http.ListenAndServe(serverAddress, mux); err != nil {
 		log.Fatal(err)
 	}
 }

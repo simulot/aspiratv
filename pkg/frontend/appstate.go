@@ -3,6 +3,7 @@ package frontend
 import (
 	"context"
 	"log"
+	"net/url"
 	"sort"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/simulot/aspiratv/pkg/dispatcher"
 	"github.com/simulot/aspiratv/pkg/models"
 	"github.com/simulot/aspiratv/pkg/providers"
+	"github.com/simulot/aspiratv/pkg/store"
 )
 
 type PageID int
@@ -33,6 +35,8 @@ type AppState struct {
 
 	// API use server's REST API
 	API *API
+
+	Store store.Store
 
 	// Application settings
 	Settings models.Settings
@@ -63,24 +67,37 @@ type AppState struct {
 var MyAppState *AppState
 
 func InitializeWebApp(ctx context.Context) *AppState {
-	u := app.Window().URL()
-	u.Scheme = "http"
-	u.Path = "/api/"
-	s := NewRestStore(u.String())
+	var st store.Store
+	var u *url.URL
+	if app.IsClient {
+		u = app.Window().URL()
+		u.Scheme = "http"
+		u.Path = "/api/"
+		log.Printf("[CLIENT] API endpoint: %s", u.String())
+	} else {
+		u = app.Window().URL()
+		u.Scheme = "http"
+		u.Host = "localhost:8000"
+		u.Path = "/api/"
+		st = store.NewStoreJSON("config.json")
+		log.Printf("[SERVER] API endpoint: %s", u.String())
+	}
+	s := NewRestStore(u.String(), st)
+
 	MyAppState = NewAppState(ctx, s)
 
 	go func() {
-		ps, err := MyAppState.API.ProviderDescribe(ctx)
-		if err != nil {
-			log.Print("Providers error: ", err)
-			return
-		}
-		MyAppState.ChannelsList = NewChannelList(ps)
+		var err error
 		MyAppState.Settings, err = MyAppState.GetSettings(ctx)
 		if err != nil {
 			log.Print("Settings error: ", err)
-			return
 		}
+
+		ps, err := MyAppState.API.ProviderDescribe(ctx)
+		if err != nil {
+			log.Print("Providers error: ", err)
+		}
+		MyAppState.ChannelsList = NewChannelList(ps)
 
 		MyAppState.StateReady = true
 		close(MyAppState.Ready)
@@ -132,14 +149,11 @@ func NewAppState(ctx context.Context, s *API) *AppState {
 }
 
 func (s *AppState) GetSettings(ctx context.Context) (models.Settings, error) {
-	if !app.IsServer {
-		settings, err := MyAppState.API.GetSettings(ctx)
-		if err != nil {
-			return models.Settings{}, err
-		}
-		return settings, nil
+	settings, err := MyAppState.API.GetSettings(ctx)
+	if err != nil {
+		return models.Settings{}, err
 	}
-	return models.Settings{}, nil
+	return settings, nil
 }
 
 func (s *AppState) ToggleServerNotifications(b bool) {

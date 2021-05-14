@@ -2,6 +2,7 @@ package backend
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/simulot/aspiratv/pkg/models"
@@ -40,6 +41,7 @@ func (s *Server) setSettings(w http.ResponseWriter, r *http.Request) {
 		s.sendError(w, err)
 		return
 	}
+	log.Printf("Settings %#v", settings)
 	settings, err = s.store.SetSettings(settings)
 	if err != nil {
 		s.sendError(w, err)
