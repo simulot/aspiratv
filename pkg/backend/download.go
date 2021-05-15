@@ -63,14 +63,14 @@ func (s *Server) postDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var fileNamer models.FileNamer
+	var fileNamer *models.FileNamer
 	switch task.Result.Type {
 	case models.TypeCollection:
-		fileNamer = settings.DefaultCollectionSettings.FileNamer
+		fileNamer = settings.CollectionSettings.FileNamer
 	case models.TypeSeries:
-		fileNamer = settings.DefaultSeriesSettings.FileNamer
+		fileNamer = settings.SeriesSettings.FileNamer
 	case models.TypeTVShow:
-		fileNamer = settings.DefaultTVShowsSettings.FileNamer
+		fileNamer = settings.TVShowsSettings.FileNamer
 	}
 
 	go library.NewBatchDownloader(

@@ -1,4 +1,4 @@
-package library
+package models
 
 import (
 	"bytes"
@@ -7,76 +7,48 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
-
-	"github.com/simulot/aspiratv/pkg/models"
 )
 
-var RegularNameCleaner = NewNameCleaner(
-	// illegal chars in windows filename  / \ : * < > ? "
-	strings.NewReplacer(
-		"/", "-",
-		"\\", "-",
-		"?", "",
-		":", "-",
-		"*", "-",
-		"|", "-",
-		"\"", "''",
-		">", ")",
-		"<", "(",
-	))
-
-var UTF8NameCleaner = NewNameCleaner(
-	strings.NewReplacer(
-		"/", "\u2215", // ∕
-		"\\", "\u2216", // ∖
-		"?", "\uFF1F", // ？
-		":", "\u02F8", // ˸
-		"*", "\u2731", // ✱
-		"|", "\u2758", // ❘
-		"\"", "\uff02", // ＂
-		"<", "\uFF1C", // ＜
-		">", "\uFF1E", // ＞
-	))
-
-var DefaultPathSettings = map[models.MediaType]models.PathSettings{
-	models.TypeCollection: {
+var DefaultPathSettings = map[PathNamingType]PathSettings{
+	PathTypeCollection: {
 		ShowPathTemplate:      `{{.Show}}`,
 		SeasonPathTemplate:    ``,
 		MediaFileNameTemplate: `{{.Title}}.mp4`,
 	},
-	models.TypeSeries: {
+	PathTypeSeries: {
 		ShowPathTemplate:      `{{.Show}}`,
 		SeasonPathTemplate:    `{{if not .IsBonus}}Season {{.Season | printf "%02d" }}{{else}}Specials{{end}}`,
 		MediaFileNameTemplate: `{{if not .IsBonus}}{{.Show}} s{{.Season | printf "%02d" }}e{{.Episode | printf "%02d" }} {{end}}{{.Title}}.mp4`,
 	},
-	models.TypeTVShow: {
+	PathTypeTVShow: {
 		ShowPathTemplate:      `{{.Show}}`,
 		SeasonPathTemplate:    `{{if not .IsBonus}}Season {{.Year | printf "%04d" }}{{else}}Specials{{end}}`,
 		MediaFileNameTemplate: `{{if not .IsBonus}}{{.Show}} {{.Aired.Format "2006-01-02" }} {{end}}{{.Title}}.mp4`,
 	},
-	models.TypeMovie: {
+	PathTypeMovie: {
 		ShowPathTemplate:      `{{.Title}} ({{.Year}})`,
 		SeasonPathTemplate:    ``,
 		MediaFileNameTemplate: `{{.Title}} ({{.Year}}).mp4`,
 	},
 }
-var DefaultFileNamer = map[models.MediaType]*FilesNamer{
-	models.TypeCollection: MustFileName(DefaultPathSettings[models.TypeCollection], RegularNameCleaner),
-	models.TypeSeries:     MustFileName(DefaultPathSettings[models.TypeSeries], RegularNameCleaner),
-	models.TypeTVShow:     MustFileName(DefaultPathSettings[models.TypeTVShow], RegularNameCleaner),
-	models.TypeMovie:      MustFileName(DefaultPathSettings[models.TypeMovie], RegularNameCleaner),
+var DefaultFileNamer = map[PathNamingType]*FileNamer{
+	PathTypeCollection: MustFileName(DefaultPathSettings[PathTypeCollection], RegularNameCleaner),
+	PathTypeSeries:     MustFileName(DefaultPathSettings[PathTypeSeries], RegularNameCleaner),
+	PathTypeTVShow:     MustFileName(DefaultPathSettings[PathTypeTVShow], RegularNameCleaner),
+	PathTypeMovie:      MustFileName(DefaultPathSettings[PathTypeMovie], RegularNameCleaner),
 }
 
-type FilesNamer struct {
+// FileNamer build templates to be used when creating files/folders names
+type FileNamer struct {
 	nc                *NameCleaner
 	tmplShowPath      *template.Template
 	tmplSeasonPath    *template.Template
 	tmplMediaFileName *template.Template
 }
 
-func NewFilesNamer(s models.PathSettings, nc *NameCleaner) (*FilesNamer, error) {
+func NewFilesNamer(s PathSettings, nc *NameCleaner) (*FileNamer, error) {
 	var err error
-	n := FilesNamer{
+	n := FileNamer{
 		nc: nc,
 	}
 	n.tmplShowPath, err = template.New("ShowPath").Parse(s.ShowPathTemplate)
@@ -94,7 +66,7 @@ func NewFilesNamer(s models.PathSettings, nc *NameCleaner) (*FilesNamer, error) 
 	return &n, nil
 }
 
-func MustFileName(s models.PathSettings, nc *NameCleaner) *FilesNamer {
+func MustFileName(s PathSettings, nc *NameCleaner) *FileNamer {
 	n, err := NewFilesNamer(s, nc)
 	if err != nil {
 		panic(err)
@@ -102,7 +74,7 @@ func MustFileName(s models.PathSettings, nc *NameCleaner) *FilesNamer {
 	return n
 }
 
-func (n FilesNamer) ShowPath(info models.MediaInfo) (string, error) {
+func (n FileNamer) ShowPath(info MediaInfo) (string, error) {
 	var err error
 	b := bytes.NewBuffer(nil)
 	err = n.tmplShowPath.Execute(b, info)
@@ -112,7 +84,7 @@ func (n FilesNamer) ShowPath(info models.MediaInfo) (string, error) {
 	return n.nc.Clean(b.String()), nil
 }
 
-func (n FilesNamer) SeasonPath(info models.MediaInfo) (string, error) {
+func (n FileNamer) SeasonPath(info MediaInfo) (string, error) {
 	var err error
 	b := bytes.NewBuffer(nil)
 	err = n.tmplSeasonPath.Execute(b, info)
@@ -122,7 +94,7 @@ func (n FilesNamer) SeasonPath(info models.MediaInfo) (string, error) {
 	return n.nc.Clean(b.String()), nil
 }
 
-func (n *FilesNamer) MediaFileName(info models.MediaInfo) (string, error) {
+func (n *FileNamer) MediaFileName(info MediaInfo) (string, error) {
 	var err error
 	b := bytes.NewBuffer(nil)
 	err = n.tmplMediaFileName.Execute(b, info)
@@ -139,6 +111,35 @@ func (n *FilesNamer) MediaFileName(info models.MediaInfo) (string, error) {
 	return base + ext, nil
 }
 
+// RegularNameCleaner is used to avoid forbiedden file names created after show title
+var RegularNameCleaner = NewNameCleaner(
+	// illegal chars in windows filename  / \ : * < > ? "
+	strings.NewReplacer(
+		"/", "-",
+		"\\", "-",
+		"?", "",
+		":", "-",
+		"*", "-",
+		"|", "-",
+		"\"", "''",
+		">", ")",
+		"<", "(",
+	))
+
+// UTF8NameCleaner replace forbidden chars by some UTF-8 with similar glyph **EXPERIMENTAL**
+var UTF8NameCleaner = NewNameCleaner(
+	strings.NewReplacer(
+		"/", "\u2215", // ∕
+		"\\", "\u2216", // ∖
+		"?", "\uFF1F", // ？
+		":", "\u02F8", // ˸
+		"*", "\u2731", // ✱
+		"|", "\u2758", // ❘
+		"\"", "\uff02", // ＂
+		"<", "\uFF1C", // ＜
+		">", "\uFF1E", // ＞
+	))
+
 type NameCleaner struct {
 	repl *strings.Replacer
 }
@@ -154,6 +155,7 @@ func NewNameCleaner(repl *strings.Replacer) *NameCleaner {
 	}
 }
 
+// Clean file name from forbidden chars, multiples spaces and trailing spaces
 func (n NameCleaner) Clean(s string) string {
 	if n.repl != nil {
 		s = n.repl.Replace(s)

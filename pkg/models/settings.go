@@ -1,14 +1,29 @@
 package models
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
+
+//go:generate enumer -type=PathNamingType -json
+type PathNamingType int
+
+const (
+	PathTypeUnknown PathNamingType = iota
+	PathTypeCollection
+	PathTypeSeries
+	PathTypeTVShow
+	PathTypeMovie
+	PathTypeCustom
+)
 
 type Settings struct {
-	LastSaved                 time.Time
-	LibraryPath               string
-	DefaultSeriesSettings     *PathSettings
-	DefaultTVShowsSettings    *PathSettings
-	DefaultCollectionSettings *PathSettings
-	Providers                 map[string]ProvidersSetting
+	LastSaved          time.Time                   `json:"last_saved,omitempty"`          // Time when saved
+	LibraryPath        string                      `json:"library_path,omitempty"`        // Library root path. All folders are given relative to this path
+	SeriesSettings     *PathSettings               `json:"series_settings,omitempty"`     // Path settings for series
+	TVShowsSettings    *PathSettings               `json:"tv_shows_settings,omitempty"`   // Path settings for TV Shows
+	CollectionSettings *PathSettings               `json:"collection_settings,omitempty"` // Path settings fro Collections
+	Providers          map[string]ProvidersSetting `json:"providers,omitempty"`           // Settings specifics to providers
 }
 
 type ProvidersSetting struct {
@@ -21,15 +36,27 @@ type ProvidersSetting struct {
 
 // PathSettings hold templates for naming folder and files of the media
 type PathSettings struct {
-	ShowPathTemplate      string    // Template for folder that will contain show's files
-	SeasonPathTemplate    string    // Template for folder that will contain season's files
-	MediaFileNameTemplate string    // Template for the media file name
-	FileNamer             FileNamer `json:"-"`
+	Folder                string         `json:"folder,omitempty"`                   // Destination folder for this kind of media relative to library path
+	PathNaming            PathNamingType `json:"path_naming,omitempty"`              // One of standard, or custom
+	ShowPathTemplate      string         `json:"show_path_template,omitempty"`       // Custom template for folder that will contain show's files
+	SeasonPathTemplate    string         `json:"season_path_template,omitempty"`     // Custom template for folder that will contain season's files
+	MediaFileNameTemplate string         `json:"media_file_name_template,omitempty"` // Custom template for the media file name
+	FileNamer             *FileNamer     `json:"-"`
 }
 
-// FileNamer implement the code for applying templates
-type FileNamer interface {
-	ShowPath(info MediaInfo) (string, error)
-	SeasonPath(info MediaInfo) (string, error)
-	MediaFileName(info MediaInfo) (string, error)
+func (p *PathSettings) UnmarshalJSON(b []byte) error {
+	type pathSettingsjson = PathSettings
+	s := pathSettingsjson{}
+	err := json.Unmarshal(b, &s)
+	if err != nil {
+		return err
+	}
+	*p = s
+	if p.PathNaming != PathTypeCustom {
+		p.FileNamer = DefaultFileNamer[p.PathNaming]
+	} else {
+		p.FileNamer, err = NewFilesNamer(*p, RegularNameCleaner)
+		return err
+	}
+	return nil
 }

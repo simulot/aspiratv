@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
+//go:generate enumer -type=StatusType -json
 type StatusType int
 
 const (
@@ -15,8 +16,6 @@ const (
 	StatusWarning
 	StatusError
 )
-
-type PublishableType int
 
 // Message is a simple message that can be Published
 type Message struct {

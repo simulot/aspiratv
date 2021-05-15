@@ -17,7 +17,7 @@ func TestDowload(t *testing.T) {
 		task := models.DownloadTask{Result: models.SearchResult{Title: "Test", Type: models.TypeSeries}}
 		dl := newFakeDownloader(func(s *fakeDownloader) error { return nil })
 		c := makeMediaChannel(t, task, 1, dl)
-		NewBatchDownloader(task.Result.Show, "data", DefaultFileNamer[task.Result.Type]).
+		NewBatchDownloader(task.Result.Show, "data", models.DefaultFileNamer[models.PathNamingType(task.Result.Type)]).
 			Download(context.
 				Background(),
 				c)
@@ -38,7 +38,7 @@ func TestDowload(t *testing.T) {
 		task := models.DownloadTask{Result: models.SearchResult{Title: "Test", Type: models.TypeSeries}}
 		dl := newFakeDownloader(func(s *fakeDownloader) error { return os.ErrNotExist })
 		c := makeMediaChannel(t, task, 1, dl)
-		NewBatchDownloader(task.Result.Show, "data", DefaultFileNamer[task.Result.Type]).
+		NewBatchDownloader(task.Result.Show, "data", models.DefaultFileNamer[models.PathNamingType(task.Result.Type)]).
 			Download(context.
 				Background(),
 				c)
@@ -65,7 +65,7 @@ func TestDowload(t *testing.T) {
 			return nil
 		})
 		c := makeMediaChannel(t, task, 3, dl)
-		NewBatchDownloader(task.Result.Show, "data", DefaultFileNamer[task.Result.Type]).
+		NewBatchDownloader(task.Result.Show, "data", models.DefaultFileNamer[models.PathNamingType(task.Result.Type)]).
 			Download(context.
 				Background(),
 				c)

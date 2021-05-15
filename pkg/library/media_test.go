@@ -11,12 +11,12 @@ func TestMakeFileNameReplacer(t *testing.T) {
 	tt := []struct {
 		name     string
 		expected string
-		nc       *NameCleaner
+		nc       *models.NameCleaner
 	}{
-		{"super simple regular", "super simple regular", RegularNameCleaner},
-		{"super simple utf-8", "super simple utf-8", UTF8NameCleaner},
-		{"game of thrones? <1/8> regular", "game of thrones (1-8) regular", RegularNameCleaner},
-		{"game of thrones? <1/8> utf-8", "game of thrones\uFF1F \uFF1C1\u22158\uFF1E utf-8", UTF8NameCleaner},
+		{"super simple regular", "super simple regular", models.RegularNameCleaner},
+		{"super simple utf-8", "super simple utf-8", models.UTF8NameCleaner},
+		{"game of thrones? <1/8> regular", "game of thrones (1-8) regular", models.RegularNameCleaner},
+		{"game of thrones? <1/8> utf-8", "game of thrones\uFF1F \uFF1C1\u22158\uFF1E utf-8", models.UTF8NameCleaner},
 	}
 
 	for _, c := range tt {
@@ -32,13 +32,13 @@ func TestMakeFileNameSpacesManagement(t *testing.T) {
 	tt := []struct {
 		name     string
 		expected string
-		nc       *NameCleaner
+		nc       *models.NameCleaner
 	}{
-		{"super simple", "super simple", RegularNameCleaner},
-		{"double  spaces", "double spaces", RegularNameCleaner},
-		{"triple   spaces", "triple spaces", RegularNameCleaner},
-		{" space at ends ", "space at ends", RegularNameCleaner},
-		{"    spaces at ends    ", "spaces at ends", RegularNameCleaner},
+		{"super simple", "super simple", models.RegularNameCleaner},
+		{"double  spaces", "double spaces", models.RegularNameCleaner},
+		{"triple   spaces", "triple spaces", models.RegularNameCleaner},
+		{" space at ends ", "space at ends", models.RegularNameCleaner},
+		{"    spaces at ends    ", "spaces at ends", models.RegularNameCleaner},
 	}
 
 	for _, c := range tt {
@@ -136,7 +136,7 @@ func TestFileNamer(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.info.Show, func(t *testing.T) {
-			got, err := DefaultFileNamer[c.info.Type].ShowPath(c.info)
+			got, err := models.DefaultFileNamer[models.PathNamingType(c.info.Type)].ShowPath(c.info)
 			want := c.showPath
 			if err != nil {
 				t.Errorf("Unexpected error: %s", err)
@@ -144,7 +144,7 @@ func TestFileNamer(t *testing.T) {
 			if c.showPath != got {
 				t.Errorf("Expected ShowPath:%q, got: %q", want, got)
 			}
-			got, err = DefaultFileNamer[c.info.Type].SeasonPath(c.info)
+			got, err = models.DefaultFileNamer[models.PathNamingType(c.info.Type)].SeasonPath(c.info)
 			want = c.seasonPath
 			if err != nil {
 				t.Errorf("Unexpected error: %s", err)
@@ -152,7 +152,7 @@ func TestFileNamer(t *testing.T) {
 			if c.seasonPath != got {
 				t.Errorf("Expected SeasonPath:%q, got: %q", want, got)
 			}
-			got, err = DefaultFileNamer[c.info.Type].MediaFileName(c.info)
+			got, err = models.DefaultFileNamer[models.PathNamingType(c.info.Type)].MediaFileName(c.info)
 			want = c.mediaFile
 			if err != nil {
 				t.Errorf("Unexpected error: %s", err)

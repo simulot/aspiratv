@@ -37,8 +37,8 @@ func (c *Settings) Render() app.UI {
 			Class("title is-1").
 			Text(labelSettings),
 		bulma.NewTextField(&c.Settings.LibraryPath, labelLibraryPath, labelLibraryPathPlaceHolder),
-		NewPathSettings("Pour les séries", c.Settings.DefaultSeriesSettings),
-		NewPathSettings("Pour les émissions", c.Settings.DefaultTVShowsSettings),
+		NewPathSettings("Pour les séries", c.Settings.SeriesSettings),
+		NewPathSettings("Pour les émissions", c.Settings.TVShowsSettings),
 		app.Div().
 			Class("field is-grouped").
 			Body(

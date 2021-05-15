@@ -26,12 +26,12 @@ type (
 type BatchDownloader struct {
 	name        string
 	libraryPath string
-	fileNamer   models.FileNamer
+	fileNamer   *models.FileNamer
 	p           Publisher
 	l           Logger
 }
 
-func NewBatchDownloader(name string, path string, fn models.FileNamer) *BatchDownloader {
+func NewBatchDownloader(name string, path string, fn *models.FileNamer) *BatchDownloader {
 	return &BatchDownloader{
 		name:        name,
 		libraryPath: path,

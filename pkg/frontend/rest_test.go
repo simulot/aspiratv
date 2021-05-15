@@ -22,9 +22,9 @@ func TestRestSearch(t *testing.T) {
 		s, tearDownSrv := setupApiServer(t, &spyStore{}, &spy)
 		defer tearDownSrv()
 		ctx := context.Background()
-		restStore := NewRestStore(wsURL(t, s.URL) + "/api/")
+		restStore := NewRestStore(wsURL(t, s.URL)+"/api/", nil)
 
-		q := models.SearchQuery{Title: "Hello"}
+		q := models.SearchQuery{Title: "Hello", AiredAfter: time.Now()}
 		results, err := restStore.Search(ctx, q)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
@@ -39,7 +39,7 @@ func TestRestSearch(t *testing.T) {
 		if got != want {
 			t.Errorf("Expecting %d result, got %d", want, got)
 		}
-		if q != spy.searchQuery {
+		if q.Title != spy.searchQuery.Title {
 			t.Errorf("Got %v when expecting %v", spy.searchQuery, q)
 		}
 	})
@@ -55,7 +55,7 @@ func TestRestSearch(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		restStore := NewRestStore(wsURL(t, s.URL) + "/api/")
+		restStore := NewRestStore(wsURL(t, s.URL)+"/api/", nil)
 
 		results, err := restStore.Search(ctx, models.SearchQuery{Title: "Hello"})
 		if err != nil {
@@ -108,7 +108,7 @@ func TestSettings(t *testing.T) {
 
 		defer tearDownSrv()
 		ctx := context.Background()
-		restStore := NewRestStore(s.URL + "/api/")
+		restStore := NewRestStore(s.URL+"/api/", nil)
 
 		got, err := restStore.GetSettings(ctx)
 		if err != nil {

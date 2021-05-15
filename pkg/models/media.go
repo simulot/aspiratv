@@ -1,10 +1,12 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 type MediaType int
 
-//go:generate stringer -type=MediaType
+//go:generate enumer -type=MediaType -json
 const (
 	TypeUnknown    MediaType = iota
 	TypeCollection           // We don't know yet the actual type, but this is a collection, Arte?
