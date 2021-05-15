@@ -22,7 +22,7 @@ func (l *LoadSettings) OnMount(ctx app.Context) {
 }
 
 func (l *LoadSettings) Render() app.UI {
-	log.Printf("LoadSettings rendering %v", MyAppState.StateReady)
+	// log.Printf("LoadSettings rendering %v", MyAppState.StateReady)
 	return app.Div().ID("LOADING").
 		Class("modal").
 		Class(StringIf(!MyAppState.StateReady, "is-active", "")).

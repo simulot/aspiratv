@@ -1,8 +1,6 @@
 package frontend
 
 import (
-	"log"
-
 	"github.com/maxence-charriere/go-app/v9/pkg/app"
 )
 
@@ -13,21 +11,21 @@ type MyApp struct {
 	Notifications   bool
 }
 
-func (c *MyApp) OnPreRender(ctx app.Context) {
-	log.Printf("Settings is waiting")
-	<-MyAppState.Ready
+// func (c *MyApp) OnPreRender(ctx app.Context) {
+// 	log.Printf("Settings is waiting")
+// 	<-MyAppState.Ready
 
-}
+// }
 
-func (c *MyApp) OnMount(ctx app.Context) {
-	if !MyAppState.StateReady {
-		ctx.Async(func() {
-			log.Printf("Settings is waiting")
-			<-MyAppState.Ready
-			c.Update()
-		})
-	}
-}
+// func (c *MyApp) OnMount(ctx app.Context) {
+// 	if !MyAppState.StateReady {
+// 		ctx.Async(func() {
+// 			log.Printf("Settings is waiting")
+// 			<-MyAppState.Ready
+// 			c.Update()
+// 		})
+// 	}
+// }
 
 func (c *MyApp) OnAppUpdate(ctx app.Context) {
 	c.UpdateAvailable = ctx.AppUpdateAvailable // Reports that an app update is available.

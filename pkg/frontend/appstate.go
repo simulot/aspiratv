@@ -27,9 +27,6 @@ const (
 type AppState struct {
 	Ready chan struct{}
 
-	// When running in backend
-	InBackend bool
-
 	// Indicate when the application is ready. Used by LoadSetting component
 	StateReady bool
 
@@ -66,6 +63,7 @@ type AppState struct {
 
 var MyAppState *AppState
 
+//InitializeWebApp initialize the client sitde either for the browser and the serverside rendering
 func InitializeWebApp(ctx context.Context) *AppState {
 	var st store.Store
 	var u *url.URL
@@ -86,13 +84,17 @@ func InitializeWebApp(ctx context.Context) *AppState {
 
 	MyAppState = NewAppState(ctx, s)
 
-	go func() {
+	// go
+	func() {
+		log.Printf("InitializeWebApp get settings")
+
 		var err error
 		MyAppState.Settings, err = MyAppState.GetSettings(ctx)
 		if err != nil {
 			log.Print("Settings error: ", err)
 		}
 
+		log.Printf("InitializeWebApp get providers")
 		ps, err := MyAppState.API.ProviderDescribe(ctx)
 		if err != nil {
 			log.Print("Providers error: ", err)
@@ -100,6 +102,7 @@ func InitializeWebApp(ctx context.Context) *AppState {
 		MyAppState.ChannelsList = NewChannelList(ps)
 
 		MyAppState.StateReady = true
+		log.Printf("InitializeWebApp ready")
 		close(MyAppState.Ready)
 	}()
 	return MyAppState
@@ -142,7 +145,7 @@ func NewAppState(ctx context.Context, s *API) *AppState {
 	state.Dispatch = dispatcher.NewDispatcher()
 	state.Drawer = NewNotificationsDrawer()
 	state.Drawer.Attach(state.Dispatch)
-	if !app.IsServer {
+	if app.IsClient {
 		go state.ServerNotifications(ctx)
 	}
 	return &state

@@ -44,14 +44,15 @@ type PathSettings struct {
 	FileNamer             *FileNamer     `json:"-"`
 }
 
+// UnmarshalJSON PathSettings initialise file namer up on PathNaming Filed
 func (p *PathSettings) UnmarshalJSON(b []byte) error {
-	type pathSettingsjson = PathSettings
+	type pathSettingsjson PathSettings
 	s := pathSettingsjson{}
 	err := json.Unmarshal(b, &s)
 	if err != nil {
 		return err
 	}
-	*p = s
+	*p = PathSettings(s)
 	if p.PathNaming != PathTypeCustom {
 		p.FileNamer = DefaultFileNamer[p.PathNaming]
 	} else {

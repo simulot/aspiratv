@@ -83,6 +83,13 @@ func (n FileNamer) ShowPath(info MediaInfo) (string, error) {
 	}
 	return n.nc.Clean(b.String()), nil
 }
+func (n FileNamer) ShowPathString(info MediaInfo) string {
+	s, err := n.ShowPath(info)
+	if err != nil {
+		return err.Error()
+	}
+	return s
+}
 
 func (n FileNamer) SeasonPath(info MediaInfo) (string, error) {
 	var err error
@@ -92,6 +99,14 @@ func (n FileNamer) SeasonPath(info MediaInfo) (string, error) {
 		return "", err
 	}
 	return n.nc.Clean(b.String()), nil
+}
+
+func (n FileNamer) SeasonPathString(info MediaInfo) string {
+	s, err := n.SeasonPath(info)
+	if err != nil {
+		return err.Error()
+	}
+	return s
 }
 
 func (n *FileNamer) MediaFileName(info MediaInfo) (string, error) {
@@ -109,6 +124,14 @@ func (n *FileNamer) MediaFileName(info MediaInfo) (string, error) {
 	ext = strings.TrimSpace(anySpace.ReplaceAllString(ext, ""))
 
 	return base + ext, nil
+}
+
+func (n FileNamer) MediaFileNameString(info MediaInfo) string {
+	s, err := n.MediaFileName(info)
+	if err != nil {
+		return err.Error()
+	}
+	return s
 }
 
 // RegularNameCleaner is used to avoid forbiedden file names created after show title

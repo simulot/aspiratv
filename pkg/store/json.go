@@ -81,7 +81,9 @@ func (s *StoreJSON) readSettingFile(name string) error {
 }
 
 func (s *StoreJSON) writeSettings(w io.Writer) error {
-	return json.NewEncoder(w).Encode(s.settings)
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	return enc.Encode(s.settings)
 }
 
 func (s *StoreJSON) writeSettingsFile(name string) error {
