@@ -28,17 +28,17 @@ func (s *StoreJSON) GetSettings() (models.Settings, error) {
 			settings := models.Settings{}
 			settings.LibraryPath, _ = os.UserHomeDir()
 			filepath.Join(settings.LibraryPath, "Videos", "apsiratv")
-			settings.SeriesSettings = &models.PathSettings{
+			settings.SeriesSettings = models.PathSettings{
 				FileNamer:  models.DefaultFileNamer[models.PathTypeSeries],
 				Folder:     "Series",
 				PathNaming: models.PathTypeSeries,
 			}
-			settings.CollectionSettings = &models.PathSettings{
+			settings.CollectionSettings = models.PathSettings{
 				FileNamer:  models.DefaultFileNamer[models.PathTypeCollection],
 				Folder:     "Collections",
 				PathNaming: models.PathTypeCollection,
 			}
-			settings.TVShowsSettings = &models.PathSettings{
+			settings.TVShowsSettings = models.PathSettings{
 				FileNamer:  models.DefaultFileNamer[models.PathTypeTVShow],
 				Folder:     "TV",
 				PathNaming: models.PathTypeTVShow,

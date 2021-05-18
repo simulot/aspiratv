@@ -1,13 +1,13 @@
 {
-  "last_saved": "2021-05-15T18:22:23.932428708+02:00",
-  "library_path": "/home/jfcassan",
+  "last_saved": "2021-05-18T09:49:46.313017997+02:00",
+  "library_path": "/home/jfcassan/Videos",
   "series_settings": {
-    "folder": "Vidéos/Séries sympas",
-    "path_naming": "PathTypeSeries"
+    "folder": "Séries/Super",
+    "path_naming": "PathTypeCollection"
   },
   "tv_shows_settings": {
-    "folder": "Magazines",
-    "path_naming": "PathTypeSeries"
+    "folder": "TV",
+    "path_naming": "PathTypeTVShow"
   },
   "collection_settings": {
     "folder": "Collections",

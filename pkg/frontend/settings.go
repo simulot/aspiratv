@@ -1,13 +1,19 @@
 package frontend
 
+/*
+	Settings screen
+
+	TODO:
+		- Update path exemples when change library pass
+		-
+
+*/
+
 import (
-	"fmt"
-	"log"
 	"path/filepath"
 	"strconv"
 	"time"
 
-	"github.com/kr/pretty"
 	"github.com/maxence-charriere/go-app/v9/pkg/app"
 	"github.com/simulot/aspiratv/pkg/frontend/bulma"
 	"github.com/simulot/aspiratv/pkg/models"
@@ -67,38 +73,47 @@ var SampleMedia = map[models.PathNamingType]models.MediaInfo{
 type Settings struct {
 	app.Compo
 	Settings    models.Settings
-	LibraryPath *string
-	v, h        string
-
-	i int
+	initialized bool
 }
 
 func (c *Settings) OnMount(ctx app.Context) {
 	<-MyAppState.Ready
 	c.Settings = MyAppState.Settings
+	c.initialized = true
 }
-
-// func (c *Settings) OnPreRender(ctx app.Context) {
-// 	<-MyAppState.Ready
-// 	c.Settings = MyAppState.Settings
-// 	log.Printf("%#v", c.Settings)
-// }
 
 func (c *Settings) Render() app.UI {
 	MyAppState.CurrentPage = PageSettings
-	c.Settings = MyAppState.Settings
-	c.LibraryPath = &c.Settings.LibraryPath
+	if !c.initialized {
+		<-MyAppState.Ready
+		c.Settings = MyAppState.Settings
+		c.initialized = true
+	}
+
+	cSeries := NewPathSettings("Séries", c.Settings.SeriesSettings, &c.Settings.LibraryPath).WithOnInput(func(s models.PathSettings) {
+		c.Settings.SeriesSettings = s
+	})
+	cTVShows := NewPathSettings("Émissions", c.Settings.TVShowsSettings, &c.Settings.LibraryPath).WithOnInput(func(s models.PathSettings) {
+		c.Settings.TVShowsSettings = s
+	})
+	cCollections := NewPathSettings("Collections", c.Settings.CollectionSettings, &c.Settings.LibraryPath).WithOnInput(func(s models.PathSettings) {
+		c.Settings.CollectionSettings = s
+	})
+
 	return AppPageRender(
 		app.H1().
 			Class("title is-1").
 			Text(labelSettings),
-		bulma.NewTextField(&c.Settings.LibraryPath, labelLibraryPath, labelLibraryPathPlaceHolder).WithOnInput(func(ctx app.Context, v string) (string, error) {
+		bulma.NewTextField(c.Settings.LibraryPath, labelLibraryPath, labelLibraryPathPlaceHolder).WithOnInput(func(v string) {
 			c.Settings.LibraryPath = v
-			return v, nil
+			cSeries.SetHelp()
+			cTVShows.SetHelp()
+			cCollections.SetHelp()
+			c.Update()
 		}),
-		NewPathSettings("Séries", c.Settings.SeriesSettings, c.Settings.LibraryPath),
-		NewPathSettings("Émissions", c.Settings.TVShowsSettings, c.Settings.LibraryPath),
-		NewPathSettings("Collections", c.Settings.CollectionSettings, c.Settings.LibraryPath),
+		cSeries,
+		cTVShows,
+		cCollections,
 		app.Div().
 			Class("field is-grouped").
 			Body(
@@ -119,86 +134,77 @@ func (c *Settings) Render() app.UI {
 							Text(labelCancel),
 					),
 			),
-		app.Div().
-			Class("field is-grouped").
-			Body(
-				app.Div().
-					Class("control").
-					Body(
-						app.Button().
-							Class("button is-link").
-							OnClick(c.messageError).
-							Text("Message Erreur!"),
-					),
-				app.Button().
-					Class("button is-link").
-					OnClick(c.messageSuccess).
-					Text("Message Succés!"),
-			),
 	)
 }
 
 type PathSetting struct {
 	app.Compo
 	Legend      string
-	PathSetting *models.PathSettings
-	LibraryPath string
-	Folder      *string
-	sample      string
+	pathSetting models.PathSettings
+	libraryPath *string
+	help        string
+	selected    string
+	onInputFn   func(models.PathSettings)
 }
 
-func NewPathSettings(legend string, s *models.PathSettings, libraryPath string) *PathSetting {
+func NewPathSettings(legend string, s models.PathSettings, libraryPath *string) *PathSetting {
 	return &PathSetting{
-		PathSetting: s,
+		pathSetting: s,
 		Legend:      legend,
-		LibraryPath: libraryPath,
-		Folder:      &s.Folder,
+		libraryPath: libraryPath,
 	}
 }
 
+func (c *PathSetting) WithOnInput(f func(models.PathSettings)) *PathSetting {
+	c.onInputFn = f
+	return c
+}
+
+func (c *PathSetting) onInput() {
+	if c.onInputFn != nil {
+		c.onInputFn(c.pathSetting)
+	}
+}
+
+func (c *PathSetting) SetHelp() {
+	namer := models.DefaultFileNamer[c.pathSetting.PathNaming]
+	m := SampleMedia[c.pathSetting.PathNaming]
+
+	c.help = filepath.Join(*c.libraryPath, c.pathSetting.Folder, namer.ShowPathString(m), namer.SeasonPathString(m), namer.MediaFileNameString(m))
+}
+
 func (c *PathSetting) Render() app.UI {
-	s := bulma.NewSelectField(labelTypePathNaming).WhitOnInput(func(ctx app.Context, selected string) (string, error) {
+	s := bulma.NewSelectField(c.selected, labelTypePathNaming).WhitOnInput(func(selected string) {
 		option, _ := strconv.Atoi(selected)
-		c.PathSetting.PathNaming = models.PathNamingType(option)
-		return selected, nil
+		c.pathSetting.PathNaming = models.PathNamingType(option)
+		c.onInput()
+		c.SetHelp()
 	})
 	for k := range SampleMedia {
 		s.WithOption(
 			strconv.Itoa(int(k)),
 			labelsTypePathNaming[k],
-			k == c.PathSetting.PathNaming,
+			k == c.pathSetting.PathNaming,
 		)
 	}
-
-	namer := models.DefaultFileNamer[c.PathSetting.PathNaming]
-	m := SampleMedia[c.PathSetting.PathNaming]
-	c.sample = filepath.Join(c.LibraryPath, *c.Folder, namer.ShowPathString(m), namer.SeasonPathString(m), namer.MediaFileNameString(m))
-
 	return app.Section().Body(
 		app.H2().Class("title is-2").Text(c.Legend),
-		bulma.NewTextField(&c.PathSetting.Folder, labelSubFolder, labelSubFolderPlaceHolder),
+		bulma.NewTextField(c.pathSetting.Folder, labelSubFolder, labelSubFolderPlaceHolder).WithOnInput(func(v string) {
+			c.pathSetting.Folder = v
+			c.onInput()
+			c.SetHelp()
+		}),
+		s,
 		app.Div().Class("field").Body(
-			app.Label().Class("label").Text(labelSubFolder),
-			s,
-		),
-		app.P().Body(
-			app.Text("Exemple: "),
-			app.Text(c.sample),
+			app.P().Class("help").Body(
+				app.Text("Exemple : "),
+				app.Text(c.help),
+			),
 		),
 	)
 }
 
-func (c *Settings) messageError(ctx app.Context, e app.Event) {
-	c.i++
-	MyAppState.Dispatch.Publish(models.NewMessage(fmt.Sprintf("Message %d !", c.i)).SetStatus(models.StatusError).SetPinned(true))
-}
-func (c *Settings) messageSuccess(ctx app.Context, e app.Event) {
-	c.i++
-	MyAppState.Dispatch.Publish(models.NewMessage(fmt.Sprintf("Message %d !", c.i)).SetStatus(models.StatusSuccess))
-}
-
 func (c *Settings) submit(ctx app.Context, e app.Event) {
-	log.Printf("Settings: %# v", pretty.Formatter(c.Settings))
 	s, err := MyAppState.API.SetSettings(ctx, c.Settings)
 	if err != nil {
 		MyAppState.Dispatch.Publish(models.NewMessage(err.Error()).SetStatus(models.StatusError).SetPinned(true))

@@ -27,11 +27,12 @@ func TestMessageJSON(t *testing.T) {
 func TestSettingsJSON(t *testing.T) {
 	want := Settings{
 		LibraryPath: "path",
-		SeriesSettings: &PathSettings{
+		SeriesSettings: PathSettings{
 			Folder:     "Series",
 			PathNaming: PathTypeSeries,
 		},
 	}
+	want.SeriesSettings.FileNamer = DefaultFileNamer[PathTypeSeries]
 
 	b, err := json.MarshalIndent(want, "", "  ")
 	if err != nil {
