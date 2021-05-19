@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/simulot/aspiratv/pkg/backend"
 	"github.com/simulot/aspiratv/pkg/models"
 	"github.com/simulot/aspiratv/pkg/providers"
@@ -200,12 +201,22 @@ type spyStore struct {
 	setSettingsCalled bool
 }
 
-func (s *spyStore) GetSettings() (models.Settings, error) {
+func (s *spyStore) GetSubscription(ctx context.Context, UUID uuid.UUID) (models.Subscription, error) {
+	return models.Subscription{}, nil
+}
+func (s *spyStore) GetAllSubscriptions(ctx context.Context) ([]models.Subscription, error) {
+	return []models.Subscription{}, nil
+}
+func (s *spyStore) SetSubscription(context.Context, models.Subscription) (models.Subscription, error) {
+	return models.Subscription{}, nil
+}
+
+func (s *spyStore) GetSettings(ctx context.Context) (models.Settings, error) {
 	s.getSettingsCalled = true
 	return s.settings, nil
 }
 
-func (s *spyStore) SetSettings(settings models.Settings) (models.Settings, error) {
+func (s *spyStore) SetSettings(ctx context.Context, settings models.Settings) (models.Settings, error) {
 	s.setSettingsCalled = true
 	return settings, nil
 }

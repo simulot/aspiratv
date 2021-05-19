@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/google/uuid"
 	"github.com/simulot/aspiratv/pkg/models"
 	"github.com/simulot/aspiratv/pkg/myhttp"
 	"github.com/simulot/aspiratv/pkg/providers"
@@ -23,15 +24,15 @@ const (
 
 // API implements a store using RestAPI.
 type API struct {
-	endPoint  string
-	client    *myhttp.Client
-	jsonStore store.Store
+	endPoint string
+	client   *myhttp.Client
+	Store    store.Store
 }
 
 func NewRestStore(endPoint string, s store.Store) *API {
 	return &API{
-		endPoint:  endPoint,
-		jsonStore: s,
+		endPoint: endPoint,
+		Store:    s,
 		client: myhttp.NewClient(
 			myhttp.WithLogger(log.Default()),
 		),
@@ -115,36 +116,11 @@ func (s *API) Search(ctx context.Context, q models.SearchQuery) (<-chan models.S
 }
 
 func (s *API) GetSettings(ctx context.Context) (models.Settings, error) {
-	if s.jsonStore != nil {
-		return s.jsonStore.GetSettings()
-	}
-	req, err := s.client.NewRequestJSON(ctx, s.endPoint+settingsURL, nil, nil, nil)
-	if err != nil {
-		return models.Settings{}, err
-	}
-
-	var settings models.Settings
-
-	err = s.client.GetJSON(req, &settings)
-	if err != nil {
-		return models.Settings{}, err
-	}
-	return settings, err
+	return s.Store.GetSettings(ctx)
 }
 
 func (s *API) SetSettings(ctx context.Context, settings models.Settings) (models.Settings, error) {
-	if s.jsonStore != nil {
-		return s.jsonStore.SetSettings(settings)
-	}
-	req, err := s.client.NewRequestJSON(ctx, s.endPoint+settingsURL, nil, nil, settings)
-	if err != nil {
-		return models.Settings{}, err
-	}
-	err = s.client.PostJSON(req, &settings)
-	if err != nil {
-		return models.Settings{}, err
-	}
-	return settings, err
+	return s.Store.SetSettings(ctx, settings)
 }
 
 func (s *API) PostDownload(ctx context.Context, dr models.DownloadTask) (models.DownloadTask, error) {
@@ -199,4 +175,16 @@ func (s *API) SubscribeServerNotifications(ctx context.Context) (<-chan *models.
 	}()
 
 	return messages, nil
+}
+
+func (s *API) GetSubscription(ctx context.Context, UUID uuid.UUID) (models.Subscription, error) {
+	return s.Store.GetSubscription(ctx, UUID)
+}
+
+func (s *API) GetAllSubscriptions(ctx context.Context) ([]models.Subscription, error) {
+	return s.Store.GetAllSubscriptions(ctx)
+}
+
+func (s *API) SetSubscription(ctx context.Context, sub models.Subscription) (models.Subscription, error) {
+	return s.Store.SetSubscription(ctx, sub)
 }

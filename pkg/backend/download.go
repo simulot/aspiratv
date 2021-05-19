@@ -57,7 +57,7 @@ func (s *Server) postDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	settings, err := s.store.GetSettings()
+	settings, err := s.store.GetSettings(s.backgroundCtx)
 	if p == nil {
 		s.sendError(w, APIError{err: err, code: http.StatusInternalServerError})
 		return

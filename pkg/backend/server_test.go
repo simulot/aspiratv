@@ -262,6 +262,10 @@ type spyProvider struct {
 	searchSent      int
 }
 
+func (s *spyProvider) GetAllSubscriptions() ([]models.Subscription, error) {
+	return []models.Subscription{}, nil
+}
+
 func (s *spyProvider) GetMedias(ctx context.Context, task models.DownloadTask) (<-chan models.DownloadItem, error) {
 	return nil, nil
 }

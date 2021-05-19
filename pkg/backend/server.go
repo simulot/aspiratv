@@ -20,6 +20,7 @@ const (
 	settingsURL      = APIURL + "settings/"
 	downloadURL      = APIURL + "download/"
 	notificationsURL = APIURL + "notifications/"
+	subscriptionsURL = APIURL + "subscriptions/"
 )
 
 type logger interface {
@@ -51,6 +52,7 @@ func NewServer(ctx context.Context, store store.Store, p []providers.Provider) *
 	router.Handle(settingsURL, http.HandlerFunc(s.settingsHandler))
 	router.Handle(downloadURL, http.HandlerFunc(s.downloadHandler))
 	router.Handle(notificationsURL, http.HandlerFunc(s.notificationsHandler))
+	router.Handle(subscriptionsURL, http.HandlerFunc(s.subscriptionsHandler))
 	s.Handler = router
 	s.Scheduler(ctx)
 	return s

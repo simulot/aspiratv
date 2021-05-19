@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"errors"
 
 	"github.com/google/uuid"
@@ -10,16 +11,17 @@ import (
 var ErrorNotFound = errors.New("ressource not found")
 
 type Store interface {
-	ProviderInterface
+	SettingsInterface
+	SubscriptionInterfaces
 }
 
-type ProviderInterface interface {
-	GetSettings() (models.Settings, error)
-	SetSettings(models.Settings) (models.Settings, error)
+type SettingsInterface interface {
+	GetSettings(context.Context) (models.Settings, error)
+	SetSettings(context.Context, models.Settings) (models.Settings, error)
 }
 
 type SubscriptionInterfaces interface {
-	GetSubscription(id uuid.UUID) (models.Subscription, error)
-	GetAllSubscription() ([]models.Subscription, error)
-	SetSubscription(models.Subscription) (models.Subscription, error)
+	GetSubscription(context.Context, uuid.UUID) (models.Subscription, error)
+	GetAllSubscriptions(context.Context) ([]models.Subscription, error)
+	SetSubscription(context.Context, models.Subscription) (models.Subscription, error)
 }

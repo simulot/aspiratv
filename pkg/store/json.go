@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"os"
@@ -12,7 +13,7 @@ import (
 	"github.com/simulot/aspiratv/pkg/models"
 )
 
-type StoreJSON struct {
+type JSONStore struct {
 	l             sync.Mutex                        `json:"lock,omitempty"`
 	Settings      models.Settings                   `json:"settings,omitempty"`
 	Subscriptions map[uuid.UUID]models.Subscription `json:"subscriptions,omitempty"`
@@ -20,8 +21,8 @@ type StoreJSON struct {
 	filename      string                            `json:"filename,omitempty"`
 }
 
-func NewStoreJSON(filename string) *StoreJSON {
-	return &StoreJSON{
+func NewStoreJSON(filename string) *JSONStore {
+	return &JSONStore{
 		filename: filename,
 	}
 }
@@ -48,7 +49,7 @@ func freshSettings() models.Settings {
 	return settings
 }
 
-func (s *StoreJSON) GetSettings() (models.Settings, error) {
+func (s *JSONStore) GetSettings(ctx context.Context) (models.Settings, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
 	if s.LastSaved.IsZero() {
@@ -60,7 +61,7 @@ func (s *StoreJSON) GetSettings() (models.Settings, error) {
 	return s.Settings, nil
 }
 
-func (s *StoreJSON) SetSettings(settings models.Settings) (models.Settings, error) {
+func (s *JSONStore) SetSettings(ctx context.Context, settings models.Settings) (models.Settings, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
 
@@ -73,7 +74,7 @@ func (s *StoreJSON) SetSettings(settings models.Settings) (models.Settings, erro
 	return s.Settings, nil
 }
 
-func (s *StoreJSON) GetSubscription(UUID uuid.UUID) (models.Subscription, error) {
+func (s *JSONStore) GetSubscription(ctx context.Context, UUID uuid.UUID) (models.Subscription, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
 
@@ -90,7 +91,7 @@ func (s *StoreJSON) GetSubscription(UUID uuid.UUID) (models.Subscription, error)
 
 	return sub, nil
 }
-func (s *StoreJSON) GetAllSubscription() ([]models.Subscription, error) {
+func (s *JSONStore) GetAllSubscriptions(ctx context.Context) ([]models.Subscription, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
 
@@ -107,7 +108,7 @@ func (s *StoreJSON) GetAllSubscription() ([]models.Subscription, error) {
 	return ss, nil
 }
 
-func (s *StoreJSON) SetSubscription(subscription models.Subscription) (models.Subscription, error) {
+func (s *JSONStore) SetSubscription(ctx context.Context, subscription models.Subscription) (models.Subscription, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
 
@@ -123,8 +124,8 @@ func (s *StoreJSON) SetSubscription(subscription models.Subscription) (models.Su
 	return subscription, nil
 }
 
-func (s *StoreJSON) readConfig(r io.Reader) error {
-	var config StoreJSON
+func (s *JSONStore) readConfig(r io.Reader) error {
+	var config JSONStore
 	err := json.NewDecoder(r).Decode(&config)
 	if err != nil {
 		return err
@@ -133,7 +134,7 @@ func (s *StoreJSON) readConfig(r io.Reader) error {
 	return nil
 }
 
-func (s *StoreJSON) readConfigFile() error {
+func (s *JSONStore) readConfigFile() error {
 	f, err := os.Open(s.filename)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -146,13 +147,13 @@ func (s *StoreJSON) readConfigFile() error {
 	return s.readConfig(f)
 }
 
-func (s *StoreJSON) writeConfig(w io.Writer) error {
+func (s *JSONStore) writeConfig(w io.Writer) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	return enc.Encode(s)
 }
 
-func (s *StoreJSON) writeConfigFile() error {
+func (s *JSONStore) writeConfigFile() error {
 	f, err := os.Create(s.filename)
 	if err != nil {
 		return err
