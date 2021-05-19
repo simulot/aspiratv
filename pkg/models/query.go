@@ -19,28 +19,28 @@ var MediaTypeLabel = []string{
 }
 
 type SearchResult struct {
-	Err             error     // When not nil, the rest of the structure is invalid
-	ID              string    // To disambiguate detail search
-	Rank            int       // Result rank
-	Type            MediaType // Collection / Series / TV Show / Movie or media
-	Show            string    // Show name
-	Title           string    // Media Title
-	Plot            string    // Plot
-	PageURL         string    // Page on the web site
-	ThumbURL        string    // Image
-	Aired           time.Time // When it has been broadcasted
-	AvailableOn     time.Time // O when available, or date of availability
-	Chanel          string    // TV Chanel
-	Provider        string    // Provider
-	Tags            []string
-	AvailableVideos int
-	MoreAvailable   bool
+	Err             error     `json:"err,omitempty"`          // When not nil, the rest of the structure is invalid
+	ID              string    `json:"id,omitempty"`           // To disambiguate detail search
+	Rank            int       `json:"rank,omitempty"`         // Result rank
+	Type            MediaType `json:"type,omitempty"`         // Collection / Series / TV Show / Movie or media
+	Show            string    `json:"show,omitempty"`         // Show name
+	Title           string    `json:"title,omitempty"`        // Media Title
+	Plot            string    `json:"plot,omitempty"`         // Plot
+	PageURL         string    `json:"page_url,omitempty"`     // Page on the web site
+	ThumbURL        string    `json:"thumb_url,omitempty"`    // Image
+	Aired           time.Time `json:"aired,omitempty"`        // When it has been broadcasted
+	AvailableOn     time.Time `json:"available_on,omitempty"` // O when available, or date of availability
+	Chanel          string    `json:"chanel,omitempty"`       // TV Chanel
+	Provider        string    `json:"provider,omitempty"`     // Provider
+	Tags            []string  `json:"tags,omitempty"`
+	AvailableVideos int       `json:"available_videos,omitempty"`
+	MoreAvailable   bool      `json:"more_available,omitempty"`
 }
 
 type AvailableSeason struct {
-	Season             int
-	AvailableEpsisodes int
-	LatestAired        time.Time
+	Season             int       `json:"season,omitempty"`
+	AvailableEpsisodes int       `json:"available_epsisodes,omitempty"`
+	LatestAired        time.Time `json:"latest_aired,omitempty"`
 }
 
 func (sr *SearchResult) AddTag(t string) {
@@ -53,21 +53,10 @@ func (sr *SearchResult) AddTag(t string) {
 }
 
 type SearchQuery struct {
-	Title           string    // Title to be searched on line
-	normalizedTitle string    // Normalized title to ease comparisons with diacritics
-	OnlyExactTitle  bool      // When true, the result title must match the searched title
-	AiredAfter      time.Time // WHen set, must be aired after, zero means during the last month
-
-	// Future Use
-	// MustTitle       *regexp.Regexp // When given, the title must be recognized by this regexp
-	// RejectTitle     *regexp.Regexp // When give the title must not be recognized by this regexp
-	// AiredBefore     time.Time      // when set, must be aired before
-
-	// // Default options
-	// RefuseSeries  bool
-	// RefuseTVShow  bool
-	// RefuseMovies  bool
-	// AcceptBonuses bool
+	Title           string    `json:"title,omitempty"`            // Title to be searched on line
+	normalizedTitle string    `json:"-,omitempty"`                // Normalized title to ease comparisons with diacritics
+	OnlyExactTitle  bool      `json:"only_exact_title,omitempty"` // When true, the result title must match the searched title
+	AiredAfter      time.Time `json:"aired_after,omitempty"`      // WHen set, must be aired after, zero means during the last month
 }
 
 func (q SearchQuery) IsMatch(t string) bool {

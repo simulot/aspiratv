@@ -225,14 +225,6 @@ func (p *ArteTV) getShows(ctx context.Context, mr *matcher.MatchRequest, data []
 	return shows
 }
 
-//https://www.arte.tv/guide/api/emac/v3/fr/web/programs/044892-008-A/?
-//https://    www.arte.tv/guide/api/emac/v3/fr/web/data/COLLECTION_VIDEOS/?collectionId=RC-014408&page=1&limit=100
-//https://api-cdn.arte.tv/      api/emac/v3/fr/web/data/COLLECTION_VIDEOS/?collectionId=RC-015842&page=2&limit=12
-var (
-	parseSeason  = regexp.MustCompile(`Saison (\d+)`)              // Detect season number in web page
-	parseEpisode = regexp.MustCompile(`^(?:.+) \((\d+)\/(\d+)\)$`) // Extract episode number
-)
-
 // getSerie
 // Arte presents a serie either as collection of episodes for a single season or as a collection of collection of episodes for multiple seasons.
 
@@ -394,7 +386,7 @@ func getThumbs(images map[string]Image) []nfo.Thumb {
 		case "landscape":
 			aspect = "thumb"
 		case "banner":
-			aspect = "fanart"
+			aspect = "backdrop"
 		case "portrait":
 			aspect = "poster"
 		case "square":

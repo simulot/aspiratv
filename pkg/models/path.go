@@ -17,8 +17,8 @@ var DefaultPathSettings = map[PathNamingType]PathSettings{
 	},
 	PathTypeSeries: {
 		ShowPathTemplate:      `{{.Show}}`,
-		SeasonPathTemplate:    `{{if not .IsBonus}}Season {{.Season | printf "%02d" }}{{else}}Specials{{end}}`,
-		MediaFileNameTemplate: `{{if not .IsBonus}}{{.Show}} s{{.Season | printf "%02d" }}e{{.Episode | printf "%02d" }} {{end}}{{.Title}}.mp4`,
+		SeasonPathTemplate:    `{{if not .IsBonus}}Season {{if ne .Season 0}}{{.Season | printf "%02d" }}{{else}}{{.Year}}{{end}}{{else}}Specials{{end}}`,
+		MediaFileNameTemplate: `{{if and (not .IsBonus) (ne .Season 0)}}{{.Show}} s{{.Season | printf "%02d" }}e{{.Episode | printf "%02d" }} {{end}}{{.Title}}.mp4`,
 	},
 	PathTypeTVShow: {
 		ShowPathTemplate:      `{{.Show}}`,

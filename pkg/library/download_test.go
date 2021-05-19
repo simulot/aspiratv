@@ -112,7 +112,7 @@ func makeMediaChannel(t *testing.T, task models.DownloadTask, number int, dl *fa
 		Plot:  "This is the show plot",
 		Type:  task.Result.Type,
 		Title: task.Result.Show,
-		Thumbs: []models.Image{
+		Images: []models.Image{
 			{
 				ID:     uuid.NewString(),
 				Aspect: "banner",
@@ -124,7 +124,7 @@ func makeMediaChannel(t *testing.T, task models.DownloadTask, number int, dl *fa
 	season := models.SeasonInfo{
 		ID:   uuid.NewString(),
 		Plot: "This is the season plot",
-		Thumbs: []models.Image{
+		Images: []models.Image{
 			{
 				ID:     uuid.NewString(),
 				Aspect: "banner",

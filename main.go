@@ -8,8 +8,9 @@ import (
 	"github.com/maxence-charriere/go-app/v9/pkg/app"
 	"github.com/simulot/aspiratv/pkg/backend"
 	"github.com/simulot/aspiratv/pkg/frontend"
+	"github.com/simulot/aspiratv/pkg/myhttp"
 	"github.com/simulot/aspiratv/pkg/providers"
-	"github.com/simulot/aspiratv/pkg/providers/mockup"
+	"github.com/simulot/aspiratv/pkg/providers/artetv"
 	"github.com/simulot/aspiratv/pkg/store"
 )
 
@@ -31,15 +32,15 @@ func main() {
 	st := store.NewStoreJSON("config.json")
 
 	providers := []providers.Provider{
-		mockup.NewMockup(),
-		// artetv.NewArte(
-		// 	artetv.WithClientConfigurations(
-		// 		myhttp.WithRequestLogger(log.Default()),
-		// 		myhttp.WithResponseLogger(
-		// 			myhttp.NewPayloadDumper(log.Default(), "tmp", "arte_*.json", func(b []byte) []byte { return b }),
-		// 		),
-		// 	),
-		// ),
+		// mockup.NewMockup(),
+		artetv.NewArte(
+			artetv.WithClientConfigurations(
+				myhttp.WithRequestLogger(log.Default()),
+				myhttp.WithResponseLogger(
+					myhttp.NewPayloadDumper(log.Default(), "tmp", "arte_*.json", myhttp.JSONDumper),
+				),
+			),
+		),
 		// francetv.NewFranceTV(
 		// 	francetv.WithClientConfigurations(
 		// 		myhttp.WithRequestLogger(log.Default()),

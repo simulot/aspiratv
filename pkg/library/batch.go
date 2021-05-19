@@ -1,10 +1,19 @@
 package library
 
 import (
+	"context"
 	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	"image/png"
 	"os"
 	"path/filepath"
 	"strings"
+
+	_ "golang.org/x/image/webp"
+
+	"github.com/simulot/aspiratv/pkg/myhttp"
 )
 
 type runFn func() error
@@ -115,6 +124,9 @@ func MkDirAll(alldir string) *Action {
 }
 
 func WriteFile(FileName string, content []byte) *Action {
+	if fileExist(FileName) {
+		return nop
+	}
 	return NewAction(
 		fmt.Sprintf("WriteFile %q", FileName),
 		func() error {
@@ -130,5 +142,44 @@ func WriteFile(FileName string, content []byte) *Action {
 		}).WithUndo(
 		func() error {
 			return os.Remove(FileName)
+		})
+}
+
+func fileExist(name string) bool {
+	_, err := os.Stat(name)
+	return err == nil
+}
+
+func DownloadImage(ctx context.Context, U string, fileName string) *Action {
+	if fileExist(fileName) {
+		return nop
+	}
+	return NewAction(
+		fmt.Sprintf("Download %q from %q", fileName, U),
+		func() error {
+			client := myhttp.NewClient()
+			req, err := client.NewRequest(ctx, U, nil, nil, nil)
+			if err != nil {
+				return err
+			}
+			resp, err := client.Get(req)
+			if err != nil {
+				return err
+			}
+			defer resp.Body.Close()
+			img, _, err := image.Decode(resp.Body)
+			if err != nil {
+				return err
+			}
+			f, err := os.Create(fileName)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			err = png.Encode(f, img)
+			return nil
+		}).WithUndo(
+		func() error {
+			return os.Remove(fileName)
 		})
 }

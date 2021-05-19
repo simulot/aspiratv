@@ -91,7 +91,7 @@ func (b *BatchDownloader) Download(ctx context.Context, medias <-chan models.Dow
 				return
 			}
 			if item.MediaInfo.ShowInfo != nil {
-				buf, err := json.Marshal(item.MediaInfo.ShowInfo)
+				buf, err := json.MarshalIndent(item.MediaInfo.ShowInfo, "", "  ")
 				if err != nil {
 					dispatchError(err)
 					return
@@ -101,6 +101,7 @@ func (b *BatchDownloader) Download(ctx context.Context, medias <-chan models.Dow
 					dispatchError(err)
 					return
 				}
+				downloadImages(ctx, t, filepath.Join(libraryPath, showPath), "", item.MediaInfo.ShowInfo.Images)
 			}
 
 			seasonPath, err := b.fileNamer.SeasonPath(item.MediaInfo)
@@ -114,7 +115,7 @@ func (b *BatchDownloader) Download(ctx context.Context, medias <-chan models.Dow
 				return
 			}
 			if item.MediaInfo.SeasonInfo != nil {
-				buf, err := json.Marshal(item.MediaInfo.SeasonInfo)
+				buf, err := json.MarshalIndent(item.MediaInfo.SeasonInfo, "", "  ")
 				if err != nil {
 					dispatchError(err)
 					return
@@ -131,7 +132,7 @@ func (b *BatchDownloader) Download(ctx context.Context, medias <-chan models.Dow
 				dispatchError(err)
 				return
 			}
-			buf, err := json.Marshal(item.MediaInfo)
+			buf, err := json.MarshalIndent(item.MediaInfo, "", "  ")
 			if err != nil {
 				dispatchError(err)
 				return
@@ -141,23 +142,26 @@ func (b *BatchDownloader) Download(ctx context.Context, medias <-chan models.Dow
 				dispatchError(err)
 				return
 			}
-			itemProgression := dlProgression{
-				Message: models.NewProgression(mediaFileName, 0, 0).SetPinned(true).SetStatus(models.StatusInfo),
-				p:       b.p,
-			}
-			if b.p != nil {
-				b.p.Publish(itemProgression.Message)
-				item.Downloader.WithProgresser(&itemProgression)
-			}
 			mediaFile := filepath.Join(libraryPath, showPath, seasonPath, mediaFileName)
-			err = t.Do(NewAction(fmt.Sprintf("Download %q", mediaFile), func() error {
-				return item.Downloader.Download(ctx, mediaFile)
-			}).WithUndo(func() error {
-				return os.Remove(mediaFile)
-			}))
+			downloadImages(ctx, t, filepath.Join(libraryPath, showPath, seasonPath), mediaFileName, item.MediaInfo.Images)
 
-			if err != nil {
-				dispatchError(err)
+			if !fileExist(mediaFile) {
+				itemProgression := dlProgression{
+					Message: models.NewProgression(mediaFileName, 0, 0).SetPinned(true).SetStatus(models.StatusInfo),
+					p:       b.p,
+				}
+				if b.p != nil {
+					b.p.Publish(itemProgression.Message)
+					item.Downloader.WithProgresser(&itemProgression)
+				}
+				err = t.Do(NewAction(fmt.Sprintf("Download %q", mediaFile), func() error {
+					return item.Downloader.Download(ctx, mediaFile)
+				}).WithUndo(func() error {
+					return os.Remove(mediaFile)
+				}))
+				if err != nil {
+					dispatchError(err)
+				}
 			}
 		}
 	}
@@ -175,4 +179,32 @@ func (p *dlProgression) Progress(current int, total int) {
 		p.SetPinned(false)
 	}
 	p.p.Publish(p.Message)
+}
+
+func downloadImages(ctx context.Context, t *Batch, path string, mediaName string, images []models.Image) error {
+	extMedia := filepath.Ext(mediaName)
+	baseMedia := strings.TrimSuffix(mediaName, extMedia)
+	for _, aspect := range []string{"thumb", "backdrop", "poster"} {
+		idx := 1
+		for _, image := range images {
+			if image.Aspect == aspect {
+				var imageName string
+				if len(mediaName) > 0 {
+					switch aspect {
+					case "thumb":
+						imageName = fmt.Sprintf("%s-%d.png", baseMedia, idx)
+					default:
+						imageName = fmt.Sprintf("%s-%s-%d.png", baseMedia, aspect, idx)
+					}
+				} else {
+					imageName = fmt.Sprintf("%s-%d.png", aspect, idx)
+				}
+				err := t.Do(DownloadImage(ctx, image.URL, filepath.Join(path, imageName)))
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }

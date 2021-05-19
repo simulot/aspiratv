@@ -18,10 +18,24 @@ type DownloadDialog struct {
 }
 
 func NewDownloadDialog(r models.SearchResult, back func()) *DownloadDialog {
+	path := MyAppState.Settings.LibraryPath
+	namer := models.DefaultFileNamer[models.PathNamingType(r.Type)]
+	if namer != nil {
+		path = filepath.Join(path, namer.ShowPathString(models.MediaInfo{
+			Type:     r.Type,
+			Title:    r.Title,
+			Show:     r.Show,
+			Aired:    r.Aired,
+			Year:     r.Aired.Year(),
+			Channel:  r.Chanel,
+			Provider: r.Provider,
+		}))
+	}
+
 	return &DownloadDialog{
 		Result: r,
 		Back:   back,
-		Path:   filepath.Join(MyAppState.Settings.LibraryPath, r.Show),
+		Path:   path,
 	}
 }
 
@@ -38,7 +52,7 @@ func (dd *DownloadDialog) Render() app.UI {
 					app.Div().Class("field").Body(
 						app.Label().Class("label").Text("Répertoire sur le serveur"),
 						app.Div().Class("control").Body(
-							app.Input().Type("text").Placeholder("Chemin").OnChange(dd.ValueTo(&dd.Path)).Value(dd.Path),
+							app.Input().Type("text").Placeholder("Chemin").OnChange(dd.ValueTo(&dd.Path)).Value(dd.Path).Disabled(true),
 						),
 					),
 				),

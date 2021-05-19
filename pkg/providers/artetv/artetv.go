@@ -1,5 +1,15 @@
 package artetv
 
+/*
+	Connector for Arte TV
+
+
+	TODO:
+		Choose preferred language for audio and subtitles
+		Thumbnails
+
+*/
+
 import (
 	"bytes"
 	"context"
@@ -20,9 +30,16 @@ import (
 )
 
 type Arte struct {
-	preferredLanguage string
-	client            *myhttp.Client
-	limiter           *rate.Limiter
+	client           *myhttp.Client
+	limiter          *rate.Limiter
+	settings         arteSettings
+	preferredQuality []string
+}
+
+type arteSettings struct {
+	MainLanguage      string   // FR,DE
+	PreferredVersions []string // VT,VOF,VF-STF...
+
 }
 
 var (
@@ -53,7 +70,11 @@ func WithLimiter(l *rate.Limiter) func(p *Arte) {
 
 func NewArte(confFn ...func(p *Arte)) *Arte {
 	p := Arte{
-		preferredLanguage: "fr",
+		settings: arteSettings{
+			MainLanguage:      "fr",
+			PreferredVersions: []string{"VF", "VOF", "VF-STF", "VOF-STF", "VO-STF", "VOF-STMF", "VO"},
+		},
+		preferredQuality: []string{"SQ", "XQ", "EQ", "HQ", "MQ"},
 	}
 	for _, fn := range confFn {
 		fn(&p)
@@ -100,7 +121,7 @@ func (p *Arte) callSearch(ctx context.Context, results chan models.SearchResult,
 		urlValues.Add("mainZonePage", "1")
 		req, err := p.client.NewRequest(
 			ctx,
-			"https://www.arte.tv/guide/api/emac/v3/%s/web/pages/SEARCH/", []interface{}{p.preferredLanguage},
+			"https://www.arte.tv/guide/api/emac/v3/%s/web/pages/SEARCH/", []interface{}{p.settings.MainLanguage},
 			urlValues,
 			nil,
 		)
@@ -291,4 +312,28 @@ func bestImage(images Image) string {
 		}
 	}
 	return bestURL
+}
+
+var versions = map[string][]struct {
+	code  string
+	label string
+}{
+	"fr": {
+		{
+			code:  "VF",
+			label: "Français",
+		},
+		{
+			code:  "VO-STF",
+			label: "Version originale - ST français",
+		},
+		{
+			code:  "VO",
+			label: "Version originale",
+		},
+		{
+			code:  "VA",
+			label: "Allemand",
+		},
+	},
 }

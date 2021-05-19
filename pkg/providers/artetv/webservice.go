@@ -279,15 +279,23 @@ type Pages struct {
 }
 
 type Page struct {
-	ID          string `json:"id"`
-	Page        string `json:"page"`
-	Language    string `json:"language"`
-	Support     string `json:"support"`
-	Level       int    `json:"level"`
-	URL         string `json:"url"`
-	Deeplink    string `json:"deeplink"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Slug        string `json:"slug"`
-	Zones       []Zone `json:"zones"`
+	ID          string `json:"id,omitempty"`
+	Page        string `json:"page,omitempty"`
+	Language    string `json:"language,omitempty"`
+	Support     string `json:"support,omitempty"`
+	Level       int    `json:"level,omitempty"`
+	URL         string `json:"url,omitempty"`
+	Deeplink    string `json:"deeplink,omitempty"`
+	Title       string `json:"title,omitempty"`
+	Description string `json:"description,omitempty"`
+	Parent      Parent `json:"parent,omitempty"`
+	Slug        string `json:"slug,omitempty"`
+	Zones       []Zone `json:"zones,omitempty"`
+}
+
+type Parent struct {
+	ID     string  `json:"id,omitempty"`
+	Label  string  `json:"label,omitempty"`
+	Page   string  `json:"page,omitempty"`
+	Parent *Parent `json:"parent,omitempty"`
 }

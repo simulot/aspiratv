@@ -83,6 +83,24 @@ func (p *payloadDumper) Printf(f string, a ...interface{}) {
 	}
 }
 
+func JSONDumper(in []byte) []byte {
+	var temp interface{}
+	var err error
+	err = json.NewDecoder(bytes.NewReader(in)).Decode(&temp)
+	if err != nil {
+		return []byte(err.Error())
+	}
+
+	out := bytes.NewBuffer(nil)
+	enc := json.NewEncoder(out)
+	enc.SetIndent("", "  ")
+	err = enc.Encode(temp)
+	if err != nil {
+		return []byte(err.Error())
+	}
+	return out.Bytes()
+}
+
 type Client struct {
 	http.Client
 

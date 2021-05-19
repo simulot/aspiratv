@@ -17,7 +17,7 @@ func (p Mockup) GetMedias(ctx context.Context, task models.DownloadTask) (<-chan
 		Plot:  "This is the show plot",
 		Type:  task.Result.Type,
 		Title: task.Result.Show,
-		Thumbs: []models.Image{
+		Images: []models.Image{
 			{
 				ID:     uuid.NewString(),
 				Aspect: "banner",
@@ -29,7 +29,7 @@ func (p Mockup) GetMedias(ctx context.Context, task models.DownloadTask) (<-chan
 	season := models.SeasonInfo{
 		ID:   uuid.NewString(),
 		Plot: "This is the season plot",
-		Thumbs: []models.Image{
+		Images: []models.Image{
 			{
 				ID:     uuid.NewString(),
 				Aspect: "banner",
