@@ -142,7 +142,7 @@ func (p *Arte) fetchShowDetails(ctx context.Context, info *models.MediaInfo) err
 
 	{
 		b := myhttp.JSONDumper([]byte(js))
-		w, err := os.Create("tmp/arte_" + info.ID + ".json")
+		w, err := os.Create("testdata/arte_" + info.ID + ".json")
 		if err == nil {
 			w.Write(b)
 			w.Close()

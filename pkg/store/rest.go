@@ -22,7 +22,7 @@ type RestStore struct {
 	client   *myhttp.Client
 }
 
-func NewRestStore(endPoint string, s Store) *RestStore {
+func NewRestStore(endPoint string) *RestStore {
 	return &RestStore{
 		endPoint: endPoint,
 		client: myhttp.NewClient(

@@ -72,6 +72,8 @@ func InitializeWebApp(ctx context.Context) *AppState {
 		u.Scheme = "http"
 		u.Path = "/api/"
 		log.Printf("[CLIENT] API endpoint: %s", u.String())
+		st = store.NewRestStore(u.String())
+
 	} else {
 		u = app.Window().URL()
 		u.Scheme = "http"

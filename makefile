@@ -9,7 +9,7 @@ sass:
 	sass  frontend/sass/mystyles.scss:web/mystyles.css
 
 clean:
-	rm ./tmp/*
+	rm -fR./tmp/*
 
 
 init:

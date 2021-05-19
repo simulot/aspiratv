@@ -37,7 +37,7 @@ func main() {
 			artetv.WithClientConfigurations(
 				myhttp.WithRequestLogger(log.Default()),
 				myhttp.WithResponseLogger(
-					myhttp.NewPayloadDumper(log.Default(), "tmp", "arte_*.json", myhttp.JSONDumper),
+					myhttp.NewPayloadDumper(log.Default(), "testdata", "arte_*.json", myhttp.JSONDumper),
 				),
 			),
 		),
