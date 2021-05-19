@@ -57,6 +57,7 @@ type SearchQuery struct {
 	normalizedTitle string    `json:"-,omitempty"`                // Normalized title to ease comparisons with diacritics
 	OnlyExactTitle  bool      `json:"only_exact_title,omitempty"` // When true, the result title must match the searched title
 	AiredAfter      time.Time `json:"aired_after,omitempty"`      // WHen set, must be aired after, zero means during the last month
+	MaxResults      int       `json:"max_results,omitempty"`      // When not zero, limit the number of downloaded media
 }
 
 func (q SearchQuery) IsMatch(t string) bool {
