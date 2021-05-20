@@ -22,15 +22,15 @@ const (
 	searchURL   = "search/"
 )
 
-// API implements a store using RestAPI.
-type API struct {
+// APIClient implements a store using RestAPI.
+type APIClient struct {
 	endPoint string
 	client   *myhttp.Client
 	Store    store.Store
 }
 
-func NewRestStore(endPoint string, s store.Store) *API {
-	return &API{
+func NewAPIClient(endPoint string, s store.Store) *APIClient {
+	return &APIClient{
 		endPoint: endPoint,
 		Store:    s,
 		client: myhttp.NewClient(
@@ -39,7 +39,7 @@ func NewRestStore(endPoint string, s store.Store) *API {
 	}
 }
 
-func (s *API) ProviderDescribe(ctx context.Context) ([]providers.Description, error) {
+func (s *APIClient) ProviderDescribe(ctx context.Context) ([]providers.Description, error) {
 	req, err := s.client.NewRequestJSON(ctx, s.endPoint+"providers/", nil, nil, nil)
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func (s *API) ProviderDescribe(ctx context.Context) ([]providers.Description, er
 	return p, nil
 }
 
-func (s *API) Search(ctx context.Context, q models.SearchQuery) (<-chan models.SearchResult, error) {
+func (s *APIClient) Search(ctx context.Context, q models.SearchQuery) (<-chan models.SearchResult, error) {
 	// ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	ctx, cancel := context.WithCancel(ctx)
 	log.Printf("[HTTPCLIENT] Dial websocket %s", s.endPoint+"search/")
@@ -115,15 +115,15 @@ func (s *API) Search(ctx context.Context, q models.SearchQuery) (<-chan models.S
 	return results, nil
 }
 
-func (s *API) GetSettings(ctx context.Context) (models.Settings, error) {
+func (s *APIClient) GetSettings(ctx context.Context) (models.Settings, error) {
 	return s.Store.GetSettings(ctx)
 }
 
-func (s *API) SetSettings(ctx context.Context, settings models.Settings) (models.Settings, error) {
+func (s *APIClient) SetSettings(ctx context.Context, settings models.Settings) (models.Settings, error) {
 	return s.Store.SetSettings(ctx, settings)
 }
 
-func (s *API) PostDownload(ctx context.Context, dr models.DownloadTask) (models.DownloadTask, error) {
+func (s *APIClient) PostDownload(ctx context.Context, dr models.DownloadTask) (models.DownloadTask, error) {
 	req, err := s.client.NewRequestJSON(ctx, s.endPoint+"download/", nil, nil, dr)
 	if err != nil {
 		return models.DownloadTask{}, err
@@ -137,7 +137,7 @@ func (s *API) PostDownload(ctx context.Context, dr models.DownloadTask) (models.
 }
 
 // Subscribe to server notifications api, return a channel of messages, a closing function and an error
-func (s *API) SubscribeServerNotifications(ctx context.Context) (<-chan *models.Message, error) {
+func (s *APIClient) SubscribeServerNotifications(ctx context.Context) (<-chan *models.Message, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	c, _, err := websocket.Dial(ctx, s.endPoint+"notifications/", nil)
 	if err != nil {
@@ -177,14 +177,14 @@ func (s *API) SubscribeServerNotifications(ctx context.Context) (<-chan *models.
 	return messages, nil
 }
 
-func (s *API) GetSubscription(ctx context.Context, UUID uuid.UUID) (models.Subscription, error) {
+func (s *APIClient) GetSubscription(ctx context.Context, UUID uuid.UUID) (models.Subscription, error) {
 	return s.Store.GetSubscription(ctx, UUID)
 }
 
-func (s *API) GetAllSubscriptions(ctx context.Context) ([]models.Subscription, error) {
+func (s *APIClient) GetAllSubscriptions(ctx context.Context) ([]models.Subscription, error) {
 	return s.Store.GetAllSubscriptions(ctx)
 }
 
-func (s *API) SetSubscription(ctx context.Context, sub models.Subscription) (models.Subscription, error) {
+func (s *APIClient) SetSubscription(ctx context.Context, sub models.Subscription) (models.Subscription, error) {
 	return s.Store.SetSubscription(ctx, sub)
 }

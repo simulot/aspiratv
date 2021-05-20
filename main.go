@@ -18,8 +18,9 @@ func main() {
 
 	ctx := context.Background()
 	// TODO: Handle gracefull shutdown
+	st := store.NewStoreJSON("config.json")
 
-	frontend.InitializeWebApp(context.Background())
+	frontend.InitializeWebApp(context.Background(), st)
 	app.Route("/", &frontend.LandingPage{})
 	app.Route("/search", &frontend.Search{})
 	app.Route("/settings", &frontend.Settings{})
@@ -29,7 +30,6 @@ func main() {
 	// Starting here, the server side
 
 	serverAddress := "localhost:8000"
-	st := store.NewStoreJSON("config.json")
 
 	providers := []providers.Provider{
 		// mockup.NewMockup(),

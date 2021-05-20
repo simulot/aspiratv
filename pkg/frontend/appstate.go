@@ -31,7 +31,7 @@ type AppState struct {
 	StateReady bool
 
 	// API use server's REST API
-	API *API
+	API *APIClient
 
 	Store store.Store
 
@@ -64,25 +64,21 @@ type AppState struct {
 var MyAppState *AppState
 
 //InitializeWebApp initialize the client sitde either for the browser and the serverside rendering
-func InitializeWebApp(ctx context.Context) *AppState {
-	var st store.Store
+func InitializeWebApp(ctx context.Context, st store.Store) *AppState {
 	var u *url.URL
 	if app.IsClient {
 		u = app.Window().URL()
 		u.Scheme = "http"
 		u.Path = "/api/"
 		log.Printf("[CLIENT] API endpoint: %s", u.String())
-		st = store.NewRestStore(u.String())
-
 	} else {
 		u = app.Window().URL()
 		u.Scheme = "http"
 		u.Host = "localhost:8000"
 		u.Path = "/api/"
-		st = store.NewStoreJSON("config.json")
 		log.Printf("[SERVER] API endpoint: %s", u.String())
 	}
-	s := NewRestStore(u.String(), st)
+	s := NewAPIClient(u.String(), st)
 
 	MyAppState = NewAppState(ctx, s)
 
@@ -110,7 +106,7 @@ func InitializeWebApp(ctx context.Context) *AppState {
 	return MyAppState
 }
 
-func NewAppState(ctx context.Context, s *API) *AppState {
+func NewAppState(ctx context.Context, s *APIClient) *AppState {
 
 	state := AppState{
 		StateContext: ctx,

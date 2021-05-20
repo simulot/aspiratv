@@ -23,7 +23,7 @@ func TestRestSearch(t *testing.T) {
 		s, tearDownSrv := setupApiServer(t, &spyStore{}, &spy)
 		defer tearDownSrv()
 		ctx := context.Background()
-		restStore := NewRestStore(wsURL(t, s.URL)+"/api/", nil)
+		restStore := NewAPIClient(wsURL(t, s.URL)+"/api/", nil)
 
 		q := models.SearchQuery{Title: "Hello", AiredAfter: time.Now()}
 		results, err := restStore.Search(ctx, q)
@@ -56,7 +56,7 @@ func TestRestSearch(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		restStore := NewRestStore(wsURL(t, s.URL)+"/api/", nil)
+		restStore := NewAPIClient(wsURL(t, s.URL)+"/api/", nil)
 
 		results, err := restStore.Search(ctx, models.SearchQuery{Title: "Hello"})
 		if err != nil {
@@ -109,7 +109,7 @@ func TestSettings(t *testing.T) {
 
 		defer tearDownSrv()
 		ctx := context.Background()
-		restStore := NewRestStore(s.URL+"/api/", nil)
+		restStore := NewAPIClient(s.URL+"/api/", nil)
 
 		got, err := restStore.GetSettings(ctx)
 		if err != nil {

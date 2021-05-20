@@ -130,7 +130,9 @@ func (s *JSONStore) readConfig(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	s = &config
+	s.LastSaved = config.LastSaved
+	s.Settings = config.Settings
+	s.Subscriptions = config.Subscriptions
 	return nil
 }
 
