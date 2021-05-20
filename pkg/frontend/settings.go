@@ -70,19 +70,19 @@ var SampleMedia = map[models.PathNamingType]models.MediaInfo{
 	},
 }
 
-type Settings struct {
+type SettingsPage struct {
 	app.Compo
 	Settings    models.Settings
 	initialized bool
 }
 
-func (c *Settings) OnMount(ctx app.Context) {
+func (c *SettingsPage) OnMount(ctx app.Context) {
 	<-MyAppState.Ready
 	c.Settings = MyAppState.Settings
 	c.initialized = true
 }
 
-func (c *Settings) Render() app.UI {
+func (c *SettingsPage) Render() app.UI {
 	MyAppState.CurrentPage = PageSettings
 	if !c.initialized {
 		<-MyAppState.Ready
@@ -204,7 +204,7 @@ func (c *PathSetting) Render() app.UI {
 	)
 }
 
-func (c *Settings) submit(ctx app.Context, e app.Event) {
+func (c *SettingsPage) submit(ctx app.Context, e app.Event) {
 	s, err := MyAppState.API.SetSettings(ctx, c.Settings)
 	if err != nil {
 		MyAppState.Dispatch.Publish(models.NewMessage(err.Error()).SetStatus(models.StatusError).SetPinned(true))
@@ -214,7 +214,7 @@ func (c *Settings) submit(ctx app.Context, e app.Event) {
 	MyAppState.Dispatch.Publish(models.NewMessage("Réglages enregistrés").SetStatus(models.StatusSuccess))
 }
 
-func (c *Settings) cancel(ctx app.Context, e app.Event) {
+func (c *SettingsPage) cancel(ctx app.Context, e app.Event) {
 	s, err := MyAppState.GetSettings(ctx)
 	if err != nil {
 		MyAppState.Dispatch.Publish(models.NewMessage(err.Error()).SetStatus(models.StatusError).SetPinned(true))

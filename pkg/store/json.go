@@ -21,7 +21,7 @@ type JSONStore struct {
 	filename      string                            `json:"filename,omitempty"`
 }
 
-func NewStoreJSON(filename string) *JSONStore {
+func NewJSONStore(filename string) *JSONStore {
 	return &JSONStore{
 		filename: filename,
 	}

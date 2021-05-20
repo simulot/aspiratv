@@ -19,6 +19,7 @@ type PageID int
 const (
 	PageSearchOnLine PageID = iota
 	PageLibrary
+	PageSubscriptions
 	PageSettings
 	PageCredits
 )
@@ -120,12 +121,19 @@ func NewAppState(ctx context.Context, s *APIClient) *AppState {
 				"Chercher en ligne",
 				"/search",
 			},
+			// {
+			// 	PageLibrary,
+			// 	"",
+			// 	"Bibliothèque",
+			// 	"/library",
+			// },
 			{
-				PageLibrary,
+				PageSubscriptions,
 				"",
-				"Bibliothèque",
-				"/library",
+				"Abonnements",
+				"/subscriptions",
 			},
+
 			{
 				PageSettings,
 				"",

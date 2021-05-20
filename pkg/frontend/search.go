@@ -17,7 +17,7 @@ const (
 	labelAvailableVideos = "%d%s video(s) disponible(s)"
 )
 
-type Search struct {
+type SearchPage struct {
 	app.Compo
 	Results []models.SearchResult
 
@@ -28,7 +28,7 @@ type Search struct {
 	SelectedResult models.SearchResult
 }
 
-func (c *Search) OnMount(ctx app.Context) {
+func (c *SearchPage) OnMount(ctx app.Context) {
 	MyAppState.CurrentPage = PageSearchOnLine
 	c.Results = MyAppState.Results
 
@@ -37,15 +37,15 @@ func (c *Search) OnMount(ctx app.Context) {
 	// })
 }
 
-func (c *Search) OnDismount() {
+func (c *SearchPage) OnDismount() {
 	MyAppState.Results = c.Results
 }
 
-func (c *Search) OnUpdate(ctx app.Context) {
+func (c *SearchPage) OnUpdate(ctx app.Context) {
 	log.Printf("SearchOnline OnUpdate")
 }
 
-func (c *Search) Render() app.UI {
+func (c *SearchPage) Render() app.UI {
 
 	return AppPageRender(
 		app.H1().Class("title is-1").Text("Rechercher sur l'Internet"),
@@ -64,7 +64,7 @@ func (c *Search) Render() app.UI {
 	)
 }
 
-func (c *Search) Search(ctx app.Context, e app.Event) {
+func (c *SearchPage) Search(ctx app.Context, e app.Event) {
 	if c.IsRunning {
 		log.Printf("[SEARCH] Stopped clicked")
 		close(c.StopSearch)
@@ -118,12 +118,12 @@ func (c *Search) Search(ctx app.Context, e app.Event) {
 
 }
 
-func (c *Search) Add(ctx app.Context, r models.SearchResult) {
+func (c *SearchPage) Add(ctx app.Context, r models.SearchResult) {
 	c.Results = append(c.Results, r)
 	c.Update()
 }
 
-func (c *Search) RenderResults() app.UI {
+func (c *SearchPage) RenderResults() app.UI {
 	return app.If(len(c.Results) > 0,
 		app.H2().Class("title is-2").Text(fmt.Sprintf("%d result(s)", len(c.Results))),
 		app.Div().Class("columns is-multiline is-mobile").Body(
@@ -136,7 +136,7 @@ func (c *Search) RenderResults() app.UI {
 	)
 }
 
-func (c *Search) RenderResult(r models.SearchResult) app.UI {
+func (c *SearchPage) RenderResult(r models.SearchResult) app.UI {
 	return app.Body().Class("column is-6").Body(
 		app.Div().Class("card").Body(
 			app.Div().Class("card-image").Body(app.Img().Class("image").Src(r.ThumbURL)),
@@ -164,7 +164,7 @@ func (c *Search) RenderResult(r models.SearchResult) app.UI {
 	)
 }
 
-func (c *Search) OnDownload(r models.SearchResult) func(ctx app.Context, e app.Event) {
+func (c *SearchPage) OnDownload(r models.SearchResult) func(ctx app.Context, e app.Event) {
 	return func(ctx app.Context, e app.Event) {
 		c.DownloadOpen = true
 		c.SelectedResult = r

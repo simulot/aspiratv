@@ -2,11 +2,11 @@ package frontend
 
 import "github.com/maxence-charriere/go-app/v9/pkg/app"
 
-type Credits struct {
+type CreditsPage struct {
 	app.Compo
 }
 
-func (c *Credits) Render() app.UI {
+func (c *CreditsPage) Render() app.UI {
 	MyAppState.CurrentPage = PageCredits
 
 	return app.Div().Class("container").Body(
