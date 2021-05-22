@@ -4,11 +4,66 @@ import (
 	"github.com/maxence-charriere/go-app/v9/pkg/app"
 )
 
+type Menuitem struct {
+	page        PageID
+	icon        string
+	label       string
+	path        string
+	selected    bool
+	constructor func() app.Composer
+}
+
+var appMenus = []Menuitem{
+	{
+		page:        PageSearchOnLine,
+		label:       "Chercher en ligne",
+		path:        "/search",
+		constructor: newSearch,
+	},
+	// {
+	// 	PageLibrary,
+	// 	"",
+	// 	"Bibliothèque",
+	// 	"/library",
+	// },
+	{
+		page:        PageSubscriptions,
+		label:       "Abonnements",
+		path:        "/subscriptions",
+		constructor: newSubscriptionPage,
+	},
+
+	{
+		page:        PageSettings,
+		label:       "Réglages",
+		path:        "/settings",
+		constructor: newSettingsPage,
+	},
+	{
+		page:        PageCredits,
+		label:       "Crédits",
+		path:        "/credits",
+		constructor: newCreditPage,
+	},
+}
+
 // MyApp component draw de application banner and menus
 type MyApp struct {
 	app.Compo
 	UpdateAvailable bool
 	Notifications   bool
+
+	ready         bool
+	page          app.UI
+	currentPageID PageID
+}
+
+func (a *MyApp) OnMount(ctx app.Context) {
+	if a.currentPageID == 0 {
+		a.currentPageID = PageSearchOnLine
+	}
+	a.GotoPage(a.currentPageID)
+	a.ready = true
 }
 
 // func (c *MyApp) OnPreRender(ctx app.Context) {
@@ -27,25 +82,17 @@ type MyApp struct {
 // 	}
 // }
 
-func (c *MyApp) OnAppUpdate(ctx app.Context) {
-	c.UpdateAvailable = ctx.AppUpdateAvailable() // Reports that an app update is available.
-	c.Update()                                   // Triggers UI update.
+func (a *MyApp) OnAppUpdate(ctx app.Context) {
+	a.UpdateAvailable = ctx.AppUpdateAvailable() // Reports that an app update is available.
+	a.Update()                                   // Triggers UI update.
 }
 
-func (c *MyApp) onUpdateClick(ctx app.Context, e app.Event) {
+func (a *MyApp) onUpdateClick(ctx app.Context, e app.Event) {
 	// Reloads the page to display the modifications.
 	ctx.Reload()
 }
 
-func (c *MyApp) Render() app.UI {
-	return app.Div().Class("column is-narrow").Body(
-		&Logo{},
-		&Menu{},
-		app.If(c.UpdateAvailable, app.Button().Text("Mettre à jour").OnClick(c.onUpdateClick)),
-	)
-}
-
-func AppPageRender(pages ...app.UI) app.UI {
+func (a *MyApp) Render() app.UI {
 	return app.Div().
 		Class("container").
 		Body(
@@ -54,17 +101,56 @@ func AppPageRender(pages ...app.UI) app.UI {
 			app.Div().
 				Class("columns").
 				Body(
-					&MyApp{},
+					app.Div().
+						Class("column is-narrow").
+						Body(
+							&Logo{},
+							a.RenderMenus(),
+							app.If(a.UpdateAvailable, app.Button().
+								Text("Mettre à jour").
+								OnClick(a.onUpdateClick),
+							),
+						),
 					app.Div().
 						Class("column").
 						Body(
-							app.Range(pages).
-								Slice(func(i int) app.UI {
-									return pages[i]
-								}),
+							a.page,
 						),
-				),
-		)
+				))
+}
+
+func (a *MyApp) RenderMenus() app.UI {
+	return app.Div().Class("menu").Body(
+		app.Ul().Class("menu-list").Body(
+			app.Range(appMenus).Slice(func(i int) app.UI {
+				item := appMenus[i]
+				return app.Li().Body(
+					app.A().
+						Class(StringIf(item.page == a.currentPageID, "is-active", "")).
+						Text(item.label).
+						OnClick(a.menuClick(item.page)),
+				)
+			}),
+		),
+	)
+}
+
+func (a *MyApp) menuClick(page PageID) app.EventHandler {
+	return func(ctx app.Context, e app.Event) {
+		a.GotoPage(page)
+	}
+}
+
+func (a *MyApp) GotoPage(page PageID) {
+	for i := range appMenus {
+		if appMenus[i].page == page {
+			appMenus[i].selected = true
+			a.page = appMenus[i].constructor()
+			a.currentPageID = page
+		} else {
+			appMenus[i].selected = false
+		}
+	}
 }
 
 type Logo struct {
@@ -75,16 +161,4 @@ func (c *Logo) Render() app.UI {
 	return app.Div().Class("banner").Body(
 		app.H1().Class("title").Text("AspiraTV"),
 	)
-}
-
-type LandingPage struct {
-	app.Compo
-}
-
-func (c *LandingPage) OnNav(ctx app.Context) {
-	ctx.Navigate("/search")
-}
-
-func (c *LandingPage) Render() app.UI {
-	return app.A().Href("/search").Text("Aller sur la page de recherche")
 }

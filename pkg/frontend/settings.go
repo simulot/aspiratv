@@ -76,6 +76,9 @@ type SettingsPage struct {
 	initialized bool
 }
 
+func newSettingsPage() app.Composer {
+	return &SettingsPage{}
+}
 func (c *SettingsPage) OnMount(ctx app.Context) {
 	<-MyAppState.Ready
 	c.Settings = MyAppState.Settings
@@ -100,7 +103,7 @@ func (c *SettingsPage) Render() app.UI {
 		c.Settings.CollectionSettings = s
 	})
 
-	return AppPageRender(
+	return app.Div().Body(
 		app.H1().
 			Class("title is-1").
 			Text(labelSettings),

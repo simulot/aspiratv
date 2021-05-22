@@ -41,9 +41,6 @@ type AppState struct {
 	// Keep track of displayed page, used for application menue
 	CurrentPage PageID
 
-	// List of menu items.
-	menuItems []Menuitem
-
 	// Dispatch sent notifications to all of its subscribers
 	Dispatch *dispatcher.Dispatcher
 
@@ -99,39 +96,6 @@ func NewAppState(ctx context.Context, s *APIClient) *AppState {
 		Ready:        make(chan struct{}, 1),
 		API:          s,
 		CurrentPage:  PageSearchOnLine,
-		menuItems: []Menuitem{
-			{
-				PageSearchOnLine,
-				"",
-				"Chercher en ligne",
-				"/search",
-			},
-			// {
-			// 	PageLibrary,
-			// 	"",
-			// 	"Bibliothèque",
-			// 	"/library",
-			// },
-			{
-				PageSubscriptions,
-				"",
-				"Abonnements",
-				"/subscriptions",
-			},
-
-			{
-				PageSettings,
-				"",
-				"Réglages",
-				"/settings",
-			},
-			{
-				PageCredits,
-				"",
-				"Crédits",
-				"/credits",
-			},
-		},
 	}
 	state.Dispatch = dispatcher.NewDispatcher()
 	state.Drawer = NewNotificationsDrawer()

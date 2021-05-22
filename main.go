@@ -42,11 +42,11 @@ func main() {
 	}
 	frontend.InitializeWebApp(ctx, endpoint, st)
 
-	app.Route("/", &frontend.LandingPage{})
-	app.Route("/search", &frontend.SearchPage{})
-	app.Route("/subscriptions", &frontend.SubscriptionPage{})
-	app.Route("/settings", &frontend.SettingsPage{})
-	app.Route("/credits", &frontend.CreditsPage{})
+	app.Route("/", &frontend.MyApp{})
+	// app.Route("/search", &frontend.SearchPage{})
+	// app.Route("/subscriptions", &frontend.SubscriptionPage{})
+	// app.Route("/settings", &frontend.SettingsPage{})
+	// app.Route("/credits", &frontend.CreditsPage{})
 	app.RunWhenOnBrowser()
 
 	// Starting here, the server side

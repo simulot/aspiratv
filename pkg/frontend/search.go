@@ -28,6 +28,10 @@ type SearchPage struct {
 	SelectedResult models.SearchResult
 }
 
+func newSearch() app.Composer {
+	return &SearchPage{}
+}
+
 func (c *SearchPage) OnMount(ctx app.Context) {
 	MyAppState.CurrentPage = PageSearchOnLine
 	c.Results = MyAppState.Results
@@ -47,7 +51,7 @@ func (c *SearchPage) OnUpdate(ctx app.Context) {
 
 func (c *SearchPage) Render() app.UI {
 
-	return AppPageRender(
+	return app.Div().Body(
 		app.H1().Class("title is-1").Text("Rechercher sur l'Internet"),
 		app.Div().Class("field is-groupped").Body(
 			app.Div().Class("field has-addons").Body(

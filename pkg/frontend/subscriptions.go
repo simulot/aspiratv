@@ -14,6 +14,10 @@ type SubscriptionPage struct {
 	Editing string
 }
 
+func newSubscriptionPage() app.Composer {
+	return &SearchPage{}
+}
+
 func (s *SubscriptionPage) OnMount(ctx app.Context) {
 	subs, err := MyAppState.API.GetAllSubscriptions(ctx)
 	if err != nil {
@@ -33,7 +37,7 @@ func (s *SubscriptionPage) Render() app.UI {
 		return app.Text("Initialisation")
 	}
 
-	return AppPageRender(
+	return app.Div().Body(
 		app.H1().Class("title is-1").Text("Abonnements"),
 		app.If(s.Editing != "", s.RenderSubscription()).
 			Else(app.Range(s.Subs).Map(func(k string) app.UI {
