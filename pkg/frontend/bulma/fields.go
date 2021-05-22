@@ -64,7 +64,7 @@ func (t *TextField) Render() app.UI {
 }
 
 func (t *TextField) onInput(ctx app.Context, e app.Event) {
-	t.Value = ctx.JSSrc.Get("value").String()
+	t.Value = ctx.JSSrc().Get("value").String()
 	if t.OnInput != nil {
 		t.OnInput(t.Value)
 	}
@@ -136,7 +136,7 @@ func (s *SelectField) Render() app.UI {
 }
 
 func (s *SelectField) onInput(ctx app.Context, e app.Event) {
-	s.value = ctx.JSSrc.Get("value").String()
+	s.value = ctx.JSSrc().Get("value").String()
 	if s.OnInput != nil {
 		s.OnInput(s.value)
 	}
@@ -159,4 +159,78 @@ func NewOptionField(value string, text string, selected bool) *OptionField {
 
 func (o *OptionField) Render() app.UI {
 	return app.Option().Value(o.value).Selected(o.selected).Text(o.text)
+}
+
+type RadioFields struct {
+	app.Compo
+	label     string
+	value     string
+	values    []option
+	OnInput   OnInputFn
+	help      string
+	helpClass string
+}
+
+func NewRadioFields(value string, label string) *RadioFields {
+	s := RadioFields{
+		label: label,
+		value: value,
+	}
+	return &s
+}
+
+func (s *RadioFields) WithOption(value string, text string, selected bool) *RadioFields {
+	s.values = append(s.values, option{value, text, selected})
+	return s
+}
+
+// WhitOnInput call fn whenever an Input event is thrown.
+// fn retrun is just ignored
+func (s *RadioFields) WhitOnInput(fn OnInputFn) *RadioFields {
+	s.OnInput = fn
+	return s
+}
+
+func (s *RadioFields) OnMount(ctx app.Context) {
+	if s.OnInput != nil {
+		for _, o := range s.values {
+			if o.selected {
+				s.OnInput(o.value)
+			}
+		}
+	}
+}
+func (s *RadioFields) SetHelp(text, class string) {
+	s.help = text
+	s.helpClass = class
+}
+
+func (s *RadioFields) Render() app.UI {
+	return app.Div().Class("field").Body(
+		app.Label().Class("label").Text(s.label),
+		app.Div().Class("control").Body(
+			app.Div().Class("select").Body(
+				app.Select().OnInput(s.onInput, s.label).Body(
+					app.Range(s.values).Slice(func(i int) app.UI {
+						return app.Option().Value(s.values[i].value).Selected(s.values[i].selected).Text(s.values[i].text)
+					}),
+				),
+			),
+		),
+		app.If(len(s.help) > 0, app.P().Class("help").Class(s.helpClass).Text(s.help)),
+	)
+}
+
+func (s *RadioFields) onInput(ctx app.Context, e app.Event) {
+	s.value = ctx.JSSrc().Get("value").String()
+	if s.OnInput != nil {
+		s.OnInput(s.value)
+	}
+}
+
+func stringIf(b bool, thenStr, elseStr string) string {
+	if b {
+		return thenStr
+	}
+	return elseStr
 }

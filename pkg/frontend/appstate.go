@@ -3,7 +3,6 @@ package frontend
 import (
 	"context"
 	"log"
-	"net/url"
 	"sort"
 	"time"
 
@@ -64,23 +63,9 @@ type AppState struct {
 
 var MyAppState *AppState
 
-//InitializeWebApp initialize the client sitde either for the browser and the serverside rendering
-func InitializeWebApp(ctx context.Context, st store.Store) *AppState {
-	var u *url.URL
-	if app.IsClient {
-		u = app.Window().URL()
-		u.Scheme = "http"
-		u.Path = "/api/"
-		log.Printf("[CLIENT] API endpoint: %s", u.String())
-	} else {
-		u = app.Window().URL()
-		u.Scheme = "http"
-		u.Host = "localhost:8000"
-		u.Path = "/api/"
-		log.Printf("[SERVER] API endpoint: %s", u.String())
-	}
-	s := NewAPIClient(u.String(), st)
-
+//InitializeWebApp initialize the client side either for the browser and the serverside rendering
+func InitializeWebApp(ctx context.Context, endpoint string, st store.Store) *AppState {
+	s := NewAPIClient(endpoint, st)
 	MyAppState = NewAppState(ctx, s)
 
 	// go

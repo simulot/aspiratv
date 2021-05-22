@@ -11,7 +11,6 @@ import (
 )
 
 const (
-	APIURL           = "api/"
 	settingsURL      = "settings/"
 	subscriptionsURL = "subscriptions/"
 )

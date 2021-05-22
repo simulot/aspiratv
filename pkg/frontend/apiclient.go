@@ -16,10 +16,11 @@ import (
 )
 
 const (
-	APIURL      = "api/"
-	settingsURL = "settings/"
-	providerURL = "providers/"
-	searchURL   = "search/"
+	settingsURL      = "settings/"
+	providerURL      = "providers/"
+	searchURL        = "search/"
+	downladURL       = "download/"
+	notificationsURL = "notifications/"
 )
 
 // APIClient implements a store using RestAPI.
@@ -40,7 +41,7 @@ func NewAPIClient(endPoint string, s store.Store) *APIClient {
 }
 
 func (s *APIClient) ProviderDescribe(ctx context.Context) ([]providers.Description, error) {
-	req, err := s.client.NewRequestJSON(ctx, s.endPoint+"providers/", nil, nil, nil)
+	req, err := s.client.NewRequestJSON(ctx, s.endPoint+providerURL, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +57,7 @@ func (s *APIClient) ProviderDescribe(ctx context.Context) ([]providers.Descripti
 func (s *APIClient) Search(ctx context.Context, q models.SearchQuery) (<-chan models.SearchResult, error) {
 	// ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	ctx, cancel := context.WithCancel(ctx)
-	log.Printf("[HTTPCLIENT] Dial websocket %s", s.endPoint+"search/")
+	log.Printf("[HTTPCLIENT] Dial websocket %s", s.endPoint+searchURL)
 	c, _, err := websocket.Dial(ctx, s.endPoint+"search/", nil)
 	if err != nil {
 		log.Printf("Search Dial error:%s", err)
@@ -124,7 +125,7 @@ func (s *APIClient) SetSettings(ctx context.Context, settings models.Settings) (
 }
 
 func (s *APIClient) PostDownload(ctx context.Context, dr models.DownloadTask) (models.DownloadTask, error) {
-	req, err := s.client.NewRequestJSON(ctx, s.endPoint+"download/", nil, nil, dr)
+	req, err := s.client.NewRequestJSON(ctx, s.endPoint+downladURL, nil, nil, dr)
 	if err != nil {
 		return models.DownloadTask{}, err
 	}
@@ -139,13 +140,13 @@ func (s *APIClient) PostDownload(ctx context.Context, dr models.DownloadTask) (m
 // Subscribe to server notifications api, return a channel of messages, a closing function and an error
 func (s *APIClient) SubscribeServerNotifications(ctx context.Context) (<-chan *models.Message, error) {
 	ctx, cancel := context.WithCancel(ctx)
-	c, _, err := websocket.Dial(ctx, s.endPoint+"notifications/", nil)
+	c, _, err := websocket.Dial(ctx, s.endPoint+notificationsURL, nil)
 	if err != nil {
-		log.Printf("[HTTPCLIENT] Can't connect to %s: %s", s.endPoint+"notifications/", err)
+		log.Printf("[HTTPCLIENT] Can't connect to %s: %s", s.endPoint+notificationsURL, err)
 		cancel()
 		return nil, err
 	}
-	log.Printf("[HTTPCLIENT] connected to %s", s.endPoint+"notifications/")
+	log.Printf("[HTTPCLIENT] connected to %s", s.endPoint+notificationsURL)
 	messages := make(chan *models.Message, 1)
 
 	go func() {

@@ -158,7 +158,7 @@ func (c *SearchPage) RenderResult(r models.SearchResult) app.UI {
 			),
 			app.Div().Class("card-footer").Body(
 				app.A().Href("#").Class("card-footer-item").Text("Télécharger").OnClick(c.OnDownload(r)),
-				app.A().Href("#").Class("card-footer-item").Text("Surveiller"),
+				app.A().Href("/subscriptions/").Class("card-footer-item").Text("S'abonner"),
 			),
 		),
 	)
@@ -171,3 +171,9 @@ func (c *SearchPage) OnDownload(r models.SearchResult) func(ctx app.Context, e a
 		c.Update()
 	}
 }
+
+// func (c *SearchPage) OnSubscribe(r models.SearchResult) func(cyx app.Context, e app.Event) {
+// 	return func(cyx app.Context, e app.Event) {
+// 		app.Nav()
+// 	}
+// }

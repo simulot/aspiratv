@@ -21,24 +21,27 @@ func main() {
 	ctx := context.Background()
 
 	var st store.Store
-
+	var endpoint string
 	var u *url.URL
 	if app.IsClient {
 		u = app.Window().URL()
 		u.Scheme = "http"
 		u.Path = "/api/"
+		u.RawQuery = ""
 		log.Printf("[CLIENT] API endpoint: %s", u.String())
-		st = store.NewRestStore(u.String())
+		endpoint = u.String()
+		st = store.NewRestStore(endpoint)
 	} else {
 		st = store.NewJSONStore("config.json")
-		// u = app.Window().URL()
-		// u.Scheme = "http"
-		// u.Host = "localhost:8000"
-		// u.Path = "/api/"
-		// log.Printf("[SERVER] API endpoint: %s", u.String())
+		u = app.Window().URL()
+		u.Scheme = "http"
+		u.Host = "localhost:8000"
+		u.Path = "/api/"
+		log.Printf("[SERVER] API endpoint: %s", u.String())
+		endpoint = u.String()
 	}
+	frontend.InitializeWebApp(ctx, endpoint, st)
 
-	frontend.InitializeWebApp(context.Background(), st)
 	app.Route("/", &frontend.LandingPage{})
 	app.Route("/search", &frontend.SearchPage{})
 	app.Route("/subscriptions", &frontend.SubscriptionPage{})

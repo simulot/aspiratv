@@ -28,8 +28,8 @@ type MyApp struct {
 // }
 
 func (c *MyApp) OnAppUpdate(ctx app.Context) {
-	c.UpdateAvailable = ctx.AppUpdateAvailable // Reports that an app update is available.
-	c.Update()                                 // Triggers UI update.
+	c.UpdateAvailable = ctx.AppUpdateAvailable() // Reports that an app update is available.
+	c.Update()                                   // Triggers UI update.
 }
 
 func (c *MyApp) onUpdateClick(ctx app.Context, e app.Event) {

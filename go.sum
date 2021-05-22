@@ -91,6 +91,8 @@ github.com/mattn/go-isatty v0.0.12 h1:wuysRhFDzyxgEmMf5xjvJ2M9dZoWAXNNr5LSBS7uHX
 github.com/mattn/go-isatty v0.0.12/go.mod h1:cbi8OIDigv2wuxKPP5vlRcQ1OAZbq2CE4Kysco4FUpU=
 github.com/maxence-charriere/go-app/v9 v9.0.0-20210422141225-0e7d7c5630b2 h1:gK/4vgBKz5tr/g6/R+yR18xfs52DiZ0fxptkeNDsYwE=
 github.com/maxence-charriere/go-app/v9 v9.0.0-20210422141225-0e7d7c5630b2/go.mod h1:zo0n1kh4OMKn7P+MrTUUi7QwUMU2HOfHsZ293TITtxI=
+github.com/maxence-charriere/go-app/v9 v9.0.0-20210522022017-692ebc622535 h1:OKV/PuZenCmQ7zZkWybVKTBQK+/AO9Pit/CY+LY32Lc=
+github.com/maxence-charriere/go-app/v9 v9.0.0-20210522022017-692ebc622535/go.mod h1:zo0n1kh4OMKn7P+MrTUUi7QwUMU2HOfHsZ293TITtxI=
 github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 h1:ZqeYNhU3OHLH3mGKHDcjJRFFRrJa6eAM5H+CtDdOsPc=
 github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
 github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742 h1:Esafd1046DLDQ0W1YjYsBW+p8U2u7vzgW2SQVmlNazg=
