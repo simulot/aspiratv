@@ -76,7 +76,7 @@ type SettingsPage struct {
 	initialized bool
 }
 
-func newSettingsPage() app.Composer {
+func newSettingsPage(app.Action) app.Composer {
 	return &SettingsPage{}
 }
 func (c *SettingsPage) OnMount(ctx app.Context) {

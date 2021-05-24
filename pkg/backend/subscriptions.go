@@ -13,11 +13,32 @@ func (s *Server) subscriptionsHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		s.getSubscriptions(w, r)
+	case http.MethodDelete:
+		s.deleteSubscription(w, r)
 	case http.MethodPost, http.MethodPut, http.MethodPatch:
 		s.setSubscriptions(w, r)
 	default:
 		s.sendError(w, APIError{nil, http.StatusMethodNotAllowed, ""})
 	}
+}
+
+func (s *Server) deleteSubscription(w http.ResponseWriter, r *http.Request) {
+	var UUID uuid.UUID
+	var err error
+
+	if p := r.URL.Query().Get("UUID"); p != "" {
+		UUID, err = uuid.Parse(p)
+		if err != nil {
+			s.sendError(w, APIError{err: err, code: http.StatusBadRequest})
+			return
+		}
+	}
+	err = s.store.DeleteSubscription(r.Context(), UUID)
+	if err != nil {
+		s.sendError(w, APIError{err: err, code: http.StatusBadRequest})
+		return
+	}
+	w.Write([]byte("OK"))
 }
 
 func (s *Server) getSubscriptions(w http.ResponseWriter, r *http.Request) {

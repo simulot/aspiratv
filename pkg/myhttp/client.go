@@ -219,6 +219,15 @@ func (c *Client) Get(req *http.Request) (*http.Response, error) {
 	return c.Do(req)
 }
 
+func (c *Client) Delete(req *http.Request) error {
+	req.Method = http.MethodDelete
+	resp, err := c.Do(req)
+	if err != nil {
+		resp.Body.Close()
+	}
+	return err
+}
+
 func (c *Client) doJSON(req *http.Request, payload interface{}) error {
 	resp, err := c.Do(req)
 	if err != nil {

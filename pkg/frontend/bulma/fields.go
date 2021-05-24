@@ -1,6 +1,8 @@
 package bulma
 
 import (
+	"log"
+
 	"github.com/maxence-charriere/go-app/v9/pkg/app"
 )
 
@@ -208,23 +210,34 @@ func (s *RadioFields) SetHelp(text, class string) {
 func (s *RadioFields) Render() app.UI {
 	return app.Div().Class("field").Body(
 		app.Label().Class("label").Text(s.label),
-		app.Div().Class("control").Body(
-			app.Div().Class("select").Body(
-				app.Select().OnInput(s.onInput, s.label).Body(
-					app.Range(s.values).Slice(func(i int) app.UI {
-						return app.Option().Value(s.values[i].value).Selected(s.values[i].selected).Text(s.values[i].text)
-					}),
-				),
+		app.Div().Class("field").Body(
+			app.Div().Class("control").Body(
+				app.Range(s.values).Slice(func(i int) app.UI {
+					return app.Label().Class("radio").Body(
+						app.Input().
+							Type("radio").
+							Value(s.values[i].value).
+							Checked(s.values[i].selected).
+							OnInput(s.onInput(s.values[i])),
+						app.Text(s.values[i].text),
+					)
+				}),
 			),
 		),
 		app.If(len(s.help) > 0, app.P().Class("help").Class(s.helpClass).Text(s.help)),
 	)
 }
 
-func (s *RadioFields) onInput(ctx app.Context, e app.Event) {
-	s.value = ctx.JSSrc().Get("value").String()
-	if s.OnInput != nil {
-		s.OnInput(s.value)
+func (s *RadioFields) onInput(o option) func(ctx app.Context, e app.Event) {
+	return func(ctx app.Context, e app.Event) {
+		s.value = o.value
+		for i := range s.values {
+			s.values[i].selected = s.values[i].value == s.value
+		}
+		log.Printf("value :%s", s.value)
+		if s.OnInput != nil {
+			s.OnInput(s.value)
+		}
 	}
 }
 

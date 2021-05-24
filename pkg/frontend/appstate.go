@@ -219,3 +219,10 @@ func (c ChanneList) SortedList() []providers.Channel {
 }
 
 func (c ChanneList) Channel(code string) providers.Channel { return c.channels[code] }
+
+func GotoPage(ctx app.Context, page PageID, subPage PageID, payload interface{}) {
+	ctx.NewAction("GOTOPAGE").
+		Tag("PAGE", page).
+		Tag("SUBPAGE", subPage).
+		Value(payload).Post()
+}

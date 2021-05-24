@@ -22,6 +22,7 @@ type SettingsInterface interface {
 
 type SubscriptionInterfaces interface {
 	GetSubscription(context.Context, uuid.UUID) (models.Subscription, error)
+	DeleteSubscription(context.Context, uuid.UUID) error
 	GetAllSubscriptions(context.Context) ([]models.Subscription, error)
 	SetSubscription(context.Context, models.Subscription) (models.Subscription, error)
 }

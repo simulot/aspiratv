@@ -76,6 +76,10 @@ type spyStore struct {
 	setSettingsCalled bool
 }
 
+func (s *spyStore) DeleteSubscription(ctx context.Context, UUID uuid.UUID) (m error) {
+	return nil
+}
+
 func (s *spyStore) GetSubscription(ctx context.Context, UUID uuid.UUID) (models.Subscription, error) {
 	return models.Subscription{}, nil
 }

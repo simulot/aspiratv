@@ -28,7 +28,7 @@ type SearchPage struct {
 	SelectedResult models.SearchResult
 }
 
-func newSearch() app.Composer {
+func newSearch(app.Action) app.Composer {
 	return &SearchPage{}
 }
 
@@ -161,8 +161,8 @@ func (c *SearchPage) RenderResult(r models.SearchResult) app.UI {
 				),
 			),
 			app.Div().Class("card-footer").Body(
-				app.A().Href("#").Class("card-footer-item").Text("Télécharger").OnClick(c.OnDownload(r)),
-				app.A().Href("/subscriptions/").Class("card-footer-item").Text("S'abonner"),
+				app.A().Class("card-footer-item").Text("Télécharger").OnClick(c.OnDownload(r)),
+				app.A().Class("card-footer-item").Text("S'abonner").OnClick(c.OnSubscribe(r)),
 			),
 		),
 	)
@@ -176,8 +176,8 @@ func (c *SearchPage) OnDownload(r models.SearchResult) func(ctx app.Context, e a
 	}
 }
 
-// func (c *SearchPage) OnSubscribe(r models.SearchResult) func(cyx app.Context, e app.Event) {
-// 	return func(cyx app.Context, e app.Event) {
-// 		app.Nav()
-// 	}
-// }
+func (c *SearchPage) OnSubscribe(r models.SearchResult) func(ctx app.Context, e app.Event) {
+	return func(ctx app.Context, e app.Event) {
+		GotoPage(ctx, PageSubscriptions, 0, r)
+	}
+}

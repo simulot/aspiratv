@@ -1,16 +1,19 @@
 package frontend
 
 import (
+	"strconv"
+
 	"github.com/maxence-charriere/go-app/v9/pkg/app"
 )
 
+type pageConstructor func(app.Action) app.Composer
 type Menuitem struct {
 	page        PageID
 	icon        string
 	label       string
 	path        string
 	selected    bool
-	constructor func() app.Composer
+	constructor pageConstructor
 }
 
 var appMenus = []Menuitem{
@@ -59,11 +62,14 @@ type MyApp struct {
 }
 
 func (a *MyApp) OnMount(ctx app.Context) {
-	if a.currentPageID == 0 {
-		a.currentPageID = PageSearchOnLine
-	}
-	a.GotoPage(a.currentPageID)
+	ctx.Handle("GOTOPAGE", a.GotoPageActionHandler)
+	GotoPage(ctx, PageSearchOnLine, 0, nil)
 	a.ready = true
+}
+
+func (a *MyApp) GotoPageActionHandler(ctx app.Context, action app.Action) {
+	a.GotoPage(ctx, action)
+
 }
 
 // func (c *MyApp) OnPreRender(ctx app.Context) {
@@ -137,16 +143,18 @@ func (a *MyApp) RenderMenus() app.UI {
 
 func (a *MyApp) menuClick(page PageID) app.EventHandler {
 	return func(ctx app.Context, e app.Event) {
-		a.GotoPage(page)
+		GotoPage(ctx, page, 0, nil)
 	}
 }
 
-func (a *MyApp) GotoPage(page PageID) {
+func (a *MyApp) GotoPage(ctx app.Context, action app.Action) {
+	p, _ := strconv.Atoi(action.Tags.Get("PAGE"))
+	pageID := PageID(p)
 	for i := range appMenus {
-		if appMenus[i].page == page {
+		if appMenus[i].page == pageID {
 			appMenus[i].selected = true
-			a.page = appMenus[i].constructor()
-			a.currentPageID = page
+			a.page = appMenus[i].constructor(action)
+			a.currentPageID = pageID
 		} else {
 			appMenus[i].selected = false
 		}

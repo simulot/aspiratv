@@ -204,6 +204,9 @@ type spyStore struct {
 func (s *spyStore) GetSubscription(ctx context.Context, UUID uuid.UUID) (models.Subscription, error) {
 	return models.Subscription{}, nil
 }
+func (s *spyStore) DeleteSubscription(ctx context.Context, UUID uuid.UUID) error {
+	return nil
+}
 func (s *spyStore) GetAllSubscriptions(ctx context.Context) ([]models.Subscription, error) {
 	return []models.Subscription{}, nil
 }

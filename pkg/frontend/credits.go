@@ -6,7 +6,7 @@ type CreditsPage struct {
 	app.Compo
 }
 
-func newCreditPage() app.Composer {
+func newCreditPage(app.Action) app.Composer {
 	return &CreditsPage{}
 }
 func (c *CreditsPage) Render() app.UI {

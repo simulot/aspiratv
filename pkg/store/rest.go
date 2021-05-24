@@ -69,6 +69,21 @@ func (s *RestStore) GetSubscription(ctx context.Context, UUID uuid.UUID) (models
 	}
 	return sub, nil
 }
+
+func (s *RestStore) DeleteSubscription(ctx context.Context, UUID uuid.UUID) error {
+	v := url.Values{}
+	v.Set("UUID", UUID.String())
+	req, err := s.client.NewRequest(ctx, s.endPoint+subscriptionsURL, nil, v, nil)
+	if err != nil {
+		return err
+	}
+	err = s.client.Delete(req)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *RestStore) GetAllSubscriptions(ctx context.Context) ([]models.Subscription, error) {
 	req, err := s.client.NewRequestJSON(ctx, s.endPoint+subscriptionsURL, nil, nil, nil)
 	if err != nil {
@@ -76,6 +91,10 @@ func (s *RestStore) GetAllSubscriptions(ctx context.Context) ([]models.Subscript
 	}
 	subs := []models.Subscription{}
 	err = s.client.GetJSON(req, &subs)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("GetAllSubscriptions: %#v", subs)
 	return subs, nil
 }
 
@@ -85,6 +104,9 @@ func (s *RestStore) SetSubscription(ctx context.Context, sub models.Subscription
 		return models.Subscription{}, err
 	}
 	err = s.client.PostJSON(req, &sub)
+	if err != nil {
+		return models.Subscription{}, err
+	}
 
 	return sub, nil
 }

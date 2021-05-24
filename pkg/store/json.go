@@ -23,7 +23,8 @@ type JSONStore struct {
 
 func NewJSONStore(filename string) *JSONStore {
 	return &JSONStore{
-		filename: filename,
+		filename:      filename,
+		Subscriptions: map[uuid.UUID]models.Subscription{},
 	}
 }
 
@@ -91,6 +92,25 @@ func (s *JSONStore) GetSubscription(ctx context.Context, UUID uuid.UUID) (models
 
 	return sub, nil
 }
+
+func (s *JSONStore) DeleteSubscription(ctx context.Context, UUID uuid.UUID) error {
+	s.l.Lock()
+	defer s.l.Unlock()
+	if s.Subscriptions == nil {
+		return ErrorNotFound
+	}
+	if _, ok := s.Subscriptions[UUID]; !ok {
+		return ErrorNotFound
+	}
+
+	delete(s.Subscriptions, UUID)
+	err := s.writeConfigFile()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *JSONStore) GetAllSubscriptions(ctx context.Context) ([]models.Subscription, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
@@ -115,6 +135,7 @@ func (s *JSONStore) SetSubscription(ctx context.Context, subscription models.Sub
 	if subscription.UUID == uuid.Nil {
 		subscription.UUID = uuid.New()
 	}
+
 	s.Subscriptions[subscription.UUID] = subscription
 	s.LastSaved = time.Now()
 	err := s.writeConfigFile()
@@ -132,7 +153,11 @@ func (s *JSONStore) readConfig(r io.Reader) error {
 	}
 	s.LastSaved = config.LastSaved
 	s.Settings = config.Settings
-	s.Subscriptions = config.Subscriptions
+	if config.Subscriptions == nil {
+		s.Subscriptions = map[uuid.UUID]models.Subscription{}
+	} else {
+		s.Subscriptions = config.Subscriptions
+	}
 	return nil
 }
 

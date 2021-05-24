@@ -1,3 +1,7 @@
+/*
+	This providers is used to have a test bed for building the application without querying actual web sites
+*/
+
 package mockup
 
 import (
@@ -71,6 +75,7 @@ func (p *Mockup) callSearch(ctx context.Context, results chan models.SearchResul
 			Show:            "The " + q.Title + " show",
 			Title:           fmt.Sprintf("%q Item %d", q.Title, i),
 			ThumbURL:        "https://via.placeholder.com/1920x1080.png",
+			PageURL:         "https://www.youtube.com/watch?v=x31tDT-4fQw",
 			AvailableVideos: rand.Intn(7) + 1,
 			Plot: `
 			Generated Lorem Ipsum

@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/simulot/aspiratv/pkg/dispatcher"
 	"github.com/simulot/aspiratv/pkg/models"
@@ -61,19 +59,19 @@ func NewServer(ctx context.Context, store store.Store, p []providers.Provider) *
 }
 
 func (s *Server) Scheduler(ctx context.Context) {
-	go func() {
-		log.Printf("[SCHEDULER] Started")
-		tick := time.NewTicker(10 * time.Second)
-		defer tick.Stop()
-		for {
-			select {
-			case t := <-tick.C:
-				s.dispatcher.Publish(models.NewMessage(fmt.Sprintf("It's %s, and I'm alive", t.Format("15:04:05"))).SetStatus(models.StatusInfo))
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
+	// go func() {
+	// 	log.Printf("[SCHEDULER] Started")
+	// 	tick := time.NewTicker(10 * time.Second)
+	// 	defer tick.Stop()
+	// 	for {
+	// 		select {
+	// 		case t := <-tick.C:
+	// 			s.dispatcher.Publish(models.NewMessage(fmt.Sprintf("It's %s, and I'm alive", t.Format("15:04:05"))).SetStatus(models.StatusInfo))
+	// 		case <-ctx.Done():
+	// 			return
+	// 		}
+	// 	}
+	// }()
 
 }
 
