@@ -28,29 +28,26 @@ type SearchPage struct {
 	SelectedResult models.SearchResult
 }
 
-func newSearch(app.Action) app.Composer {
-	return &SearchPage{}
+func newSearch(initialValue interface{}) app.Composer {
+	c := &SearchPage{}
+	if initialValue != nil {
+		if results, ok := initialValue.([]models.SearchResult); ok {
+			c.Results = results
+		}
+	}
+	return c
 }
 
 func (c *SearchPage) OnMount(ctx app.Context) {
-	MyAppState.CurrentPage = PageSearchOnLine
-	c.Results = MyAppState.Results
+	ctx.Handle("BeforeMoving", c.beforeMoving)
 
-	// ctx.Async(func() {
-	// 	c.Update()
-	// })
 }
 
-func (c *SearchPage) OnDismount() {
-	MyAppState.Results = c.Results
-}
-
-func (c *SearchPage) OnUpdate(ctx app.Context) {
-	log.Printf("SearchOnline OnUpdate")
+func (c *SearchPage) beforeMoving(ctx app.Context, action app.Action) {
+	ctx.NewAction("PushHistory").Tag("page", PageSearchOnLine.String()).Tag("title", "Recherche").Value(c.Results).Post()
 }
 
 func (c *SearchPage) Render() app.UI {
-
 	return app.Div().Body(
 		app.H1().Class("title is-1").Text("Rechercher sur l'Internet"),
 		app.Div().Class("field is-groupped").Body(
@@ -178,6 +175,17 @@ func (c *SearchPage) OnDownload(r models.SearchResult) func(ctx app.Context, e a
 
 func (c *SearchPage) OnSubscribe(r models.SearchResult) func(ctx app.Context, e app.Event) {
 	return func(ctx app.Context, e app.Event) {
-		GotoPage(ctx, PageSubscriptions, 0, r)
+		GotoPage(ctx, PageEditSubscrition,
+			models.Subscription{
+				Title:       c.SelectedResult.Show,
+				ShowID:      c.SelectedResult.ID,
+				PollRhythm:  models.RhythmWeekly,
+				ShowType:    c.SelectedResult.Type,
+				Provider:    c.SelectedResult.Provider,
+				LimitNumber: 20,
+				Enabled:     true,
+				ShowPageURL: c.SelectedResult.PageURL,
+			},
+		)
 	}
 }

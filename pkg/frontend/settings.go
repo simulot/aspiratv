@@ -76,13 +76,18 @@ type SettingsPage struct {
 	initialized bool
 }
 
-func newSettingsPage(app.Action) app.Composer {
+func newSettingsPage(initialValue interface{}) app.Composer {
 	return &SettingsPage{}
 }
 func (c *SettingsPage) OnMount(ctx app.Context) {
 	<-MyAppState.Ready
 	c.Settings = MyAppState.Settings
 	c.initialized = true
+	ctx.Handle("BeforeMoving", c.beforeMoving)
+}
+
+func (c *SettingsPage) beforeMoving(ctx app.Context, action app.Action) {
+	ctx.NewAction("PushHistory").Tag("page", PageSettings.String()).Tag("title", "Paramètres").Post()
 }
 
 func (c *SettingsPage) Render() app.UI {

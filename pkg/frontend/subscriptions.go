@@ -10,43 +10,17 @@ import (
 	"github.com/simulot/aspiratv/pkg/models"
 )
 
-type SubscriptionPage struct {
+type SubscriptionListPage struct {
 	app.Compo
-	SubPage subscriptionSubPage
-	Subs    map[string]models.Subscription
-	Sub     models.Subscription
+	Subs map[string]models.Subscription
 }
 
-type subscriptionSubPage int
-
-const (
-	subscriptionPageList subscriptionSubPage = iota
-	subscriptionPageEdit
-)
-
-func newSubscriptionPage(action app.Action) app.Composer {
-	s := SubscriptionPage{}
-
-	if action.Value != nil {
-		if result, ok := action.Value.(models.SearchResult); ok {
-			s.SubPage = subscriptionPageEdit
-			s.Sub = models.Subscription{
-				Title:       result.Show,
-				ShowID:      result.ID,
-				PollRhythm:  models.RhythmWeekly,
-				ShowType:    result.Type,
-				Provider:    result.Provider,
-				LimitNumber: 20,
-				Enabled:     true,
-				ShowPageURL: result.PageURL,
-			}
-		}
-	}
-
-	return &s
+func newSubscriptionListPage(initialValue interface{}) app.Composer {
+	l := SubscriptionListPage{}
+	return &l
 }
 
-func (s *SubscriptionPage) loadSubs(ctx app.Context) {
+func (l *SubscriptionListPage) loadSubs(ctx app.Context) {
 	subs, err := MyAppState.API.GetAllSubscriptions(ctx)
 	if err != nil {
 		log.Printf("SubscriptionPage->GetAllSubscriptions: %s", err)
@@ -57,94 +31,104 @@ func (s *SubscriptionPage) loadSubs(ctx app.Context) {
 	for _, sub := range subs {
 		list[sub.UUID.String()] = sub
 	}
-	s.Subs = list
+	l.Subs = list
 }
 
-func (s *SubscriptionPage) OnMount(ctx app.Context) {
-	if s.Subs == nil {
-		s.loadSubs(ctx)
-		s.Update()
+func (l *SubscriptionListPage) OnMount(ctx app.Context) {
+	ctx.Handle("BeforeMoving", l.beforeMoving)
+	if l.Subs == nil {
+		l.loadSubs(ctx)
+		l.Update()
 	}
 }
 
-func (s *SubscriptionPage) Render() app.UI {
-	log.Printf("SubscriptionPage.Render s:%p s.Suv:%#v", s, s.Sub)
-	return app.Div().Body(
-		app.H1().Class("title is-1").Text("Abonnements"),
-		app.If(s.SubPage != subscriptionPageList,
-			newEditSubscriptionPage(&s.Sub)).
-			Else(NewSubscriptionList(s.Subs)),
-	)
+func (l *SubscriptionListPage) beforeMoving(ctx app.Context, action app.Action) {
+	ctx.NewAction("PushHistory").Tag("page", PageSubscriptions.String()).Tag("title", "Abonnements").Post()
 }
 
-type SubscriptionList struct {
-	app.Compo
-	Subs map[string]models.Subscription
-}
-
-func NewSubscriptionList(subs map[string]models.Subscription) *SubscriptionList {
-	return &SubscriptionList{
-		Subs: subs,
-	}
-}
-func (l *SubscriptionList) Render() app.UI {
+func (l *SubscriptionListPage) Render() app.UI {
 	if l.Subs == nil {
 		return app.Text("Loading")
 	}
-	return app.Div().Class("columns").Body(
-		app.Range(l.Subs).Map(func(k string) app.UI {
-			s := l.Subs[k]
-			log.Printf("k:%s ,v:%s", k, s.Title)
-			return app.Div().Class("column").Body(
-				app.H6().Class("title is-6").Text(s.Title),
-				app.P().Text(l.Subs[k].Title),
-				app.P().Body(
-					app.If(s.Enabled, app.Text("Activé")).Else(app.Text("Désactivé")),
-				),
-				app.P().Body(
-					app.Text("Fournisseur de contenu : "),
-					app.Text(s.Provider),
-				),
-				app.P().Body(
-					app.Text("Dernière interrogation le : "),
-					app.If(s.LastRun.IsZero(), app.Text("jamais interrogé")).Else(app.Text(s.LastRun.Format("02/01/2006 à 15:04"))),
-					app.P().Body(
-						app.Text("Dernière vidéo collectée le : "),
-						app.If(s.LastSeenMedia.IsZero(), app.Text("aucune video")).Else(app.Text(s.LastSeenMedia.Format("02/01/2006 à 15:04"))),
+	return app.Div().Body(
+		app.H1().Class("title is-1").Text("Abonnements"),
+
+		app.Div().Class("columns").Body(
+			app.Range(l.Subs).Map(func(k string) app.UI {
+				s := l.Subs[k]
+				log.Printf("k:%s ,v:%s", k, s.Title)
+				return app.Div().Class("column").Body(
+					app.Div().Class("box").Body(
+						app.H6().Class("title is-6").Text(s.Title),
+						app.P().Text(l.Subs[k].Title),
+						app.P().Body(
+							app.If(s.Enabled, app.Text("Activé")).Else(app.Text("Désactivé")),
+						),
+						app.P().Body(
+							app.Text("Fournisseur de contenu : "),
+							app.Text(s.Provider),
+						),
+						app.P().Body(
+							app.Text("Dernière interrogation le : "),
+							app.If(s.LastRun.IsZero(), app.Text("jamais interrogé")).Else(app.Text(s.LastRun.Format("02/01/2006 à 15:04"))),
+							app.P().Body(
+								app.Text("Dernière vidéo collectée le : "),
+								app.If(s.LastSeenMedia.IsZero(), app.Text("aucune video")).Else(app.Text(s.LastSeenMedia.Format("02/01/2006 à 15:04"))),
+							),
+						),
+						app.Div().Class("field is-grouped").Body(
+							app.Div().Class("control").Body(
+								app.Button().Class("button is-link").Text("Interroger maintenant"),
+							),
+							app.Div().Class("control").Body(
+								app.Button().Class("button is-link is-light").Text("Modifier").OnClick(l.gotoEdit(k), k),
+							),
+						),
 					),
-				),
-				app.Div().Class("field is-grouped").Body(
-					app.Div().Class("control").Body(
-						app.Button().Class("button is-link").Text("Interroger maintenant"),
-					),
-					app.Div().Class("control").Body(
-						app.Button().Class("button is-link is-light").Text("Modifier"),
-					),
-				),
-			)
-		}),
+				)
+			}),
+		),
 	)
 }
 
-type EditSubscriptionPage struct {
-	app.Compo
-	sub          *models.Subscription
-	deleteOpened bool
-}
-
-func newEditSubscriptionPage(sub *models.Subscription) *EditSubscriptionPage {
-	return &EditSubscriptionPage{
-		sub: sub,
+func (l *SubscriptionListPage) gotoEdit(k string) func(ctx app.Context, e app.Event) {
+	return func(ctx app.Context, e app.Event) {
+		GotoPage(ctx, PageEditSubscrition, l.Subs[k])
 	}
 }
 
-func (s *EditSubscriptionPage) Render() app.UI {
+type SubscriptionPage struct {
+	app.Compo
+	sub          models.Subscription
+	deleteOpened bool
+}
+
+func newSubscriptionPage(initialValue interface{}) app.Composer {
+	s := SubscriptionPage{}
+	if initialValue != nil {
+		if sub, ok := initialValue.(models.Subscription); ok {
+			s.sub = sub
+		}
+	}
+	return &s
+}
+
+func (s *SubscriptionPage) OnMount(ctx app.Context) {
+	ctx.Handle("BeforeMoving", s.beforeMoving)
+
+}
+
+func (s *SubscriptionPage) beforeMoving(ctx app.Context, action app.Action) {
+	ctx.NewAction("PushHistory").Tag("page", PageEditSubscrition.String()).Tag("title", "S'abonner").Value(s.sub).Post()
+}
+
+func (s *SubscriptionPage) Render() app.UI {
 	active := map[bool]string{false: "disabled", true: "enabled"}[s.sub.Enabled]
 	log.Printf("UUID :%s", s.sub.UUID)
 
 	return app.Div().Body(
 		app.Button().Class("button").Text("Retour").OnClick(func(ctx app.Context, e app.Event) {
-			GotoPage(ctx, PageSearchOnLine, 0, nil)
+			Back(ctx)
 		}),
 		bulma.NewTextField(s.sub.Title, "Nom de l'abonnement", "Nom").WithOnInput(func(v string) {
 			s.sub.Title = v
@@ -217,6 +201,7 @@ func (s *EditSubscriptionPage) Render() app.UI {
 						MyAppState.Dispatch.Publish(models.NewMessage(fmt.Sprintf("Erreur : %s", err.Error())).SetPinned(true).SetStatus(models.StatusError))
 						return
 					}
+					Back(ctx)
 					// TODO GoBack
 				}
 			}),
@@ -224,18 +209,18 @@ func (s *EditSubscriptionPage) Render() app.UI {
 	)
 }
 
-func (s *EditSubscriptionPage) submit(ctx app.Context, e app.Event) {
-	resp, err := MyAppState.API.SetSubscription(ctx, *s.sub)
+func (s *SubscriptionPage) submit(ctx app.Context, e app.Event) {
+	resp, err := MyAppState.API.SetSubscription(ctx, s.sub)
 	if err != nil {
 		MyAppState.Dispatch.Publish(models.NewMessage(fmt.Sprintf("Erreur : %s", err.Error())).SetPinned(true).SetStatus(models.StatusError))
 	}
-	*s.sub = resp
+	s.sub = resp
 }
-func (s *EditSubscriptionPage) cancel(ctx app.Context, e app.Event) {
-	// TODO: goback
+func (s *SubscriptionPage) cancel(ctx app.Context, e app.Event) {
+	Back(ctx)
 }
 
-func (s *EditSubscriptionPage) delete(ctx app.Context, e app.Event) {
+func (s *SubscriptionPage) delete(ctx app.Context, e app.Event) {
 	s.deleteOpened = true
 }
 

@@ -13,12 +13,15 @@ import (
 	"github.com/simulot/aspiratv/pkg/store"
 )
 
+//go:generate enumer -type=PageID -json
 type PageID int
 
 const (
-	PageSearchOnLine PageID = iota
+	PageUndefined PageID = iota
+	PageSearchOnLine
 	PageLibrary
 	PageSubscriptions
+	PageEditSubscrition
 	PageSettings
 	PageCredits
 )
@@ -49,10 +52,6 @@ type AppState struct {
 
 	// List of available channels and TV sites
 	ChannelsList *ChanneList
-
-	// For Search Page
-	// Store results and presents them back instantly
-	Results []models.SearchResult
 
 	serverNotificationCancel func()
 	StateContext             context.Context
@@ -220,9 +219,37 @@ func (c ChanneList) SortedList() []providers.Channel {
 
 func (c ChanneList) Channel(code string) providers.Channel { return c.channels[code] }
 
-func GotoPage(ctx app.Context, page PageID, subPage PageID, payload interface{}) {
-	ctx.NewAction("GOTOPAGE").
-		Tag("PAGE", page).
-		Tag("SUBPAGE", subPage).
-		Value(payload).Post()
+func Back(ctx app.Context) {
+	ctx.NewAction("GotoBack").Post()
+}
+
+// GotoPage i
+func GotoPage(ctx app.Context, pageID PageID, value interface{}) {
+	// Query state of current page
+	ctx.NewAction("BeforeMoving").Post()
+	// Goto
+	ctx.NewAction("GotoPage").Tag("page", pageID.String()).Value(value).Post()
+}
+
+type PageState struct {
+	page  PageID      // Page ID to ease Goto
+	title string      // Page name in clear for a potential bread crumb
+	state interface{} // The state to set
+}
+
+func actionToState(action app.Action) PageState {
+	page, _ := PageIDString(action.Tags.Get("page"))
+	title := action.Tags.Get("title")
+	return PageState{
+		page:  page,
+		title: title,
+		state: action.Value,
+	}
+}
+func stateToAction(s PageState) app.Action {
+	a := app.Action{}
+	a.Name = "Back"
+	a.Tags.Set("page", s.page)
+	a.Value = s.state
+	return a
 }
