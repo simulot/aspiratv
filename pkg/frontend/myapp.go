@@ -179,7 +179,9 @@ func (a *MyApp) RenderMenus() app.UI {
 
 func (a *MyApp) menuClick(page PageID) app.EventHandler {
 	return func(ctx app.Context, e app.Event) {
-		GotoPage(ctx, page, nil)
+		if page != a.currentPageID {
+			GotoPage(ctx, page, nil)
+		}
 	}
 }
 

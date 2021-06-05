@@ -16,6 +16,9 @@ const (
 	RhythmMonthly
 )
 
+// Subscription hold information needed to :
+//    - query the web site for new published media
+//    - determine when to query the web site
 type Subscription struct {
 	UUID          uuid.UUID      `json:"uuid,omitempty"`            // Unique identifier
 	Enabled       bool           `json:"enabled,omitempty"`         // When true, the query will ran automatically

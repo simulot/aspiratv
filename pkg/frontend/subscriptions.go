@@ -130,7 +130,7 @@ func (s *SubscriptionPage) Render() app.UI {
 		app.Button().Class("button").Text("Retour").OnClick(func(ctx app.Context, e app.Event) {
 			Back(ctx)
 		}),
-		bulma.NewTextField(s.sub.Title, "Nom de l'abonnement", "Nom").WithOnInput(func(v string) {
+		bulma.NewTextField(s.sub.Title, "Nom de l'abonnement", "Nom").WithOnInput(func(ctx app.Context, v string) {
 			s.sub.Title = v
 		}),
 		app.Div().Body(
@@ -150,10 +150,10 @@ func (s *SubscriptionPage) Render() app.UI {
 			bulma.NewRadioFields(active, "Activation").
 				WithOption("disabled", "Désactivé", !s.sub.Enabled).
 				WithOption("enabled", "Activé", s.sub.Enabled).
-				WhitOnInput(func(v string) {
+				WhitOnInput(func(ctx app.Context, v string) {
 					s.sub.Enabled = v == "enabled"
 				}),
-			bulma.NewTextField(s.sub.ShowPageURL, "Page de l'émission", "URL").WithOnInput(func(v string) {
+			bulma.NewTextField(s.sub.ShowPageURL, "Page de l'émission", "URL").WithOnInput(func(ctx app.Context, v string) {
 				s.sub.ShowPageURL = v
 			}),
 
@@ -161,22 +161,22 @@ func (s *SubscriptionPage) Render() app.UI {
 				WithOption(models.RhythmDaily.String(), "Tous les jours", s.sub.PollRhythm == models.RhythmDaily).
 				WithOption(models.RhythmWeekly.String(), "Toutes les semaines", s.sub.PollRhythm == models.RhythmWeekly).
 				WithOption(models.RhythmMonthly.String(), "Tous les mois", s.sub.PollRhythm == models.RhythmMonthly).
-				WhitOnInput(func(v string) {
+				WhitOnInput(func(ctx app.Context, v string) {
 					s.sub.PollRhythm, _ = models.PoolRhythmTypeString(v)
 				}),
 
 			bulma.NewTextField(itos(s.sub.LimitNumber), "Nombre maximal de vidéos à collecter à chaque essai :", "Nombre de videos").
-				WithOnInput(func(v string) {
+				WithOnInput(func(ctx app.Context, v string) {
 					s.sub.LimitNumber = stoi(v)
 				}),
 
 			bulma.NewTextField(itos(s.sub.MaxAge), "Exclure les vidéos diffusées depuis plus de X jours:", "Nombre de jours").
-				WithOnInput(func(v string) {
+				WithOnInput(func(ctx app.Context, v string) {
 					s.sub.MaxAge = stoi(v)
 				}),
 
 			bulma.NewTextField(itos(s.sub.DeleteAge), "Supprimer les vidéos téléchagées au delà de X jours:", "Nombre de jours").
-				WithOnInput(func(v string) {
+				WithOnInput(func(ctx app.Context, v string) {
 					s.sub.DeleteAge = stoi(v)
 				}),
 		),

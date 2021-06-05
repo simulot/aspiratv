@@ -2,12 +2,14 @@ package bulma
 
 import (
 	"log"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/maxence-charriere/go-app/v9/pkg/app"
 )
 
 // OnInputFn is called when OnInput event is thrown by the element
-type OnInputFn func(v string)
+type OnInputFn func(ctx app.Context, v string)
 
 type TextField struct {
 	app.Compo
@@ -35,7 +37,7 @@ func (t *TextField) WithOnInput(fn OnInputFn) *TextField {
 }
 func (t *TextField) OnMount(ctx app.Context) {
 	if t.OnInput != nil {
-		t.OnInput(t.Value)
+		t.OnInput(ctx, t.Value)
 	}
 }
 
@@ -68,7 +70,7 @@ func (t *TextField) Render() app.UI {
 func (t *TextField) onInput(ctx app.Context, e app.Event) {
 	t.Value = ctx.JSSrc().Get("value").String()
 	if t.OnInput != nil {
-		t.OnInput(t.Value)
+		t.OnInput(ctx, t.Value)
 	}
 }
 
@@ -111,7 +113,7 @@ func (s *SelectField) OnMount(ctx app.Context) {
 	if s.OnInput != nil {
 		for _, o := range s.values {
 			if o.selected {
-				s.OnInput(o.value)
+				s.OnInput(ctx, o.value)
 			}
 		}
 	}
@@ -140,7 +142,7 @@ func (s *SelectField) Render() app.UI {
 func (s *SelectField) onInput(ctx app.Context, e app.Event) {
 	s.value = ctx.JSSrc().Get("value").String()
 	if s.OnInput != nil {
-		s.OnInput(s.value)
+		s.OnInput(ctx, s.value)
 	}
 }
 
@@ -197,7 +199,7 @@ func (s *RadioFields) OnMount(ctx app.Context) {
 	if s.OnInput != nil {
 		for _, o := range s.values {
 			if o.selected {
-				s.OnInput(o.value)
+				s.OnInput(ctx, o.value)
 			}
 		}
 	}
@@ -236,7 +238,7 @@ func (s *RadioFields) onInput(o option) func(ctx app.Context, e app.Event) {
 		}
 		log.Printf("value :%s", s.value)
 		if s.OnInput != nil {
-			s.OnInput(s.value)
+			s.OnInput(ctx, s.value)
 		}
 	}
 }
@@ -246,4 +248,119 @@ func stringIf(b bool, thenStr, elseStr string) string {
 		return thenStr
 	}
 	return elseStr
+}
+
+type OnInputTimeFn func(ctx app.Context, v time.Time)
+type TimeField struct {
+	app.Compo
+	Label       string
+	fieldType   string
+	Placeholder string
+	Value       string
+	helpClass   string
+	help        string
+	OnInput     OnInputTimeFn
+	list        []time.Time
+}
+
+// NewTimeField create an time input field of type fieldType.
+// Accepted type :
+// 	time
+// not yet supported :
+//   date
+//   date-time-local
+//   week
+//   month
+
+func NewTimeField(value time.Time, fieldType string, label string, placeholder string) *TimeField {
+	t := TimeField{
+		Label:       label,
+		Placeholder: placeholder,
+		fieldType:   fieldType,
+	}
+	t.Value = t.timeToHTMLString(value)
+	return &t
+}
+
+func (t *TimeField) List(l []time.Time) *TimeField {
+	t.list = l
+	return t
+}
+
+func (t *TimeField) timeToHTMLString(v time.Time) string {
+	switch t.fieldType {
+	case "time":
+		return v.Format("15:04")
+	default:
+		return v.String()
+	}
+}
+
+func (t *TimeField) htmlToTime(s string) (tv time.Time, err error) {
+	switch t.fieldType {
+	case "time":
+		return time.Parse("15:04", s)
+	default:
+		return time.Parse(time.RFC3339, s)
+	}
+}
+
+// WhitOnInput call fn whenever an Input event is thrown.
+// fn retrun set Help part, and error set help style
+func (t *TimeField) WithOnInput(fn OnInputTimeFn) *TimeField {
+	t.OnInput = fn
+	return t
+}
+func (t *TimeField) OnMount(ctx app.Context) {
+	if t.OnInput != nil {
+		tv, _ := t.htmlToTime(t.Value)
+		t.OnInput(ctx, tv)
+	}
+}
+
+func (t *TimeField) SetHelp(text, class string) {
+	t.help = text
+	t.helpClass = class
+}
+
+func (t *TimeField) Render() app.UI {
+	var id string
+	if t.list != nil {
+		id = uuid.NewString()
+	}
+
+	return app.Div().
+		Class("field").
+		Body(
+			app.If(t.list != nil,
+				app.DataList().ID(id).Body(
+					app.Range(t.list).Slice(func(i int) app.UI {
+						return app.Option().Value(t.timeToHTMLString(t.list[i]))
+					}),
+				),
+			),
+			app.Label().
+				Class("label").
+				Text(t.Label),
+			app.Div().
+				Class("control").
+				Body(
+					app.Input().
+						Class("input").
+						Type(t.fieldType).
+						Placeholder(t.Placeholder).
+						Value(t.Value).
+						OnInput(t.onInput).
+						List(id),
+				),
+			app.P().Class(t.helpClass).Text(t.help),
+		)
+}
+
+func (t *TimeField) onInput(ctx app.Context, e app.Event) {
+	t.Value = ctx.JSSrc().Get("value").String()
+	if t.OnInput != nil {
+		tv, _ := t.htmlToTime(t.Value)
+		t.OnInput(ctx, tv)
+	}
 }

@@ -98,30 +98,26 @@ func (c *SettingsPage) Render() app.UI {
 		c.initialized = true
 	}
 
-	cSeries := NewPathSettings("Séries", c.Settings.SeriesSettings, &c.Settings.LibraryPath).WithOnInput(func(s models.PathSettings) {
-		c.Settings.SeriesSettings = s
-	})
-	cTVShows := NewPathSettings("Émissions", c.Settings.TVShowsSettings, &c.Settings.LibraryPath).WithOnInput(func(s models.PathSettings) {
-		c.Settings.TVShowsSettings = s
-	})
-	cCollections := NewPathSettings("Collections", c.Settings.CollectionSettings, &c.Settings.LibraryPath).WithOnInput(func(s models.PathSettings) {
-		c.Settings.CollectionSettings = s
-	})
-
 	return app.Div().Body(
 		app.H1().
 			Class("title is-1").
 			Text(labelSettings),
-		bulma.NewTextField(c.Settings.LibraryPath, labelLibraryPath, labelLibraryPathPlaceHolder).WithOnInput(func(v string) {
+		bulma.NewTextField(c.Settings.LibraryPath, labelLibraryPath, labelLibraryPathPlaceHolder).WithOnInput(func(ctx app.Context, v string) {
 			c.Settings.LibraryPath = v
-			cSeries.SetHelp()
-			cTVShows.SetHelp()
-			cCollections.SetHelp()
-			c.Update()
+			ctx.NewAction("PageSettings/LibraryPath").Value(v).Post()
 		}),
-		cSeries,
-		cTVShows,
-		cCollections,
+		bulma.NewTimeField(time.Date(0, 0, 0, 0, 0, 0, 0, time.Local).Add(c.Settings.PollSiteTime), "time", "Interroger le serveur à", "").WithOnInput(func(ctx app.Context, v time.Time) {
+			c.Settings.PollSiteTime = time.Hour*time.Duration(v.Hour()) + time.Minute*time.Duration(v.Minute())
+		}),
+		NewPathSettings("Séries", c.Settings.SeriesSettings, c.Settings.LibraryPath).WithOnInput(func(s models.PathSettings) {
+			c.Settings.SeriesSettings = s
+		}),
+		NewPathSettings("Émissions", c.Settings.TVShowsSettings, c.Settings.LibraryPath).WithOnInput(func(s models.PathSettings) {
+			c.Settings.TVShowsSettings = s
+		}),
+		NewPathSettings("Collections", c.Settings.CollectionSettings, c.Settings.LibraryPath).WithOnInput(func(s models.PathSettings) {
+			c.Settings.CollectionSettings = s
+		}),
 		app.Div().
 			Class("field is-grouped").
 			Body(
@@ -149,13 +145,13 @@ type PathSetting struct {
 	app.Compo
 	Legend      string
 	pathSetting models.PathSettings
-	libraryPath *string
+	libraryPath string
 	help        string
 	selected    string
 	onInputFn   func(models.PathSettings)
 }
 
-func NewPathSettings(legend string, s models.PathSettings, libraryPath *string) *PathSetting {
+func NewPathSettings(legend string, s models.PathSettings, libraryPath string) *PathSetting {
 	return &PathSetting{
 		pathSetting: s,
 		Legend:      legend,
@@ -174,15 +170,24 @@ func (c *PathSetting) onInput() {
 	}
 }
 
+func (c *PathSetting) OnMount(ctx app.Context) {
+	ctx.Handle("PageSettings/LibraryPath", c.handleLibraryPathChange)
+}
+
+func (c *PathSetting) handleLibraryPathChange(ctx app.Context, action app.Action) {
+	c.libraryPath = action.Value.(string)
+	c.SetHelp()
+}
+
 func (c *PathSetting) SetHelp() {
 	namer := models.DefaultFileNamer[c.pathSetting.PathNaming]
 	m := SampleMedia[c.pathSetting.PathNaming]
 
-	c.help = filepath.Join(*c.libraryPath, c.pathSetting.Folder, namer.ShowPathString(m), namer.SeasonPathString(m), namer.MediaFileNameString(m))
+	c.help = filepath.Join(c.libraryPath, c.pathSetting.Folder, namer.ShowPathString(m), namer.SeasonPathString(m), namer.MediaFileNameString(m))
 }
 
 func (c *PathSetting) Render() app.UI {
-	s := bulma.NewSelectField(c.selected, labelTypePathNaming).WhitOnInput(func(selected string) {
+	s := bulma.NewSelectField(c.selected, labelTypePathNaming).WhitOnInput(func(ctx app.Context, selected string) {
 		option, _ := strconv.Atoi(selected)
 		c.pathSetting.PathNaming = models.PathNamingType(option)
 		c.onInput()
@@ -197,7 +202,7 @@ func (c *PathSetting) Render() app.UI {
 	}
 	return app.Section().Body(
 		app.H2().Class("title is-2").Text(c.Legend),
-		bulma.NewTextField(c.pathSetting.Folder, labelSubFolder, labelSubFolderPlaceHolder).WithOnInput(func(v string) {
+		bulma.NewTextField(c.pathSetting.Folder, labelSubFolder, labelSubFolderPlaceHolder).WithOnInput(func(ctx app.Context, v string) {
 			c.pathSetting.Folder = v
 			c.onInput()
 			c.SetHelp()

@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"time"
 )
 
 //go:generate enumer -type=PathNamingType -json
@@ -18,6 +19,7 @@ const (
 
 type Settings struct {
 	LibraryPath        string                      `json:"library_path,omitempty"`        // Library root path. All folders are given relative to this path
+	PollSiteTime       time.Duration               `json:"poll_site_time,omitempty"`      // Time offset after local midnight
 	SeriesSettings     PathSettings                `json:"series_settings,omitempty"`     // Path settings for series
 	TVShowsSettings    PathSettings                `json:"tv_shows_settings,omitempty"`   // Path settings for TV Shows
 	CollectionSettings PathSettings                `json:"collection_settings,omitempty"` // Path settings fro Collections
